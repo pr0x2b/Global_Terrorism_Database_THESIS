@@ -16,11 +16,10 @@ header <- dashboardHeader(
 sidebar <- dashboardSidebar(
     sidebarMenu(id = "gtd_pranav",
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
-      menuItem("The Deadliest Groups", tabName = "p1_1", icon = icon("globe"),
+      menuItem("Impact Analysis", tabName = "p1_1", icon = icon("globe"),
         menuSubItem("EDA Part 1", icon = icon("user"),tabName = "eda_p1"),
         menuSubItem("EDA Part 2", icon = icon("user"),tabName = "eda_p2"),
-        menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations"),
-        menuSubItem("Tab 3", icon = icon("check-circle"), tabName = "p1_3")),
+        menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations")),
       menuItem("Terrorism by Country", tabName = "bycountry", icon = icon("gears")),
       menuItem("Tab 3", tabName = "predictions", icon = icon("globe")),
       menuItem("Tab 4", tabName = "predictions1", icon = icon("globe")),
@@ -45,6 +44,9 @@ sidebar <- dashboardSidebar(
 
 body <- dashboardBody(
   useShinyjs(), 
+  tags$style(type="text/css",
+         ".shiny-output-error { visibility: hidden; }",
+         ".shiny-output-error:before { visibility: hidden; }"),
   extendShinyjs(text = "shinyjs.activateTab = function(name){
                         setTimeout(function(){
                         $('a[href$=' + '\"#shiny-tab-' + name + '\"' + ']').closest('li').addClass('active')
@@ -87,7 +89,7 @@ body <- dashboardBody(
             fluidRow( 
               # box(status = "primary", width = 12, solidHeader=T, 
                 img(src = "munich_image.jpg",height = 130, width = 900, style="display: block; margin-left: auto; margin-right: auto;"), 
-                highchartOutput("world_hchart",height = 500)
+                withSpinner(highchartOutput("world_hchart",height = 500))
                 # )
               ))
             ), # End of fluid row
@@ -95,7 +97,7 @@ body <- dashboardBody(
 
         fluidRow(
 
-          column(width = 6,
+          column(width = 12,
             # actionButton("info_box", " Detailed information", icon = icon("info-circle")),
             # bsModal("modalExample", "info_box", size = "large", 
               box(
@@ -122,92 +124,99 @@ body <- dashboardBody(
                       #          outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
                       #          targeting civilians or non-combatants)."))
                   ))
-              ), 
+              )
 
-          column(width = 6,
-            fluidRow(valueBoxOutput("countries_affected"), valueBoxOutput("mult_attacks")),
-            fluidRow(valueBoxOutput("attack_log_intl"), valueBoxOutput("attack_log_domestic")), 
-            fluidRow(valueBoxOutput("attack_ideo_intl"), valueBoxOutput("attack_ideo_domestic"))
-            )
+          # column(width = 6,
+          #   fluidRow(valueBoxOutput("countries_affected"), valueBoxOutput("mult_attacks")),
+          #   fluidRow(valueBoxOutput("attack_log_intl"), valueBoxOutput("attack_log_domestic")), 
+          #   fluidRow(valueBoxOutput("attack_ideo_intl"), valueBoxOutput("attack_ideo_domestic"))
+          #   )
 
           ) # End of fluid row
 
         )),
 
+
     #-------------------------------------------- 
-    # section 1.1: Deadliest groups EDA part 1
+    # section 1.1: Geographic Visualization (Leaflet)
     #-------------------------------------------- 
     tabItem(tabName = "eda_p1",
       fluidPage(title = "tdg_eda_p1",
-
-        fluidRow(            
-          column(width = 9, highchartOutput("top10_hc1_attack_type", height = 250)),
-          column(width = 3, highchartOutput("top10_hc1_year",height = 250))
-          ),
-
-
-        fluidRow(
-          column(width = 9, highchartOutput("top10_hc1",height = 400)),
-          column(width = 3, highchartOutput("top10_hc1_target_naltly", height = 410))
-
-
-            )
-
-          # tabBox(width = 9,
-          #   title = "Characteristics Deadliest Terrorist Groups", id = "tabset2", side = "left", 
-          #   tabPanel("Plot_bar", "", 
-          #     highchartOutput("top10_hc1",height = 300)),
-          #   tabPanel("Plot_2", "")
-          #     #highchartOutput("top10_hc2",height = 600))
-          # ),
-
-          # box(width = 3, title = "Frequent Targets",status = "primary", solidHeader = TRUE,
-          #     highchartOutput("top10_hc1_target_type", height = 300),
-          #     highchartOutput("top10_hc1_target_naltly", height = 300)          
-          # ),
-
-
-          # plotlyOutput("plot1",height='auto', width = 'auto')
-          
-          # )
-        )),
-
-    #-------------------------------------------- 
-    # section 1.2: Deadliest groups EDA part 2
-    #-------------------------------------------- 
-    tabItem(tabName = "eda_p2",
-      fluidPage(title = "tdg_eda_p2",
-                          
-          tabBox(width = 12, title = "Characteristics of the Top 10 Deadliest Groups: Part 2", id = "eda_p2_leaflet", side = "left", 
-
-            tabPanel("Target locations", "", 
-                      fluidRow(
-                          sidebarPanel(width = 2, 
-                            uiOutput("leaflet_year"),
-                            uiOutput("leaflet_country"),
-                            uiOutput("leaflet_group"),
-                            uiOutput("leaflet_attack"),
-                            uiOutput("leaflet_weapon"),
-                            uiOutput("leaflet_target"),
-                            uiOutput("checkBtn1_suicide"),
-                            uiOutput("checkBtn2_multiple")),
-                          box(width = 10,
-                            column(width = 2, uiOutput("checkBtn3_log_int")),  
-                            column(width = 3, uiOutput("checkBtn4_ido_int")),  
-                            column(width = 2, uiOutput("checkBtn5_crit1")),  
-                            column(width = 2, uiOutput("checkBtn6_crit2")),  
-                            column(width = 3, uiOutput("checkBtn7_crit3"))
-                            ),
-                          column(width = 10, leafletOutput("top_10_dg_leaflet", height = 510))
-                          )
-                      ),
-
-
-            tabPanel("Intentions", "")
-              #highchartOutput("top10_hc2",height = 600))
+        fluidRow(h3("GUI: Exploration of Attack Characteristics"),
+            tabBox(width = 2, 
+              tabPanel("Plot configurations:",  
+                uiOutput("radioBtn_ldata"),
+                uiOutput("radioBtn_major_attacks"),
+                uiOutput("leaflet_year"),
+                uiOutput("leaflet_region"),
+                uiOutput("leaflet_group"),
+                uiOutput("leaflet_attack"),
+                uiOutput("leaflet_weapon"),
+                uiOutput("leaflet_target"),
+              # tabPanel("configs 2", 
+                uiOutput("checkBtn1_suicide"),
+                uiOutput("checkBtn2_multiple"),
+                uiOutput("checkBtn3_log_int"), 
+                uiOutput("checkBtn4_ido_int"), 
+                uiOutput("checkBtn5_crit1"),
+                uiOutput("checkBtn6_crit2"),
+                uiOutput("checkBtn7_crit3"))),
+              column(width = 10, 
+                  title = "Summarized figures:", 
+                  tags$head(tags$style(HTML(".small-box {height: 95px}"))),
+                  valueBoxOutput("countries_affected", width = 2), 
+                  valueBoxOutput("suicide_attack", width = 2), 
+                  valueBoxOutput("attack_success", width = 2), 
+                  valueBoxOutput("extended", width = 2), 
+                  valueBoxOutput("attack_log_intl", width = 2), 
+                  # valueBoxOutput("attack_log_domestic", width = 2), 
+                  valueBoxOutput("attack_ideo_intl", width = 2)),
+                  # valueBoxOutput("attack_ideo_domestic", width = 2)),
+              column(width = 10, 
+                withSpinner(
+                  leafletOutput("top_10_dg_leaflet", height = 750)))
               )
 
         )),
+
+    #-------------------------------------------- 
+    # section 1.2: Deadliest groups EDA part 1
+    #-------------------------------------------- 
+    tabItem(tabName = "eda_p2",
+      fluidPage(title = "tdg_eda_p2",
+        fluidRow(h3("Characteristics of Top 10 Deadliest Groups"),
+            tabBox(width = 12, 
+              tabPanel("Analysis 1", 
+                fluidRow(
+                  column(width = 9, withSpinner(highchartOutput("top10_hc1",height = 340))),
+                  column(width = 3, withSpinner(highchartOutput("top10_hc1_target_naltly", height = 340)))
+                  ),
+                fluidRow(            
+                  column(width = 9, withSpinner(highchartOutput("top10_hc1_attack_type", height = 250))),
+                  column(width = 3, withSpinner(highchartOutput("top10_hc1_year",height = 250)))
+                  ) 
+                ),
+
+              tabPanel("Fatalities", 
+                fluidRow(
+                  tabBox(width = 2, 
+                    tabPanel("Plot configurations:",  
+                            uiOutput("radioBtn_ldata2"),
+                            uiOutput("select1_xvar"),
+                            uiOutput("select2_yvar"),
+                            uiOutput("select3_zvar"),
+                            uiOutput("select4_colvar")
+                            )),
+                  column(width = 10, 
+                    plotlyOutput(outputId = "plotly_1", width = "100%", height = "700px")
+                        )
+                      # column(width = 4, 
+                      #   verbatimTextOutput("freq_table", placeholder = TRUE)
+                      #   )
+                      ))
+              ))
+        )),
+
 
     tabItem(tabName = "p1_animations",
       fluidPage(title = "Pattern Visualization",
