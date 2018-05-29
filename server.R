@@ -282,14 +282,14 @@ shinyServer(function(input, output, session) {
                                       ifelse(data$nkill >= 300 & data$nkill < 500, "#FF8000", 
                                       ifelse(data$nkill >= 500 & data$nkill < 1000, "#FF4000", "#ff0000")))),
                               iconSize = ifelse(data$nkill < 100, 2, 
-                                         ifelse(data$nkill >= 100 & data$nkill < 300, 4, 
-                                         ifelse(data$nkill >= 300 & data$nkill < 500, 8, 
-                                         ifelse(data$nkill >= 500 & data$nkill < 1000, 12, 20)))),
+                                         ifelse(data$nkill >= 100 & data$nkill < 300, 5, 
+                                         ifelse(data$nkill >= 300 & data$nkill < 500, 9, 
+                                         ifelse(data$nkill >= 500 & data$nkill < 1000, 13, 25)))),
                               animate = TRUE, 
                               heartbeat = ifelse(data$nkill < 100, 0.99, 
-                                          ifelse(data$nkill >= 100 & data$nkill < 300, 0.87, 
-                                          ifelse(data$nkill >= 300 & data$nkill < 500, 0.77, 
-                                          ifelse(data$nkill >= 500 & data$nkill < 1000, 0.67, 0.4))))
+                                          ifelse(data$nkill >= 100 & data$nkill < 300, 0.90, 
+                                          ifelse(data$nkill >= 300 & data$nkill < 500, 0.80, 
+                                          ifelse(data$nkill >= 500 & data$nkill < 1000, 0.70, 0.5))))
                               ))
             
         }
@@ -432,6 +432,139 @@ shinyServer(function(input, output, session) {
     #   })
 
 
+  #-----------------------------------------------
+  # Section 1.2: Global Attack Patterns/ Heatmaps
+  #-----------------------------------------------
+
+  output$pattern_global_hmap1 <- renderPlotly({
+    tmp <- df_leaflet %>% group_by(target_type, year) %>% summarise(total_attacks = n()) 
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$target_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target type: ", target_type,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Target Type", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$pattern_global_hmap2 <- renderPlotly({
+    tmp <- df_leaflet %>% group_by(attack_type, year) %>% summarise(total_attacks = n()) 
+    tmp %>%
+    plot_ly(x=tmp$year, y=tmp$attack_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+            hoverinfo = 'text',text = ~paste("Year: ", year,
+                                             "<br>Attack type: ", attack_type,
+                                             "<br>Total attacks : ", total_attacks)) %>%
+      layout(title = "By Attack Type",
+             xaxis = list(autorange = "reversed"), 
+             yaxis = list(autorange = "reversed"), 
+             paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+
+  output$pattern_global_hmap3 <- renderPlotly({
+    tmp <- df_leaflet %>% group_by(weapon_type, year) %>% summarise(total_attacks = n())
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$weapon_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Weapon type: ", weapon_type,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Weapon Type", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$slider_filter_year <- renderUI({ 
+        sliderInput("slider_filter_year", label = "Year range", min = 1970, max = 2016, value = c("2010", "2016"))
+    })
+
+  output$slider_filter_total_attacks <- renderUI({ 
+
+      sliderInput("slider_filter_total_attacks", label = "Total number of attacks", min = 0, max = 1500, , value = c("0", "1500"))
+
+    })
+
+  output$radioBtn_filter_tgroup <- renderUI ({
+        radioGroupButtons(inputId = "radioBtn_filter_tgroup", label = "Exclude Unknown Groups?", c("Yes", "No"), selected = "Yes",
+                          checkIcon = list(yes = icon("ok", lib = "glyphicon")))
+    })
+
+  # reactive data for leaflet + major attacks
+  df_tgroup_heatmap <- reactive({
+    req(input$slider_filter_year, input$slider_filter_total_attacks, input$radioBtn_filter_tgroup)
+
+    data <- df_leaflet[df_leaflet$year >= input$slider_filter_year[1] & df_leaflet$year <= input$slider_filter_year[2], ]
+
+    if(input$radioBtn_filter_tgroup == "Yes") { 
+      data <- data %>% filter(group_name != "Unknown") %>% group_by(group_name, year) %>% summarise(total_attacks = n()) 
+    } else { 
+      data <- data %>% group_by(group_name, year) %>% summarise(total_attacks = n()) 
+    }
+
+    data <- data[data$total_attacks >= input$slider_filter_total_attacks[1] & data$total_attacks <= input$slider_filter_total_attacks[2], ]
+
+    return(data)
+
+  })
+
+  observe({
+
+    data <- df_tgroup_heatmap()
+    min_attacks <- min(data$total_attacks)
+    max_attacks <- max(data$total_attacks)
+    updateSliderInput(session, "slider_filter_total_attacks", min = 0, max = 1500, value = c(min_attacks, max_attacks))
+    
+  })
+
+  output$pattern_global_hmap4 <- renderPlotly({
+    tmp <- df_tgroup_heatmap()
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$group_name, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Group: ", group_name,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Terrorist Groups", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$pattern_global_hmap_countries <- renderPlotly({
+    tmp <- df_leaflet %>% group_by(country, year) %>% summarise(total_attacks = n())
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$country, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target Countries: ", country,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Country", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+       
+    })
+
+
+  output$pattern_global_hmap_tnats <- renderPlotly({
+    tmp <- df_leaflet %>% group_by(target_nalty, year) %>% summarise(total_attacks = n())
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$target_nalty, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target Nationality: ", target_nalty,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Target Nationality<br><br><br>", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+       
+    })
+
+
   #-------------------------------------
   # EDA p2: Deadlist group top10_hc1
   #-------------------------------------
@@ -539,92 +672,253 @@ shinyServer(function(input, output, session) {
   # Analysis 2: Data description
   #-------------------------------------
   
-  output$radioBtn_ldata2 <- renderUI ({
-      radioButtons(inputId = "radioBtn_ldata2", label = "Select data :", choices = c("T10 Groups", "All"), selected = "T10 Groups", inline = TRUE)
-  })
+  # output$radioBtn_ldata2 <- renderUI ({
+  #       radioGroupButtons(inputId = "radioBtn_ldata2", label = "Select data :", c("T10 Groups", "All"), selected = "T10 Groups",
+  #                         size = "xs", justified = TRUE, checkIcon = list(yes = icon("ok", lib = "glyphicon")))
+  # })
+
+  # output$plotly_year <- renderUI({ 
+  #       sliderInput("plotly_year", label = "Year range", min = 1970, max = 2016, value = c("2010", "2016"))
+  #     })
+
 
   #-------------------------------------
   # Reactive data for sidebar selection
   #-------------------------------------
 
-  plotly_3d_data <- reactive({
+  # init_data <- reactive({
 
-      if(input$radioBtn_ldata2 == "T10 Groups") {
-        data <- df_leaflet_t10 %>% filter(group_name %in% top10_groups) # filter data for top 10 deadliest groups
-      } else {
-        data <- df_leaflet # select everything
-      }
+  #     if(input$radioBtn_ldata2 == "T10 Groups") {
+  #       data <- df_leaflet_t10 %>% select(-c(eventid, day, ISO)) # filter data for top 10 deadliest groups
+  #     } else {
+  #       data <- df_leaflet %>% select(-c(eventid, day, ISO)) # select everything
+  #     }
 
-      return(data)
+  #     data <- data[data$year >= input$plotly_year[1] & data$year <= input$plotly_year[2], ]
 
-    })
+  #     return(data)
 
+  #   })
+
+  # output$plotly_country <- renderUI({ 
+  #   data <- df_leaflet_t10 %>% select(-c(eventid, day, ISO))
+  #   cont_options <- levels(factor(data$country))
+  #   selectizeInput(inputId = "plotly_country", label = "Country", multiple = T, choices = cont_options, selected = cont_options[1:2])  
+  # })
+
+
+  # plotly_3d_data <- reactive({
+
+  #     data <- df_leaflet_t10 %>% 
+  #       select(-c(date, year, region, country, city, 
+  #                 nkill, nwound, latitude, longitude,
+  #                 group_name, attack_type, target_type, weapon_type, target_nalty,
+  #                 suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize))
+  #     # data <- data[data$country %in% input$plotly_country, ]
+
+  #     return(data)
+
+  #   })
 
   output$select1_xvar <- renderUI({ 
-    vars <- plotly_3d_data() %>% names()
-    selectizeInput(inputId = "select1_xvar", label = "X var", multiple = F, choices = vars, selected = NULL)  
+    
+    selectizeInput(inputId = "select1_xvar", label = "X var", multiple = F, 
+                   choices =  list(
+                                Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
+                                Geographical = c("region", "country", "city"),
+                                Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
+                   selected = "nwound")
   })
 
-
   output$select2_yvar <- renderUI({
-    vars <- plotly_3d_data() %>% names()
-    selectizeInput(inputId = "select2_yvar", label = "Y var", multiple = F, choices = vars, selected = NULL) 
+    
+    selectizeInput(inputId = "select2_yvar", label = "Y var", multiple = F, 
+                   choices =  list(
+                                Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
+                                Geographical = c("region", "country", "city"),
+                                Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
+                   selected = "nkill")
   })
 
   output$select3_zvar <- renderUI({
-    vars <- plotly_3d_data() %>% names()
-    selectizeInput(inputId = "select3_zvar", label = "Z var", multiple = F, choices = vars, selected = NULL) 
+    
+    selectizeInput(inputId = "select3_zvar", label = "Z var", multiple = F, 
+                   choices =  list(
+                                Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
+                                Geographical = c("region", "country", "city"),
+                                Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
+                   selected = "date")
   })
 
   output$select4_colvar <- renderUI({
-    vars <- plotly_3d_data() %>% names()
-    selectizeInput(inputId = "select4_colvar", label = "Color var", multiple = F, choices = vars, selected = NULL)  
+    
+    selectizeInput(inputId = "select4_colvar", label = "Color var", multiple = F, 
+                   choices =  list(
+                                Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
+                                Geographical = c("region", "country", "city"),
+                                Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
+                   selected = "group_name") 
   })
 
-  # observeEvent(c(input$picker2_yvar, input$picker3_zvars, input$picker4_colvar),{
-  #   vars <- sidebar_data() %>% select(-c(input$picker2_yvar, input$picker3_zvars, input$picker4_colvar)) %>% names()
-  #   updatePickerInput(session = session, inputId = "picker1_xvar", choices = vars)
-  # }) 
+   output$show_legend <- renderUI ({
+        radioGroupButtons(inputId = "show_legend", label = "Show legend?", c("Yes", "No"), selected = "Yes",
+                          size = "xs", checkIcon = list(yes = icon("ok", lib = "glyphicon")))
+  })
 
+  output$radioBtn_log_tr <- renderUI ({
+        radioGroupButtons(inputId = "radioBtn_log_tr", label = "Log nkill and nwound?", c("Yes", "No"), selected = "Yes",
+                          size = "xs", checkIcon = list(yes = icon("ok", lib = "glyphicon")))
+  })
 
   output$plotly_1 <- renderPlotly({
-    req(input$select1_xvar, input$select2_yvar, input$select3_zvar, input$select4_colvar)
-              
-    # df_leaflet_t10 %>%
-    #   replace_na(list(nkill = 0, nwound = 0)) %>%
-    #   mutate(group_name = as.factor(group_name), year = as.factor(as.character(year))) %>%
-    #   plot_ly(x = ~nkill, y = ~nwound, z = ~year, color = ~group_name, colors = ~viridis(length(unique(group_name)))) %>%
-    #   add_markers(opacity = 0.6) %>%
-    # layout(title = "Terror Attacks from Top 10 Groups", 
-    #        paper_bgcolor= "#f7f7f7",
-    #        legend = list(orientation = 'h', xanchor = "center", x = 0.5),
-    #        annotations=list(yref='paper',xref="paper", text = "Terror attacks", showarrow=F), 
-    #        scene = list(xaxis = list(title = 'nkill'),
-    #                     yaxis = list(title = 'nwound'),
-    #                     zaxis = list(title = 'year')))
-    
-    data <- plotly_3d_data()
-    data$xvar <- input$select1_xvar
-    data$yvar <- input$select2_yvar
-    data$zvar <- input$select3_zvar
-    data$colvar <- input$select4_colvar
 
+    req(input$select1_xvar, input$select2_yvar, input$select3_zvar, input$select4_colvar, input$show_legend, input$radioBtn_log_tr, input$goButton)
+
+    input$goButton
+
+    data <- df_leaflet_t10 %>% 
+        select(date, year, region, country, city, 
+                nkill, nwound, latitude, longitude,
+                group_name, attack_type, target_type, weapon_type, target_nalty,
+                suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize) %>% 
+        replace_na(list(nkill = 0, nwound = 0))
+
+      if(input$radioBtn_log_tr == "No") {
+        data <- data 
+      } else {
+        data <- data %>% mutate(nkill = log1p(nkill), nwound = log1p(nwound))
+      }
+        
     data %>%
       plot_ly(x = ~get(input$select1_xvar), 
               y = ~get(input$select2_yvar), 
               z = ~get(input$select3_zvar), 
-              color = ~get(input$select4_colvar), colors = ~viridis(length(unique(get(input$select4_colvar))))) %>%
-      add_markers(opacity = 0.6) %>%
-    layout(title = "Terror Attacks from Top 10 Groups", 
-           paper_bgcolor= "#f7f7f7",
-           legend = list(orientation = 'h', xanchor = "center", x = 0.5),
-           annotations=list(yref='paper',xref="paper", text = "Terror attacks", showarrow=F), 
-           scene = list(xaxis = list(title = 'xvar'),
-                        yaxis = list(title = 'yvar'),
-                        zaxis = list(title = 'zvar')))
-
-      
+              color = ~get(input$select4_colvar), 
+              colors = ~rev(viridis::plasma(length(unique(get(input$select4_colvar))))),
+              hoverinfo = 'text',
+              text = ~paste("Date: ", date,
+                            "<br>Group: ", group_name,
+                            "<br>Region : ", region,
+                            "<br>Country : ", country,
+                            "<br>City : ", city,
+                            "<br># killed : ", nkill,
+                            "<br># wounded : ", nwound,
+                            "<br>Attack type: ", attack_type,
+                            "<br>Weapon type: ", weapon_type,
+                            "<br>Target type: ", target_type,
+                            "<br>Suicide attack?: ", suicide_attack)) %>%
+      add_markers(opacity = 0.8) %>%
+      layout(title = "3 Dimensional View", 
+           # paper_bgcolor= "#f7f7f7",
+           showlegend = ifelse(input$show_legend == "Yes", TRUE, FALSE),
+           legend = list(orientation = "h", xanchor = "center", x = 0.5),
+           paper_bgcolor= "black", plot_bgcolor = "black",
+           annotations=list(yref='paper',xref="paper", text = "", showarrow=F), 
+           scene = list(xaxis = list(title = input$select1_xvar),
+                        yaxis = list(title = input$select2_yvar),
+                        zaxis = list(title = input$select3_zvar)))
+    
    })
+
+
+  #-------------------------------------
+  # Tab 3: Patterns/ Heatmaps
+  #-------------------------------------
+
+  output$pattern_hmap1 <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(target_type, year) %>% summarise(total_attacks = n()) 
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$target_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target type: ", target_type,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Target Type", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$pattern_hmap2 <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(attack_type, year) %>% summarise(total_attacks = n()) %>% ungroup() %>%
+      mutate(attack_type = ifelse(attack_type == "Hostage Taking (Kidnapping)", "Hostage Taking (Kidnap.)", 
+                           ifelse(attack_type == "Hostage Taking (Barricade Incident)", "Hostage Taking (Barricade)", 
+                           ifelse(attack_type == "Facility/Infrastructure Attack", "Facility/Infra. Attack", 
+                                  attack_type)))) #shorten long names (for better visualization)
+    tmp %>%
+    plot_ly(x=tmp$year, y=tmp$attack_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+            hoverinfo = 'text',text = ~paste("Year: ", year,
+                                             "<br>Attack type: ", attack_type,
+                                             "<br>Total attacks : ", total_attacks)) %>%
+      layout(title = "By Attack Type",
+             xaxis = list(autorange = "reversed"), 
+             yaxis = list(autorange = "reversed"), 
+             paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+
+  output$pattern_hmap3 <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(weapon_type, year) %>% summarise(total_attacks = n()) %>% ungroup() %>%
+      mutate(weapon_type = ifelse(weapon_type == "Explosives/Bombs/Dynamite", "Explosives", weapon_type)) #shorten long names (for better visualization)
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$weapon_type, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Weapon type: ", weapon_type,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Weapon Type", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$pattern_hmap4 <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(group_name, year) %>% summarise(total_attacks = n()) 
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$group_name, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Group: ", group_name,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Top 10 Terror Groups", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+
+    })
+
+  output$pattern_hmap_countries <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(country, year) %>% summarise(total_attacks = n())
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$country, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target Countries: ", country,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Country", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+       
+    })
+
+
+  output$pattern_hmap_tnats <- renderPlotly({
+    tmp <- df_leaflet_t10 %>% group_by(target_nalty, year) %>% summarise(total_attacks = n())
+    tmp %>%
+      plot_ly(x=tmp$year, y=tmp$target_nalty, z = tmp$total_attacks, type = "heatmap", colors = viridis::plasma(100),
+              hoverinfo = 'text',text = ~paste("Year: ", year,
+                                               "<br>Target Nationality: ", target_nalty,
+                                               "<br>Total attacks : ", total_attacks)) %>%
+        layout(title = "By Target Nationality<br><br><br>", 
+               xaxis = list(autorange = "reversed"),
+               yaxis = list(autorange = "reversed"), 
+               paper_bgcolor= "black", plot_bgcolor = "black")
+       
+    })
 
 
   }) # End of shinyServer logic

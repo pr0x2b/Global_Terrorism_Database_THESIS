@@ -8,7 +8,7 @@
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, 
                DescTools, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
-               viridis, viridisLite,
+               viridis, viridisLite, RColorBrewer, 
                TSstudio, timetk, plotly, highcharter, treemap, d3heatmap, 
                countrycode, 
                shiny, ggmap, maptools, maps, 

@@ -16,9 +16,10 @@ header <- dashboardHeader(
 sidebar <- dashboardSidebar(
     sidebarMenu(id = "gtd_pranav",
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
-      menuItem("Impact Analysis", tabName = "p1_1", icon = icon("globe"),
-        menuSubItem("EDA Part 1", icon = icon("user"),tabName = "eda_p1"),
-        menuSubItem("EDA Part 2", icon = icon("user"),tabName = "eda_p2"),
+      menuItem("Impact Analysis", icon = icon("globe"),tabName = "eda_p1_geographic"),
+      menuItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps"),
+      menuItem("Top 10 Groups", tabName = "p1_1", icon = icon("user"),
+        menuSubItem("Characteristics", icon = icon("user"),tabName = "eda_p2"),
         menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations")),
       menuItem("Terrorism by Country", tabName = "bycountry", icon = icon("gears")),
       menuItem("Tab 3", tabName = "predictions", icon = icon("globe")),
@@ -140,8 +141,8 @@ body <- dashboardBody(
     #-------------------------------------------- 
     # section 1.1: Geographic Visualization (Leaflet)
     #-------------------------------------------- 
-    tabItem(tabName = "eda_p1",
-      fluidPage(title = "tdg_eda_p1",
+    tabItem(tabName = "eda_p1_geographic",
+      fluidPage(title = "tdg_eda_p1_geographic",
         fluidRow(h3("GUI: Exploration of Attack Characteristics"),
             tabBox(width = 2, 
               tabPanel("Plot configurations:",  
@@ -179,14 +180,63 @@ body <- dashboardBody(
 
         )),
 
+
+    #-----------------------------------------------------
+    # section 1.2: Identifying Patterns in Global attacks
+    #-----------------------------------------------------
+    tabItem(tabName = "eda_p1_2_heatmaps",
+      fluidPage(title = "eda_p1_2_heatmaps",
+            tabBox(width = 12, title = "Identifying Patterns in All Global Attacks", id = "t10_char", side = "left", 
+
+              tabPanel("By Target, Attack and Weapon Types", 
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+
+                  box(title = "By Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 12,
+                      withSpinner(plotlyOutput("pattern_global_hmap2", width = "100%", height = 250)),
+                      withSpinner(plotlyOutput("pattern_global_hmap3", width = "100%", height = 250))
+                      )),
+                  box(title = "By Target Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 12,
+                      withSpinner(plotlyOutput("pattern_global_hmap1", width = "100%", height = 500))
+                      ))
+                  )),
+
+              tabPanel("By Terrorist Groups", 
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "By Terrorist Groups",status = "primary", width = 12, solidHeader = TRUE, 
+                      fluidRow(
+                          column(width = 4, uiOutput("slider_filter_year")),
+                          column(width = 3, uiOutput("slider_filter_total_attacks")),
+                          column(width = 3, uiOutput("radioBtn_filter_tgroup"))
+                          ),
+                      fluidRow(
+                        column(width = 12, withSpinner(plotlyOutput("pattern_global_hmap4", width = "100%"))))
+                      ))),
+
+              tabPanel("By Geographic Location", 
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, 
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_global_hmap_countries", width = "100%", height = 4000))
+                      ),
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_global_hmap_tnats", width = "100%", height = 4000))
+                      )
+                    )))
+              )
+        )),
+
     #-------------------------------------------- 
-    # section 1.2: Deadliest groups EDA part 1
+    # section 2: Deadliest groups EDA part 1
     #-------------------------------------------- 
     tabItem(tabName = "eda_p2",
       fluidPage(title = "tdg_eda_p2",
-        fluidRow(h3("Characteristics of Top 10 Deadliest Groups"),
-            tabBox(width = 12, 
-              tabPanel("Analysis 1", 
+            tabBox(width = 12, title = "Characteristics of Top 10 Deadliest Groups", id = "t10_char", side = "left", 
+              tabPanel("Snapshot", 
                 fluidRow(
                   column(width = 9, withSpinner(highchartOutput("top10_hc1",height = 340))),
                   column(width = 3, withSpinner(highchartOutput("top10_hc1_target_naltly", height = 340)))
@@ -197,25 +247,54 @@ body <- dashboardBody(
                   ) 
                 ),
 
-              tabPanel("Fatalities", 
+              tabPanel("By Fatalities (killed and/or wounded)", 
                 fluidRow(
-                  tabBox(width = 2, 
-                    tabPanel("Plot configurations:",  
-                            uiOutput("radioBtn_ldata2"),
+                  tabBox(width = 3, 
+                    tabPanel("Plot configurations:", 
+                            # uiOutput("radioBtn_ldata2"),
+                            # uiOutput("plotly_year"),
+                            # uiOutput("plotly_country"),
                             uiOutput("select1_xvar"),
                             uiOutput("select2_yvar"),
                             uiOutput("select3_zvar"),
-                            uiOutput("select4_colvar")
+                            uiOutput("select4_colvar"),
+                            uiOutput("radioBtn_log_tr"),
+                            uiOutput("show_legend"),
+                            actionButton("goButton", "Initialize Plot!", 
+                              style = "color: white; background-color: #104E8B; width: 250px; height: 50px;")
                             )),
-                  column(width = 10, 
-                    plotlyOutput(outputId = "plotly_1", width = "100%", height = "700px")
-                        )
-                      # column(width = 4, 
-                      #   verbatimTextOutput("freq_table", placeholder = TRUE)
-                      #   )
-                      ))
-              ))
-        )),
+                  column(width = 9, 
+                    withSpinner(plotlyOutput(outputId = "plotly_1", width = "100%", height = "650px"))
+                        ))),
+
+              tabPanel("Patterns by Number of Attckas Over Years", 
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {}
+                                   .box.box-solid.box-primary{ background:black }")),
+                  box(title = "By Target, Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_hmap1", width = "100%", height = 450))
+                      ),
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_hmap2", width = "100%", height = 225)),
+                      withSpinner(plotlyOutput("pattern_hmap3", width = "100%", height = 225))
+                      ),
+                    column(width = 12,
+                      withSpinner(plotlyOutput("pattern_hmap4", width = "100%", height = 250))
+                      ))),
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {}
+                                   .box.box-solid.box-primary{ background:black }")),
+                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_hmap_countries", width = "100%", height = 1400))
+                      ),
+                    column(width = 6,
+                      withSpinner(plotlyOutput("pattern_hmap_tnats", width = "100%", height = 1400))
+                      )
+                    ))
+              )
+        ))),
 
 
     tabItem(tabName = "p1_animations",
