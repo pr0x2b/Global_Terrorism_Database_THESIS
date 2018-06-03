@@ -19,15 +19,12 @@ sidebar <- dashboardSidebar(
       menuItem("Impact Analysis", icon = icon("globe"),tabName = "eda_p1_geographic"),
       menuItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps"),
       menuItem("Top 10 Groups", tabName = "p1_1", icon = icon("user"),
+        # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
         menuSubItem("Characteristics", icon = icon("user"),tabName = "eda_p2"),
         menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations")),
+      menuItem("GUI", tabName = "gui", icon = icon("gears")),
       menuItem("Terrorism by Country", tabName = "bycountry", icon = icon("gears")),
       menuItem("Tab 3", tabName = "predictions", icon = icon("globe")),
-      menuItem("Tab 4", tabName = "predictions1", icon = icon("globe")),
-      menuItem("Tab 5", tabName = "predictions2", icon = icon("globe")),
-      menuItem("Tab 6", tabName = "predictions3", icon = icon("globe")),
-      menuItem("Tab 7", tabName = "predictions4", icon = icon("globe")),
-      menuItem("Tab 8", tabName = "predictions5", icon = icon("globe")),
       menuItem("Next steps", tabName = "predictions6", icon = icon("globe")),
       br(), br(), br(), 
       menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
@@ -144,6 +141,7 @@ body <- dashboardBody(
     tabItem(tabName = "eda_p1_geographic",
       fluidPage(title = "tdg_eda_p1_geographic",
         fluidRow(h3("GUI: Exploration of Attack Characteristics"),
+          tags$style(HTML(".tab-panel{ background-color: black; color: white}")),
             tabBox(width = 2, 
               tabPanel("Plot configurations:",  
                 uiOutput("radioBtn_ldata"),
@@ -188,6 +186,19 @@ body <- dashboardBody(
       fluidPage(title = "eda_p1_2_heatmaps",
             tabBox(width = 12, title = "Identifying Patterns in All Global Attacks", id = "t10_char", side = "left", 
 
+              tabPanel("By Terrorist Groups", 
+                fluidRow(
+                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "By Terrorist Groups",status = "primary", width = 12, solidHeader = TRUE, 
+                      fluidRow(
+                          column(width = 4, uiOutput("slider_filter_year")),
+                          column(width = 3, uiOutput("slider_filter_total_attacks")),
+                          column(width = 3, uiOutput("radioBtn_filter_tgroup"))
+                          ),
+                      fluidRow(
+                        column(width = 12, withSpinner(plotlyOutput("pattern_global_hmap4", width = "100%", height = 450))))
+                      ))),
+
               tabPanel("By Target, Attack and Weapon Types", 
                 fluidRow(
                   tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
@@ -202,19 +213,6 @@ body <- dashboardBody(
                       withSpinner(plotlyOutput("pattern_global_hmap1", width = "100%", height = 500))
                       ))
                   )),
-
-              tabPanel("By Terrorist Groups", 
-                fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
-                  box(title = "By Terrorist Groups",status = "primary", width = 12, solidHeader = TRUE, 
-                      fluidRow(
-                          column(width = 4, uiOutput("slider_filter_year")),
-                          column(width = 3, uiOutput("slider_filter_total_attacks")),
-                          column(width = 3, uiOutput("radioBtn_filter_tgroup"))
-                          ),
-                      fluidRow(
-                        column(width = 12, withSpinner(plotlyOutput("pattern_global_hmap4", width = "100%"))))
-                      ))),
 
               tabPanel("By Geographic Location", 
                 fluidRow(
@@ -249,8 +247,8 @@ body <- dashboardBody(
 
               tabPanel("By Fatalities (killed and/or wounded)", 
                 fluidRow(
-                  tabBox(width = 3, 
-                    tabPanel("Plot configurations:", 
+                    sidebarPanel(width = 2,
+                      h4("Plot configs"),
                             # uiOutput("radioBtn_ldata2"),
                             # uiOutput("plotly_year"),
                             # uiOutput("plotly_country"),
@@ -261,13 +259,13 @@ body <- dashboardBody(
                             uiOutput("radioBtn_log_tr"),
                             uiOutput("show_legend"),
                             actionButton("goButton", "Initialize Plot!", 
-                              style = "color: white; background-color: #104E8B; width: 250px; height: 50px;")
-                            )),
-                  column(width = 9, 
-                    withSpinner(plotlyOutput(outputId = "plotly_1", width = "100%", height = "650px"))
-                        ))),
+                              style = "color: white; background-color: #104E8B; width: 125px; height: 40px;")
+                            ),
+                    column(width = 10, 
+                      withSpinner(plotlyOutput(outputId = "plotly_1", width = "100%", height = "600px"))
+                          ))),
 
-              tabPanel("Patterns by Number of Attckas Over Years", 
+              tabPanel("Patterns by Number of Attcks Over Years", 
                 fluidRow(
                   tags$style(HTML(".box.box-solid.box-primary>.box-header {}
                                    .box.box-solid.box-primary{ background:black }")),
@@ -315,6 +313,148 @@ body <- dashboardBody(
 
         )
       ),
+
+    #-----------------------------------------------------
+    # section 3: GUI data exploration
+    #-----------------------------------------------------
+    tabItem(tabName = "gui",
+      fluidPage(
+        sidebarPanel(width = 3,
+          tabsetPanel(
+
+            tabPanel("Plot configs",
+              uiOutput("radioBtn_data_gui"),
+              uiOutput("slider_year_gui"),
+              selectInput(inputId = "Type", label = "Type of graph:", choices = c("Boxplot", "Density", "Histogram", "Scatter", "Violin"), selected = "Boxplot"),
+              selectInput("y_var", "Y-variable", choices = ""),
+              conditionalPanel(
+                condition = "input.Type!='Density' && input.Type!='Histogram'",
+                selectInput("x_var", "X-variable", choices = "")),
+              selectInput("group", "Group (or colour)", choices = ""),
+              selectInput("facet_row", "Facet Row", choices = ""),
+              selectInput("facet_col", "Facet Column", choices = ""),
+              conditionalPanel(
+                condition = "input.Type == 'Boxplot' || input.Type == 'Violin'",
+                checkboxInput(inputId = "jitter", label = strong("Show data points (jittered)"), value = FALSE)),
+              conditionalPanel(
+                condition = "input.Type == 'Boxplot'",
+                checkboxInput(inputId = "notch", label = strong("Notched box plot"), value = FALSE)),
+              conditionalPanel(
+                condition = "input.Type == 'Density' || input.Type == 'Histogram'",
+                sliderInput("alpha", "Opacity:", min = 0, max = 1, value = 0.8)),
+              conditionalPanel(
+                condition = "input.Type == 'Histogram'",
+                numericInput("binwidth", "Binwidth:", value = 1)),
+              conditionalPanel(
+                condition = "input.Type == 'Density' || input.Type == 'Violin'",
+                sliderInput(inputId = "adj_bw", label = "Bandwidth adjustment:", min = 0.01, max = 2, value = 1, step = 0.1)),
+              conditionalPanel(
+                condition = "input.Type == 'Scatter'",
+                checkboxInput(inputId = "line", label = strong("Show regression line"), value = FALSE),
+                conditionalPanel(
+                  condition = "input.line == true",
+                  selectInput("smooth", "Smoothening function", choices = c("lm", "loess", "gam"))),
+                conditionalPanel(
+                  condition = "input.line == true",
+                  checkboxInput(inputId = "se", label = strong("Show confidence interval"), value = FALSE))
+                  )
+              ), # End of plot config tab panel
+
+            tabPanel("Aesthetics",
+              tabsetPanel(
+
+                tabPanel("Text",
+                    checkboxInput(inputId = "label_axes", label = strong("Change labels axes"), value = FALSE),
+                    conditionalPanel(
+                      condition = "input.label_axes == true",
+                      textInput("lab_x", "X-axis:", value = "label x-axis")),
+                    conditionalPanel(
+                      condition = "input.label_axes == true",
+                      textInput("lab_y", "Y-axis:", value = "label y-axis")),
+                    checkboxInput(inputId = "add_title", label = strong("Add title"), value = FALSE),
+                    conditionalPanel(
+                      condition = "input.add_title == true",
+                      textInput("title", "Title:", value = "Title")),
+                    checkboxInput(inputId = "adj_fnt_sz", label = strong("Change font size"), value = FALSE),
+                    conditionalPanel(
+                      condition = "input.adj_fnt_sz == true",
+                      numericInput("fnt_sz_ttl", "Size axis titles:", value = 12),
+                      numericInput("fnt_sz_ax", "Size axis labels:", value = 10)),
+                    checkboxInput(inputId = "rot_txt", label = strong("Rotate text x-axis"), value = FALSE),
+                    checkboxInput(inputId = "adj_fnt", label = strong("Change font"), value = FALSE),
+                    conditionalPanel(
+                      condition = "input.adj_fnt == true",
+                      selectInput("font", "Font", choices = c("Courier", "Helvetica", "Times"), selected = "Helvetica"))
+                    ),
+
+                  tabPanel("Theme",
+                    # conditionalPanel(
+                    #   condition = "input.group != '.'",
+                    #   checkboxInput(inputId = "adj_col", label = strong("Change colours"), value = FALSE),
+                    #   conditionalPanel(
+                    #     condition = "input.adj_col",
+                    #     selectInput(inputId = "palet", label = strong("Select palette"),
+                    #                 choices = list(
+                    #                   "Qualitative" = c("Accent", "Dark2", "Paired", "Pastel1", "Pastel2", "Set1", "Set2", "Set3"),
+                    #                   "Diverging" = c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"),
+                    #                   "Sequential" = c("Blues",  "BuGn",  "BuPu",  "GnBu",  "Greens",  "Greys",  "Oranges",  "OrRd",  "PuBu",  "PuBuGn",  "PuRd",  "Purples",  "RdPu",  "Reds",  "YlGn",  "YlGnBu",  "YlOrBr",  "YlOrRd")), selected = "Spectral"))),
+                    conditionalPanel(
+                      condition = "input.jitter",
+                      checkboxInput("adj_jitter", strong("Change look jitter"), FALSE),
+                      conditionalPanel(
+                        condition = "input.adj_jitter",
+                        textInput("col_jitter", "Colour (name or RGB):", value = "#cfd1cf"),
+                        numericInput("size_jitter", "Size:", value = 1),
+                        sliderInput("opac_jitter", "Opacity:", min = 0, max = 1, value = 0.5, step = 0.01),
+                        sliderInput("width_jitter", "Width jitter:", min = 0, max = 0.5, value = 0.25, step = 0.01))),
+                    checkboxInput("adj_grd", strong("Remove gridlines"), FALSE),
+                    conditionalPanel(
+                      condition = "input.adj_grd",
+                      checkboxInput("grd_maj", strong("Remove major gridlines"), FALSE),
+                      checkboxInput("grd_min", strong("Remove minor gridlines"), FALSE)),
+                    selectInput("theme", "Theme",
+                                choices = c("grey" = "theme_grey()", "light" = "theme_light()", "minimal" = "theme_minimal()"), 
+                                selected = "theme_grey()")
+                    ),
+                  
+                  tabPanel("Legend",
+                    conditionalPanel(
+                      condition = "input.group != '.'",
+                      radioButtons(inputId = "adj_leg", label = NULL,
+                                   choices = c("Keep legend as it is", "Remove legend", "Change legend"),
+                                   selected = "Keep legend as it is"),
+                      conditionalPanel(
+                        condition = "input.adj_leg=='Change legend'",
+                        textInput("leg_ttl", "Title legend:", value = "title legend"),
+                        selectInput("pos_leg", "Position legend", choices = c("right", "left", "top", "bottom"))))
+                    ),
+
+                  tabPanel("Size",
+                    checkboxInput("fig_size", strong("Adjust plot size on screen"), FALSE),
+                    conditionalPanel(
+                      condition = "input.fig_size", 
+                      numericInput("fig_height", "Plot height (# pixels): ", value = 600),
+                      numericInput("fig_width", "Plot width (# pixels):", value = 600)
+                    ),
+                    checkboxInput("fig_size_download", strong("Adjust plot size for download"), FALSE),
+                    conditionalPanel(
+                      condition = "input.fig_size_download",
+                      numericInput("fig_height_download", "Plot height (in cm):", value = 14),
+                      numericInput("fig_width_download", "Plot width (in cm):", value = 14)
+                      )
+                    )
+                  )
+              ) # End of Aesthetics tab panel
+
+            ) # End main tabset panel
+        ), # End sidebar panel
+
+        mainPanel(width = 9, 
+          plotlyOutput("out_plotly", width = "100%", height = 600),
+          DT::dataTableOutput("out_table"))
+
+        ) # End fluid page
+    ),
 
 
     tabItem(tabName = "p1_3",

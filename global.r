@@ -3,6 +3,8 @@
 # devtools::install_github('ropensci/plotly')
 # devtools::install_github("jbkunst/highcharter")
 
+# devtools::install_github("RamiKrispin/MLstudio")
+# library(MLstudio)
 
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
@@ -11,7 +13,7 @@ pacman::p_load(tidyverse, data.table, DT, openxlsx, RCurl, stringr, stringi, res
                viridis, viridisLite, RColorBrewer, 
                TSstudio, timetk, plotly, highcharter, treemap, d3heatmap, 
                countrycode, 
-               shiny, ggmap, maptools, maps, 
+               shiny, ggmap, maptools, maps,  
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders)
 
 options(warn = -1, digits = 4, scipen = 999)
@@ -54,3 +56,7 @@ df_leaflet <- df %>%
          )
 
 df_leaflet_t10 <- df_leaflet %>% filter(group_name %in% top10_groups)
+
+
+
+

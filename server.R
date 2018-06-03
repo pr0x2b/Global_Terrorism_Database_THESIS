@@ -36,7 +36,7 @@ shinyServer(function(input, output, session) {
       req(input$radioBtn_ldata)
 
       if(input$radioBtn_ldata == "T10 Groups") {
-        sidebar_data <- df_leaflet_t10 %>% filter(group_name %in% top10_groups) # filter data for top 10 deadliest groups
+        sidebar_data <- df_leaflet_t10 # filter data for top 10 deadliest groups
       } else {
         sidebar_data <- df_leaflet # select everything
       }
@@ -761,7 +761,7 @@ shinyServer(function(input, output, session) {
                                 Geographical = c("region", "country", "city"),
                                 Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
                                 Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
-                   selected = "group_name") 
+                   selected = "target_type") 
   })
 
    output$show_legend <- renderUI ({
@@ -770,7 +770,7 @@ shinyServer(function(input, output, session) {
   })
 
   output$radioBtn_log_tr <- renderUI ({
-        radioGroupButtons(inputId = "radioBtn_log_tr", label = "Log nkill and nwound?", c("Yes", "No"), selected = "Yes",
+        radioGroupButtons(inputId = "radioBtn_log_tr", label = "Logarithmic X-Y var?", c("Yes", "No"), selected = "Yes",
                           size = "xs", checkIcon = list(yes = icon("ok", lib = "glyphicon")))
   })
 
@@ -812,7 +812,7 @@ shinyServer(function(input, output, session) {
                             "<br>Target type: ", target_type,
                             "<br>Suicide attack?: ", suicide_attack)) %>%
       add_markers(opacity = 0.8) %>%
-      layout(title = "3 Dimensional View", 
+      layout( 
            # paper_bgcolor= "#f7f7f7",
            showlegend = ifelse(input$show_legend == "Yes", TRUE, FALSE),
            legend = list(orientation = "h", xanchor = "center", x = 0.5),
@@ -919,6 +919,230 @@ shinyServer(function(input, output, session) {
                paper_bgcolor= "black", plot_bgcolor = "black")
        
     })
+
+
+    #-------------------------------------
+    # Section 3: GUI (plots)
+    #-------------------------------------
+
+    output$radioBtn_data_gui <- renderUI ({
+          radioButtons(inputId = "radioBtn_data_gui", label = "Select data :", choices = c("T10 Groups", "All"), selected = "T10 Groups", inline = TRUE)
+      })
+
+    output$slider_year_gui <- renderUI({ 
+          sliderInput("slider_year_gui", label = "Year range", min = 1970, max = 2016, value = c("2014", "2016"))
+        })
+
+    observe({
+      nms <- names(df_shiny())
+
+      # Make list of variables that are not factors
+      nms_cont <- names(Filter(function(x) is.integer(x) || is.numeric(x) || is.double(x), df_shiny()))
+
+      # Make list of variables that are not factors
+      nms_fact <- names(Filter(function(x) is.factor(x) || is.logical(x) || is.character(x), df_shiny()))
+
+      avail_all <- c("No groups" = ".", nms)
+      avail_con <-
+        if (identical(nms_cont, character(0)))
+          c("No continuous vars available" = ".")
+        else c(nms_cont)
+      avail_fac <-
+        if (identical(nms_fact, character(0)))
+          c("No factors available" = ".")
+        else c("No groups" = ".", nms_fact)
+
+      updateSelectInput(session, "y_var", choices = avail_con)
+      updateSelectInput(session, "x_var", choices = c("No x-var" = "' '", nms))
+      updateSelectInput(session, "group", choices = avail_all)
+      updateSelectInput(session, "facet_row",  choices = avail_fac)
+      updateSelectInput(session, "facet_col",  choices = avail_fac)
+
+      min_year <- min(df_shiny()$year)
+      max_year <- max(df_shiny()$year)
+      updateSliderInput(session, "slider_year_gui", min = 1970, max = 2016, value = c(min_year, max_year))
+
+    })
+
+
+    #-------------------------------------
+    ###### READ IN / GET DATA ###########
+    #-------------------------------------
+
+     df_shiny <- reactive({
+
+        req(input$radioBtn_data_gui, input$slider_year_gui)
+
+        if(input$radioBtn_data_gui == "T10 Groups") {
+          data <- df_leaflet_t10 # filter data for top 10 deadliest groups
+        } else {
+          data <- df_leaflet # select everything
+        }
+
+        data <- data[data$year >= input$slider_year_gui[1] & data$year <= input$slider_year_gui[2], ]
+
+        data <- data %>% 
+          mutate(nkill_log = log1p(nkill), nwound_log = log1p(nwound)) %>%          
+          select(nkill_log, nwound_log, nkill, nwound, 
+                 date, year, region, country, city, 
+                 group_name, attack_type, target_type, weapon_type, target_nalty,
+                 suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize) 
+        return(data)
+
+      })
+
+    #-------------------------------------
+    # CREATE GRAPH-CODE 
+    #-------------------------------------
+
+    string_code <- reactive({
+
+      # Variable used for how to deal with x/y in ggplot
+      gg_x_y <- input$Type == "Histogram" || input$Type == "Density"
+      # Variable used for how to deal with colour/fill
+      gg_fil <- input$Type == "Histogram" || input$Type == "Density"
+
+      # Only plot jitter when graphs allow them
+      if (gg_fil || input$Type == "Scatter")
+        jitt <- FALSE else jitt <- input$jitter
+
+      p <- paste(
+        "ggplot(df_plotly_data, aes(",
+          if (gg_x_y) {
+            "x = input$y_var"
+          } else {
+            "x = input$x_var, y = input$y_var"
+          },
+          if (input$group != "." && gg_fil) {
+            ", fill = input$group"
+          } else if (input$group != "." && !gg_fil) {
+            ", colour = input$group"
+          },
+          ")) + ",
+          if (input$Type == "Histogram")
+            paste("geom_histogram(position = 'identity', alpha = input$alpha, ", "binwidth = input$binwidth)", sep = ""),
+          if (input$Type == "Density")
+            paste("geom_density(position = 'identity', alpha = input$alpha, ", "adjust = input$adj_bw)", sep = ""),
+          if (input$Type == "Boxplot")
+            "geom_boxplot(notch = input$notch)",
+          if (input$Type == "Violin")
+            "geom_violin(adjust = input$adj_bw)",
+          if (input$Type == "Scatter")
+            "geom_point()",
+          if (input$Type == "Scatter" && input$line)
+            "+ geom_smooth(se = input$se, method = 'input$smooth')",
+          if (jitt)
+            paste(" + geom_jitter(size = input$size_jitter, ", "alpha = input$opac_jitter, width = input$width_jitter, ", "colour = 'input$col_jitter')", sep = ""), sep = "")
+
+      # if at least one facet column/row is specified, add it
+      facets <- paste(input$facet_row, "~", input$facet_col)
+      if (facets != ". ~ .")
+        p <- paste(p, "+ facet_grid(", facets, ")")
+
+      # if labels specified
+      if (input$label_axes)
+        p <- paste(p, "+ labs(x = 'input$lab_x', y = 'input$lab_y')")
+
+      # if title specified
+      if (input$add_title)
+        p <- paste(p, "+ ggtitle('input$title')")
+
+      # if legend specified
+      if (input$adj_leg == "Change legend")
+        p <- paste(p, "+ labs(",
+                   if (gg_fil) "fill" else "colour",
+                   " = 'input$leg_ttl')",
+                   sep = "")
+
+      # if colour legend specified
+      # if (input$adj_col)
+      #   p <- paste(p, "+ scale_",
+      #              if (gg_fil) "fill" else "colour",
+      #              "_brewer(palette = 'input$palet')",
+      #              sep = "")
+
+      # If a theme specified
+      p <- paste(p, "+", input$theme)
+
+      # If theme features are specified
+      if (input$adj_fnt_sz || input$adj_fnt || input$rot_txt || input$adj_leg != "Keep legend as it is" || input$adj_grd) {
+        p <- paste(p,
+          paste(
+            " + theme(\n    ",
+            if (input$adj_fnt_sz)
+              "axis.title = element_text(size = input$fnt_sz_ttl),\n    ",
+            if (input$adj_fnt_sz)
+              "axis.text = element_text(size = input$fnt_sz_ax),\n    ",
+            if (input$adj_fnt)
+              "text = element_text(family = 'input$font'),\n    ",
+            if (input$rot_txt)
+              "axis.text.x = element_text(angle = 45, hjust = 1),\n    ",
+            if (input$adj_leg == "Remove legend")
+              "legend.position = 'none',\n    ",
+            if (input$adj_leg == "Change legend")
+              "legend.position = 'input$pos_leg',\n    ",
+            if (input$grd_maj)
+              "panel.grid.major = element_blank(),\n    ",
+            if (input$grd_min)
+              "panel.grid.minor = element_blank(),\n    ", ")",
+            sep = ""
+          ),
+          sep = ""
+        )
+      }
+
+      # Replace name of variables by values
+      p <- str_replace_all(
+             p,
+             c("input\\$y_var" = input$y_var,
+               "input\\$x_var" = input$x_var,
+               "input\\$group" = input$group,
+               "input\\$notch" = as.character(input$notch),
+               "input\\$binwidth" = as.character(input$binwidth),
+               "input\\$adj_bw" = as.character(input$adj_bw),
+               # "input\\$dot_dir" = as.character(input$dot_dir),
+               "input\\$alpha" = as.character(input$alpha),
+               "input\\$se" = as.character(input$se),
+               "input\\$smooth" = as.character(input$smooth),
+               "input\\$CI" = as.character(input$CI),
+               "input\\$size_jitter" = as.character(input$size_jitter),
+               "input\\$width_jitter" = as.character(input$width_jitter),
+               "input\\$opac_jitter" = as.character(input$opac_jitter),
+               "input\\$col_jitter" = as.character(input$col_jitter),
+               "input\\$lab_x" = as.character(input$lab_x),
+               "input\\$lab_y" = as.character(input$lab_y),
+               "input\\$title" = as.character(input$title),
+               "input\\$palet" = as.character(input$palet),
+               "input\\$fnt_sz_ttl" = as.character(input$fnt_sz_ttl),
+               "input\\$fnt_sz_ax" = as.character(input$fnt_sz_ax),
+               "input\\$font" = as.character(input$font),
+               "input\\$leg_ttl" = as.character(input$leg_ttl),
+               "input\\$pos_leg" = as.character(input$pos_leg))
+      )
+
+    })
+
+
+    #-------------------------------------
+    # GRAPHICAL/TABLE OUTPUT 
+    #-------------------------------------
+
+    output$out_table <- renderDataTable(
+      df_shiny()
+    )
+
+    width <- reactive ({ input$fig_width })
+    height <- reactive ({ input$fig_height })    
+
+    output$out_plotly <- renderPlotly({
+      # evaluate the string RCode as code
+      df_plotly_data <- df_shiny()
+      p <- eval(parse(text = string_code())) + 
+        scale_x_discrete(labels = function(x) str_wrap(x, width = 8)) 
+      ggplotly(p)
+    })
+
+
 
 
   }) # End of shinyServer logic
