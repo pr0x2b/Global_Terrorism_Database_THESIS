@@ -12,14 +12,14 @@ pacman::p_load(tidyverse, data.table, DT, openxlsx, RCurl, stringr, stringi, res
                DescTools, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
                viridis, viridisLite, RColorBrewer, 
                TSstudio, timetk, plotly, highcharter, treemap, d3heatmap, 
-               countrycode, 
+               countrycode, WDI,
                shiny, ggmap, maptools, maps,  
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders)
 
 options(warn = -1, digits = 4, scipen = 999)
 
 # load clean data (GTD)
-df <- readRDS("gtd_clean.rds")
+df <- readRDS("gtd_clean_v2.rds")
 
 # countries mapped with iso3c codes for worldmap
 countries <- readRDS("countries.rds") 
