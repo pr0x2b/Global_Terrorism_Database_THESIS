@@ -15,16 +15,21 @@ header <- dashboardHeader(
 #---------------------------------------------------------------------------------------------------------------------  
 sidebar <- dashboardSidebar(
     sidebarMenu(id = "gtd_pranav",
-      menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
-      menuItem("Impact Analysis", icon = icon("globe"),tabName = "eda_p1_geographic"),
-      menuItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps"),
-      menuItem("Top 10 Groups", tabName = "p1_1", icon = icon("user"),
         # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
+      menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
+      menuItem("Part 1: Impact Analysis", icon = icon("globe"),tabName = "part_1",
+        menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
+        menuSubItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps")),
+      menuItem("Part 2: Active Groups", tabName = "part_2", icon = icon("user"),
         menuSubItem("Characteristics", icon = icon("user"),tabName = "eda_p2"),
         menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations")),
-      menuItem("GUI", tabName = "gui", icon = icon("gears")),
-      menuItem("Terrorism by Country", tabName = "bycountry", icon = icon("gears")),
-      menuItem("Tab 3", tabName = "predictions", icon = icon("globe")),
+      menuItem("Part 3: Statistical Analysis", tabName = "part_3", icon = icon("gears"),
+        menuSubItem("GUI", tabName = "gui", icon = icon("gears"))),
+      menuItem("Part 4: Modeling", tabName = "modelling", icon = icon("gears"),
+        menuSubItem("Modelling_1", tabName = "m1", icon = icon("gears")),
+        menuSubItem("Modelling_2", tabName = "m2", icon = icon("gears")),
+        menuSubItem("Modelling_3", tabName = "m3", icon = icon("gears"))),
+      menuItem("Part 5: Insights", tabName = "predictions", icon = icon("globe")),
       menuItem("Next steps", tabName = "predictions6", icon = icon("globe")),
       br(), br(), br(), 
       menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
@@ -58,81 +63,68 @@ body <- dashboardBody(
 
         fluidRow(
           column(width = 4,
-
             box(
               h3("App summary"),
-              style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = TRUE,
+              style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE,
               tags$ul(
-                tags$li("Part 1: Global overview"), 
-                tags$li("Part 2: EDA on conflicted regions"), 
-                tags$li("Part 3: Algorithmic decision support")), 
-              p("Note: Some of the variable names have been renamed to keep the analysis informative for target audience.")),
+                tags$li("Part 1: Global impact analysis"), 
+                tags$li("Part 2: Determining most active groups"), 
+                tags$li("Part 3: Statistical analysis"), 
+                tags$li("Part 4: Algorithmic decision support"), 
+                tags$li("Part 5: Interpretations/ Insights")), 
+              p("Note: Algorithmic decision support will include various binary and multiclass classification models.")),
 
             box(
               style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE, collapsible = FALSE, collapsed = FALSE,
               h3("About data source: "),
-              p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world 
-                 from 1970 through 2016. It is the most comprehensive unclassified database on terrorist events in the world."), 
-              p("GTD is maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), 
-                  headquartered at the University of Maryland."), p(""), 
-              p("Data description: "), 
               tags$ul(
                 tags$li("Time period: 1970-2016, except 1993"), 
                 tags$li("Variables: based on location, tactics, perpetrators, targets and outcomes"), 
-                tags$li("Sources: Unclassified media articles")))
-
+                tags$li("Sources: Unclassified media articles")), p(""), 
+              p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world 
+                 from 1970 through 2016. It is the most comprehensive unclassified database on terrorist events in the world."), 
+              p("GTD is maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), 
+                  headquartered at the University of Maryland."), 
+              p("Note: Some of the variable names have been renamed to keep the analysis informative for audience."))
             ),
 
-          column(width = 8, 
-            fluidRow( 
-              # box(status = "primary", width = 12, solidHeader=T, 
-                img(src = "munich_image.jpg",height = 130, width = 900, style="display: block; margin-left: auto; margin-right: auto;"), 
-                withSpinner(highchartOutput("world_hchart",height = 500))
-                # )
-              ))
-            ), # End of fluid row
-        hr(),
+          column(width = 8,
+            img(src = "munich_image.jpg",height = 140, width = 950, style="display: block; margin-left: auto; margin-right: auto;"), 
+            withSpinner(highchartOutput("world_hchart",height = 520)))
+          ),
 
         fluidRow(
-
           column(width = 12,
             # actionButton("info_box", " Detailed information", icon = icon("info-circle")),
             # bsModal("modalExample", "info_box", size = "large", 
               box(
                 h3("Definition of Terrorism: "),
-                style = "font-size: 109%; ", background = "olive", width = 15, solidHeader = TRUE,
+                style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
                 p("The GTD defines a terrorist attack as the threatened or actual use of illegal force and violence by a non-state actor to attain a 
                     political, economic, religious, or social goal through fear, coercion, or intimidation."),
                 p("In practice this means in order to consider an incident for inclusion in the GTD, all three of the following attributes must be present:"),
                 tags$ul(
                   tags$li("The incident must be intentional – the result of a conscious calculation on the part of a perpetrator."), p(""),
                   tags$li("The incident must entail some level of violence or immediate threat of violence including property violence, as well as violence against people."),  p(""),
-                  tags$li("The perpetrators of the incidents must be sub-national actors. GTD does not include acts of state terrorism.")
-                      # p("Additionally, at least two of the following three criteria must be present for an incident to be included in the GTD:"),
-                      # tags$ul(
-                      #   tags$li("Criterion 1: The act must be aimed at attaining a political, economic, religious, or 
-                      #        social goal. In terms of economic goals, the exclusive pursuit of profit does not satisfy this 
-                      #        criterion. It must involve the pursuit of more profound, systemic economic change."), p(""),
-                      #   tags$li("Criterion 2: There must be evidence of an intention to coerce, intimidate, or convey some other message 
-                      #        to a larger audience (or audiences) than the immediate victims. It is the act taken as a totality that is 
-                      #        considered, irrespective if every individual involved in carrying out the act was aware of this intention. 
-                      #        As long as any of the planners or decision-makers behind the attack intended to coerce, intimidate or publicize, 
-                      #        the intentionality criterion is met."),  p(""),
-                      #   tags$li("Criterion 3: The action must be outside the context of legitimate warfare activities. That is, the act must be 
-                      #          outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
-                      #          targeting civilians or non-combatants)."))
+                  tags$li("The perpetrators of the incidents must be sub-national actors. GTD does not include acts of state terrorism.")),
+                p("Additionally, at least two of the following three criteria must be present for an incident to be included in the GTD:"),
+                tags$ul(
+                  tags$li("Criterion 1: The act must be aimed at attaining a political, economic, religious, or 
+                       social goal. In terms of economic goals, the exclusive pursuit of profit does not satisfy this 
+                       criterion. It must involve the pursuit of more profound, systemic economic change."), p(""),
+                  tags$li("Criterion 2: There must be evidence of an intention to coerce, intimidate, or convey some other message 
+                       to a larger audience (or audiences) than the immediate victims. It is the act taken as a totality that is 
+                       considered, irrespective if every individual involved in carrying out the act was aware of this intention. 
+                       As long as any of the planners or decision-makers behind the attack intended to coerce, intimidate or publicize, 
+                       the intentionality criterion is met."),  p(""),
+                  tags$li("Criterion 3: The action must be outside the context of legitimate warfare activities. That is, the act must be 
+                         outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
+                         targeting civilians or non-combatants)."))
                   ))
               )
 
-          # column(width = 6,
-          #   fluidRow(valueBoxOutput("countries_affected"), valueBoxOutput("mult_attacks")),
-          #   fluidRow(valueBoxOutput("attack_log_intl"), valueBoxOutput("attack_log_domestic")), 
-          #   fluidRow(valueBoxOutput("attack_ideo_intl"), valueBoxOutput("attack_ideo_domestic"))
-          #   )
-
-          ) # End of fluid row
-
-        )),
+            ) # End of fluid page
+        ),
 
 
     #-------------------------------------------- 
@@ -196,7 +188,7 @@ body <- dashboardBody(
                           column(width = 3, uiOutput("radioBtn_filter_tgroup"))
                           ),
                       fluidRow(
-                        column(width = 12, withSpinner(plotlyOutput("pattern_global_hmap4", width = "100%", height = 450))))
+                        column(width = 12, withSpinner(plotlyOutput("pattern_global_hmap4", width = "100%", height = 600))))
                       ))),
 
               tabPanel("By Target, Attack and Weapon Types", 
@@ -262,7 +254,7 @@ body <- dashboardBody(
                               style = "color: white; background-color: #104E8B; width: 125px; height: 40px;")
                             ),
                     column(width = 10, 
-                      withSpinner(plotlyOutput(outputId = "plotly_1", width = "100%", height = "600px"))
+                      withSpinner(plotlyOutput(outputId = "plotly_1", width = "100%", height = "750px"))
                           ))),
 
               tabPanel("Patterns by Number of Attcks Over Years", 
@@ -325,17 +317,17 @@ body <- dashboardBody(
             tabPanel("Plot configs",
               uiOutput("radioBtn_data_gui"),
               uiOutput("slider_year_gui"),
-              selectInput(inputId = "Type", label = "Type of graph:", choices = c("Boxplot", "Density", "Histogram", "Scatter", "Violin"), selected = "Boxplot"),
-              selectInput("y_var", "Y-variable", choices = ""),
+              pickerInput(inputId = "Type", label = "Type of graph:", choices = c("Boxplot", "Density", "Histogram", "Scatter", "Violin"), selected = "Boxplot"),
+              pickerInput("y_var", "Y-variable", choices = ""),
               conditionalPanel(
                 condition = "input.Type!='Density' && input.Type!='Histogram'",
-                selectInput("x_var", "X-variable", choices = "")),
-              selectInput("group", "Group (or colour)", choices = ""),
-              selectInput("facet_row", "Facet Row", choices = ""),
-              selectInput("facet_col", "Facet Column", choices = ""),
+                pickerInput("x_var", "X-variable", choices = "")),
+              pickerInput("group", "Group (or colour)", choices = ""),
+              pickerInput("facet_row", "Facet Row", choices = ""),
+              pickerInput("facet_col", "Facet Column", choices = ""),
               conditionalPanel(
                 condition = "input.Type == 'Boxplot' || input.Type == 'Violin'",
-                checkboxInput(inputId = "jitter", label = strong("Show data points (jittered)"), value = FALSE)),
+                checkboxInput(inputId = "jitter", label = strong("Show data points"), value = FALSE)),
               conditionalPanel(
                 condition = "input.Type == 'Boxplot'",
                 checkboxInput(inputId = "notch", label = strong("Notched box plot"), value = FALSE)),
@@ -353,7 +345,7 @@ body <- dashboardBody(
                 checkboxInput(inputId = "line", label = strong("Show regression line"), value = FALSE),
                 conditionalPanel(
                   condition = "input.line == true",
-                  selectInput("smooth", "Smoothening function", choices = c("lm", "loess", "gam"))),
+                  pickerInput("smooth", "Smoothening function", choices = c("lm", "loess", "gam"))),
                 conditionalPanel(
                   condition = "input.line == true",
                   checkboxInput(inputId = "se", label = strong("Show confidence interval"), value = FALSE))
@@ -384,7 +376,7 @@ body <- dashboardBody(
                     checkboxInput(inputId = "adj_fnt", label = strong("Change font"), value = FALSE),
                     conditionalPanel(
                       condition = "input.adj_fnt == true",
-                      selectInput("font", "Font", choices = c("Courier", "Helvetica", "Times"), selected = "Helvetica"))
+                      pickerInput("font", "Font", choices = c("Courier", "Helvetica", "Times"), selected = "Helvetica"))
                     ),
 
                   tabPanel("Theme",
@@ -393,7 +385,7 @@ body <- dashboardBody(
                     #   checkboxInput(inputId = "adj_col", label = strong("Change colours"), value = FALSE),
                     #   conditionalPanel(
                     #     condition = "input.adj_col",
-                    #     selectInput(inputId = "palet", label = strong("Select palette"),
+                    #     pickerInput(inputId = "palet", label = strong("Select palette"),
                     #                 choices = list(
                     #                   "Qualitative" = c("Accent", "Dark2", "Paired", "Pastel1", "Pastel2", "Set1", "Set2", "Set3"),
                     #                   "Diverging" = c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu", "RdGy", "RdYlBu", "RdYlGn", "Spectral"),
@@ -412,7 +404,7 @@ body <- dashboardBody(
                       condition = "input.adj_grd",
                       checkboxInput("grd_maj", strong("Remove major gridlines"), FALSE),
                       checkboxInput("grd_min", strong("Remove minor gridlines"), FALSE)),
-                    selectInput("theme", "Theme",
+                    pickerInput("theme", "Theme",
                                 choices = c("grey" = "theme_grey()", "light" = "theme_light()", "minimal" = "theme_minimal()"), 
                                 selected = "theme_grey()")
                     ),
@@ -426,7 +418,7 @@ body <- dashboardBody(
                       conditionalPanel(
                         condition = "input.adj_leg=='Change legend'",
                         textInput("leg_ttl", "Title legend:", value = "title legend"),
-                        selectInput("pos_leg", "Position legend", choices = c("right", "left", "top", "bottom"))))
+                        pickerInput("pos_leg", "Position legend", choices = c("right", "left", "top", "bottom"))))
                     ),
 
                   tabPanel("Size",
@@ -449,9 +441,16 @@ body <- dashboardBody(
             ) # End main tabset panel
         ), # End sidebar panel
 
+
+
         mainPanel(width = 9, 
-          plotlyOutput("out_plotly", width = "100%", height = 600),
-          DT::dataTableOutput("out_table"))
+          h3("Statistical Analysis"),
+          tabsetPanel(
+            tabPanel("Interactive",
+              withSpinner(plotlyOutput("out_plotly", width = "95%", height = 600))),
+            tabPanel("static plots",
+              withSpinner(plotOutput("out_ggplot", width = "95%", height = 600)))
+            ))
 
         ) # End fluid page
     ),
@@ -473,7 +472,7 @@ body <- dashboardBody(
     #-------------------------------- 
     # section 3: Interactive plots
     #------------------------------- 
-    tabItem(tabName = "bycountry",
+    tabItem(tabName = "modelling",
 
       fluidPage(title = "Terrorism by Country",
         column(width = 2,
@@ -515,7 +514,7 @@ body <- dashboardBody(
                   box(title = textOutput("tseries"), status = "primary", width = 12, solidHeader = FALSE, collapsible = TRUE, 
                     plotlyOutput("plot10",height = 350)))))))
             ) # Closing fluidpage
-        ), # Closing tabName = bycountry
+        ), # Closing tabName = modelling
 
 
     #------------------------------- 

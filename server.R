@@ -4,7 +4,6 @@ shinyServer(function(input, output, session) {
   # Collapse sidebar by default
   # addClass(selector = "body", class = "sidebar-collapse")
 
-
   #-------------------------------------
   # globe chart (About page) 
   #-------------------------------------
@@ -727,6 +726,7 @@ shinyServer(function(input, output, session) {
                                 Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
                                 Geographical = c("region", "country", "city"),
                                 Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Numeric_ext = c("arms_export", "arms_import", "population", "gdp_per_capita", "refugee_origin", "refugee_asylum", "net_migration", "n_peace_keepers", "conflict_index"),
                                 Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
                    selected = "nwound")
   })
@@ -738,6 +738,7 @@ shinyServer(function(input, output, session) {
                                 Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
                                 Geographical = c("region", "country", "city"),
                                 Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Numeric_ext = c("arms_export", "arms_import", "population", "gdp_per_capita", "refugee_origin", "refugee_asylum", "net_migration", "n_peace_keepers", "conflict_index"),
                                 Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
                    selected = "nkill")
   })
@@ -749,6 +750,7 @@ shinyServer(function(input, output, session) {
                                 Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
                                 Geographical = c("region", "country", "city"),
                                 Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Numeric_ext = c("arms_export", "arms_import", "population", "gdp_per_capita", "refugee_origin", "refugee_asylum", "net_migration", "n_peace_keepers", "conflict_index"),
                                 Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
                    selected = "date")
   })
@@ -760,6 +762,7 @@ shinyServer(function(input, output, session) {
                                 Categorical = c("group_name", "attack_type", "target_type", "weapon_type", "target_nalty"),
                                 Geographical = c("region", "country", "city"),
                                 Numeric = c("nkill", "nwound", "latitude", "longitude", "date", "year"),
+                                Numeric_ext = c("arms_export", "arms_import", "population", "gdp_per_capita", "refugee_origin", "refugee_asylum", "net_migration", "n_peace_keepers", "conflict_index"),
                                 Binary = c("suicide_attack", "intl_logistical_attack", "intl_ideological_attack", "crit1_pol_eco_rel_soc", "crit2_publicize")),
                    selected = "target_type") 
   })
@@ -770,7 +773,7 @@ shinyServer(function(input, output, session) {
   })
 
   output$radioBtn_log_tr <- renderUI ({
-        radioGroupButtons(inputId = "radioBtn_log_tr", label = "Logarithmic X-Y var?", c("Yes", "No"), selected = "Yes",
+        radioGroupButtons(inputId = "radioBtn_log_tr", label = "Logarithmic vars?", c("Yes", "No"), selected = "Yes",
                           size = "xs", checkIcon = list(yes = icon("ok", lib = "glyphicon")))
   })
 
@@ -784,13 +787,22 @@ shinyServer(function(input, output, session) {
         select(date, year, region, country, city, 
                 nkill, nwound, latitude, longitude,
                 group_name, attack_type, target_type, weapon_type, target_nalty,
-                suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize) %>% 
-        replace_na(list(nkill = 0, nwound = 0))
+                suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize,
+                arms_export, arms_import, population, gdp_per_capita, refugee_origin, refugee_asylum, net_migration, n_peace_keepers, conflict_index) %>% 
+        replace_na(list(nkill = 0, nwound = 0)) %>%
+        na.omit()
 
       if(input$radioBtn_log_tr == "No") {
         data <- data 
       } else {
-        data <- data %>% mutate(nkill = log1p(nkill), nwound = log1p(nwound))
+        data <- data %>% mutate(nkill = log1p(nkill), 
+                                nwound = log1p(nwound),
+                                arms_export = log1p(arms_export), 
+                                arms_import = log1p(arms_import), 
+                                population = log1p(population + 1), 
+                                gdp_per_capita = log1p(gdp_per_capita), 
+                                refugee_origin = log1p(refugee_origin), 
+                                refugee_asylum = log1p(refugee_asylum))
       }
         
     data %>%
@@ -802,6 +814,7 @@ shinyServer(function(input, output, session) {
               hoverinfo = 'text',
               text = ~paste("Date: ", date,
                             "<br>Group: ", group_name,
+                            "<br>Population: ", population,
                             "<br>Region : ", region,
                             "<br>Country : ", country,
                             "<br>City : ", city,
@@ -810,7 +823,11 @@ shinyServer(function(input, output, session) {
                             "<br>Attack type: ", attack_type,
                             "<br>Weapon type: ", weapon_type,
                             "<br>Target type: ", target_type,
-                            "<br>Suicide attack?: ", suicide_attack)) %>%
+                            "<br>Suicide attack?: ", suicide_attack,
+                            "<br>Arms export: ", arms_export,
+                            "<br>Arms import: ", arms_import,
+                            "<br>refugee_origin: ", refugee_origin,
+                            "<br>refugee_asylum: ", refugee_asylum)) %>%
       add_markers(opacity = 0.8) %>%
       layout( 
            # paper_bgcolor= "#f7f7f7",
@@ -930,7 +947,7 @@ shinyServer(function(input, output, session) {
       })
 
     output$slider_year_gui <- renderUI({ 
-          sliderInput("slider_year_gui", label = "Year range", min = 1970, max = 2016, value = c("2014", "2016"))
+          sliderInput("slider_year_gui", label = "Year range", min = 1970, max = 2016, value = c("2015", "2016"))
         })
 
     observe({
@@ -983,10 +1000,9 @@ shinyServer(function(input, output, session) {
 
         data <- data %>% 
           mutate(nkill_log = log1p(nkill), nwound_log = log1p(nwound)) %>%          
-          select(nkill_log, nwound_log, nkill, nwound, 
-                 date, year, region, country, city, 
-                 group_name, attack_type, target_type, weapon_type, target_nalty,
-                 suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize) 
+          select(nkill_log, nwound_log, nkill, nwound, date, year, region, country, group_name, attack_type, target_type, weapon_type, 
+                 suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize,
+                 arms_export, arms_import, population, gdp_per_capita, refugee_origin, refugee_asylum, net_migration) 
         return(data)
 
       })
@@ -1122,27 +1138,36 @@ shinyServer(function(input, output, session) {
 
     })
 
-
     #-------------------------------------
     # GRAPHICAL/TABLE OUTPUT 
     #-------------------------------------
 
-    output$out_table <- renderDataTable(
-      df_shiny()
-    )
+    # output$out_table <- renderDataTable({
+    #   df_shiny() %>% 
+    #     select(date, year, region, country, target_nalty, city, nkill, nwound, group_name, attack_type, target_type, weapon_type,
+    #            suicide_attack, intl_logistical_attack, intl_ideological_attack, crit1_pol_eco_rel_soc, crit2_publicize) %>% 
+    #     datatable(rownames = FALSE, style="cell-border", options = list(scrollX = TRUE, pageLength = 5))
+    # })
 
     width <- reactive ({ input$fig_width })
     height <- reactive ({ input$fig_height })    
+
+    output$out_ggplot <- renderPlot(width = width, height = height, {
+
+      df_plotly_data <- df_shiny()
+      p <- eval(parse(text = string_code())) +
+            scale_x_discrete(labels = function(x) str_wrap(x, width = 15))
+      p
+    })
 
     output$out_plotly <- renderPlotly({
       # evaluate the string RCode as code
       df_plotly_data <- df_shiny()
       p <- eval(parse(text = string_code())) + 
-        scale_x_discrete(labels = function(x) str_wrap(x, width = 8)) 
-      ggplotly(p)
+            scale_x_discrete(labels = function(x) str_wrap(x, width = 15))
+      ggplotly(p) 
+      # %>% layout(legend = list(orientation = "h", y = -10, x = 0))
     })
-
-
 
 
   }) # End of shinyServer logic
