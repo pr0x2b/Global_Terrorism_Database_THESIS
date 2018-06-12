@@ -8,13 +8,13 @@
 
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, 
+pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, kableExtra,
                DescTools, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
-               viridis, viridisLite, RColorBrewer, 
-               TSstudio, timetk, plotly, highcharter, treemap, d3heatmap, 
-               countrycode, WDI,
+               viridis, viridisLite, RColorBrewer, ggfortify, plotly, highcharter, treemap, d3heatmap, 
+               TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
+               countrycode, WDI, purrr, igraph, visNetwork, randomcoloR,
                shiny, ggmap, maptools, maps,  
-               shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders)
+               shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, tidyverse)
 
 options(warn = -1, digits = 4, scipen = 999)
 
@@ -56,7 +56,4 @@ df_leaflet <- df %>%
          )
 
 df_leaflet_t10 <- df_leaflet %>% filter(group_name %in% top10_groups)
-
-
-
 

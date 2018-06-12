@@ -445,7 +445,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Target Type", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -459,7 +459,7 @@ shinyServer(function(input, output, session) {
       layout(title = "By Attack Type",
              xaxis = list(autorange = "reversed"), 
              yaxis = list(autorange = "reversed"), 
-             paper_bgcolor= "black", plot_bgcolor = "black")
+             paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -474,7 +474,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Weapon Type", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -530,7 +530,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Terrorist Groups", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -544,7 +544,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Country", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
        
     })
 
@@ -559,7 +559,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Target Nationality<br><br><br>", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
        
     })
 
@@ -856,7 +856,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Target Type", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -874,7 +874,7 @@ shinyServer(function(input, output, session) {
       layout(title = "By Attack Type",
              xaxis = list(autorange = "reversed"), 
              yaxis = list(autorange = "reversed"), 
-             paper_bgcolor= "black", plot_bgcolor = "black")
+             paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -890,7 +890,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Weapon Type", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -904,7 +904,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Top 10 Terror Groups", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
 
     })
 
@@ -918,7 +918,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Country", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
        
     })
 
@@ -933,7 +933,7 @@ shinyServer(function(input, output, session) {
         layout(title = "By Target Nationality<br><br><br>", 
                xaxis = list(autorange = "reversed"),
                yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "black", plot_bgcolor = "black")
+               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
        
     })
 
@@ -970,8 +970,8 @@ shinyServer(function(input, output, session) {
         else c("No groups" = ".", nms_fact)
 
       updateSelectInput(session, "y_var", choices = avail_con)
-      updateSelectInput(session, "x_var", choices = c("No x-var" = "' '", nms))
-      updateSelectInput(session, "group", choices = avail_all)
+      updateSelectInput(session, "x_var", choices = c("No x-var" = "' '", nms), selected = "region")
+      updateSelectInput(session, "group", choices = avail_all, selected = "region")
       updateSelectInput(session, "facet_row",  choices = avail_fac)
       updateSelectInput(session, "facet_col",  choices = avail_fac)
 
@@ -1169,6 +1169,482 @@ shinyServer(function(input, output, session) {
       # %>% layout(legend = list(orientation = "h", y = -10, x = 0))
     })
 
+    #------------------------------------------------
+    # data for time-series analysis (attack counts)
+    #------------------------------------------------
+
+    output$ts_filter_country <- renderUI({    
+          selectizeInput(inputId = "ts_filter_country", label = "Select country", choices = sort(unique(df$country)), 
+            selected = sort(unique(df$country))[1], multiple = TRUE)
+        })
+
+    output$ts_filter_year <- renderUI({ 
+          sliderInput("ts_filter_year", label = "Select year range", min = 1970, max = 2016, value = c("2000", "2016"))
+        })
+
+    # reactive data
+    ts_data <- reactive({
+
+      data <- df
+      data <- data[data$year >= input$ts_filter_year[1] & data$year <= input$ts_filter_year[2], ]
+      data <- data[data$country %in% input$ts_filter_country, ]
+
+      data <- data %>%
+            mutate(month = month(date),
+                   month_year = paste(year, month,sep="-"),
+                   month_year = zoo::as.yearmon(month_year)) %>%
+        group_by(year, month) %>%
+        summarise(attack_count = n()) %>%
+        ungroup() %>%
+        group_by(year) %>%
+        tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(attack_count = 0)) %>%
+        ungroup()
+
+      data <- data %>%
+        mutate(month_year = paste(year, month, sep="-"),
+               month_year = zoo::as.yearmon(month_year)) %>%
+        select(month_year, attack_count)
+
+      # Create a ts object
+      data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
+      data <- na.kalman(data)
+
+      return(data)
+
+    })
+
+
+    #-------------------------------------
+    # Trends by attack counts
+    #-------------------------------------
+
+    output$ts_line <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_plot(attack_counts, line.mode = "lines+markers")
+    })
+
+    output$ts_cycle <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_seasonal(attack_counts, type = "cycle")      
+    })
+
+    output$ts_normal <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_seasonal(attack_counts, type = "normal")      
+    })
+
+    output$ts_box <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_seasonal(attack_counts, type = "box")      
+    })
+
+    output$ts_heatmap <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_heatmap(attack_counts)      
+    })
+
+    output$ts_surface <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_surface(attack_counts)      
+    })
+
+    output$ts_polar <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_polar(attack_counts)      
+    })
+
+    output$ts_decompose <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_decompose(attack_counts, type = "both")     
+    })
+  
+    output$ts_acf <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_acf(attack_counts, lag.max = 36)      
+    })
+
+    output$ts_pacf <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_pacf(attack_counts, lag.max = 36)      
+    })
+    
+    output$ts_lag <- renderPlotly({
+      attack_counts <- ts_data()
+      ts_lags(attack_counts)      
+    })
+
+
+    #------------------------------------------------
+    # Time-series train test validation
+    #------------------------------------------------
+
+    # reactive data for arima, tbats and ets
+    ts_forecast_data <- reactive({
+
+      data <- ts_data()
+      
+      # crete split for train and test set
+      data <- ts_split(data, sample.out = input$ts_slider_horizon)
+      
+      # Split the data into training and testing sets
+      train <- data$train
+      test  <- data$test
+
+      # Building a models on the training set
+      fit_arima <- auto.arima(train, lambda = BoxCox.lambda(train))
+      # fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats)
+      fit_tbats <- tbats(train)
+      fit_ets   <- ets(train)
+
+      # Accuracy check/ Forecast evaluation for each models
+      fc_arima <- forecast(fit_arima, h = input$ts_slider_horizon)
+      # fc_nn    <- forecast(fit_nn, h = input$ts_slider_horizon)
+      fc_tbats <- forecast(fit_tbats, h = input$ts_slider_horizon)
+      fc_ets   <- forecast(fit_ets, h = input$ts_slider_horizon)
+
+      data <- list(train      = train, 
+                   test       = test,
+                   fit_arima  = fit_arima,
+                   fc_arima   = fc_arima,
+                   # fit_nn     = fit_nn,
+                   # fc_nn      = fc_nn,
+                   fit_tbats  = fit_tbats,
+                   fc_tbats   = fc_tbats,
+                   fit_ets    = fit_ets,
+                   fc_ets     = fc_ets)
+      return(data)
+
+    })
+
+    # reactive data for neural network
+    ts_forecast_data_nn <- reactive({
+
+      data <- ts_data()
+      
+      # crete split for train and test set
+      data <- ts_split(data, sample.out = input$ts_slider_horizon)
+      
+      # Split the data into training and testing sets
+      train <- data$train
+      test  <- data$test
+
+      # Building a models on the training set
+      fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats)
+
+      # Accuracy check/ Forecast evaluation for each models
+      fc_nn    <- forecast(fit_nn, h = input$ts_slider_horizon)
+
+      data <- list(train      = train, 
+                   test       = test,
+                   fit_nn     = fit_nn,
+                   fc_nn      = fc_nn)
+      return(data)
+
+    })
+
+    output$ts_slider_horizon <- renderUI({ 
+      sliderInput("ts_slider_horizon", label = "Horizon", min = 3, max = 18, value = 12, step = 3)
+    })
+
+    output$ts_slider_nn_repeats <- renderUI({ 
+      sliderInput("ts_slider_nn_repeats", label = "nnet (repeats)", min = 5, max = 15, value = 10, step = 1)
+    })
+
+    output$ts_res_arima <- renderPlotly({
+
+      forecast_data <- ts_forecast_data()
+      fit_arima     <- forecast_data$fit_arima
+
+      # plot the residuals
+      check_res(fit_arima)
+    })
+    
+    output$ts_eval_arima <- renderPlotly({
+
+      act_data      <- ts_data()
+      forecast_data <- ts_forecast_data()
+      fc_arima      <- forecast_data$fc_arima
+      test          <- forecast_data$test
+
+      #plot actual vs fitted and forecasted
+      test_forecast(actual = act_data, forecast.obj = fc_arima, test = test) %>% layout(legend = list(x = 0.1, y = 0.9)) 
+    })
+
+
+    output$ts_res_nn <- renderPlotly({
+
+      forecast_data <- ts_forecast_data_nn()
+      fit_nn        <- forecast_data$fit_nn
+
+      # plot the residuals
+      check_res(fit_nn)
+    })
+    
+    output$ts_eval_nn <- renderPlotly({
+
+      act_data      <- ts_data()
+      forecast_data <- ts_forecast_data_nn()
+      fc_nn         <- forecast_data$fc_nn
+      test          <- forecast_data$test
+
+      #plot actual vs fitted and forecasted
+      test_forecast(actual = act_data, forecast.obj = fc_nn, test = test) %>% layout(legend = list(x = 0.1, y = 0.9))    
+    })
+
+
+    output$ts_res_tbats <- renderPlotly({
+
+      forecast_data <- ts_forecast_data()
+      fit_tbats     <- forecast_data$fit_tbats
+
+      # can't use check_res so using autoplot
+      p <- ggplot2::autoplot(fit_tbats) 
+      ggplotly(p)
+    })
+    
+    output$ts_eval_tbats <- renderPlotly({
+
+      act_data      <- ts_data()
+      forecast_data <- ts_forecast_data()
+      fc_tbats      <- forecast_data$fc_tbats
+      test          <- forecast_data$test
+
+      #plot actual vs fitted and forecasted
+      test_forecast(actual = act_data, forecast.obj = fc_tbats, test = test) %>% layout(legend = list(x = 0.1, y = 0.9))   
+    })
+
+
+    output$ts_res_ets <- renderPlotly({
+
+      forecast_data <- ts_forecast_data()
+      fit_ets       <- forecast_data$fit_ets
+
+      # plot the residuals
+      check_res(fit_ets)
+    })
+    
+    output$ts_eval_ets <- renderPlotly({
+
+      act_data      <- ts_data()
+      forecast_data <- ts_forecast_data()
+      fc_ets        <- forecast_data$fc_ets
+      test          <- forecast_data$test
+
+      #plot actual vs fitted and forecasted
+      test_forecast(actual = act_data, forecast.obj = fc_ets, test = test)  %>% layout(legend = list(x = 0.1, y = 0.9))   
+    })
+
+    output$acc_arima <- function() {
+
+      forecast_data <- ts_forecast_data()
+      fc_arima      <- forecast_data$fc_arima
+      test          <- forecast_data$test
+
+      knitr::kable(t(round(accuracy(fc_arima$mean, test), 3)), caption = "Mean accuracy") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    output$acc_nn <- function() {
+
+      forecast_data <- ts_forecast_data_nn()
+      fc_nn         <- forecast_data$fc_nn
+      test          <- forecast_data$test
+
+      knitr::kable(t(round(accuracy(fc_nn$mean, test), 3)), caption = "Mean accuracy") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    output$acc_tbats <- function() {
+
+      forecast_data <- ts_forecast_data()
+      fc_tbats      <- forecast_data$fc_tbats
+      test          <- forecast_data$test
+
+      knitr::kable(t(round(accuracy(fc_tbats$mean, test), 3)), caption = "Mean accuracy") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    output$acc_ets <- function() {
+
+      forecast_data <- ts_forecast_data()
+      fc_ets        <- forecast_data$fc_ets
+      test          <- forecast_data$test
+
+      knitr::kable(t(round(accuracy(fc_ets$mean, test), 3)), caption = "Mean accuracy") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    #--------------------------------------------------------
+    # Time-series Forecast from each models
+    #--------------------------------------------------------
+    
+    # reactive data
+    arima_preds <- reactive({
+
+      act_data  <- ts_data()
+      fit       <- auto.arima(act_data)
+      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      return(fore)
+
+    })
+
+    output$fc_prediction_arima <- renderPlotly({
+
+      act_data  <- ts_data()
+      fore      <- arima_preds()
+
+      plot_ly() %>%
+        add_lines(x = time(act_data), y = act_data,
+                  color = I("#487caf"), name = "Actual number of attacks") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
+                    color = I("gray90"), name = "95% confidence") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
+                    color = I("gray85"), name = "80% confidence") %>%
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        layout(legend = list(x = 0.1, y = 0.9)) 
+
+    })
+
+    output$tbl_fc_prediction_arima <- function() {
+
+      fore          <- arima_preds()
+      tbl           <- timetk::tk_tbl(fore$mean) 
+      names(tbl)    <- c("time_period", "forecast")
+      tbl$forecast  <- round(tbl$forecast)
+
+      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "white", background = "#a05050") 
+
+    }
+
+    # reactive data
+    nnetar_preds <- reactive({
+
+      act_data  <- ts_data()
+      fit       <- nnetar(act_data, repeats = input$ts_slider_nn_repeats)
+      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95), PI = TRUE)
+      return(fore)
+
+    })
+
+    output$fc_prediction_nn <- renderPlotly({
+
+      act_data  <- ts_data()
+      fore      <- nnetar_preds()
+
+      plot_ly() %>%
+        add_lines(x = time(act_data), y = act_data,
+                  color = I("#487caf"), name = "Actual number of attacks") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
+                    color = I("gray90"), name = "95% confidence") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
+                    color = I("gray85"), name = "80% confidence") %>%
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        layout(legend = list(x = 0.1, y = 0.9)) 
+
+    })
+
+    output$tbl_fc_prediction_nn <- function() {
+
+      fore          <- nnetar_preds()
+      tbl           <- timetk::tk_tbl(fore$mean) 
+      names(tbl)    <- c("time_period", "forecast")
+      tbl$forecast  <- round(tbl$forecast)
+
+      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "white", background = "#a05050") 
+
+    }
+
+    # reactive data
+    tbats_preds <- reactive({
+
+      act_data  <- ts_data()
+      fit       <- tbats(act_data)
+      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      return(fore)
+
+    })
+
+    output$fc_prediction_tbats <- renderPlotly({
+
+      act_data  <- ts_data()
+      fore      <- tbats_preds()
+
+      plot_ly() %>%
+        add_lines(x = time(act_data), y = act_data,
+                  color = I("#487caf"), name = "Actual number of attacks") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
+                    color = I("gray90"), name = "95% confidence") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
+                    color = I("gray85"), name = "80% confidence") %>%
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        layout(legend = list(x = 0.1, y = 0.9)) 
+
+    })
+
+    output$tbl_fc_prediction_tbats <- function() {
+
+      fore          <- tbats_preds()
+      tbl           <- timetk::tk_tbl(fore$mean) 
+      names(tbl)    <- c("time_period", "forecast")
+      tbl$forecast  <- round(tbl$forecast)
+
+      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "white", background = "#a05050") 
+
+    }
+
+    # reactive data
+    ets_preds <- reactive({
+
+      act_data  <- ts_data()
+      fit       <- ets(act_data)
+      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      return(fore)
+
+    })
+
+    output$fc_prediction_ets <- renderPlotly({
+
+      act_data  <- ts_data()
+      fore      <- ets_preds()
+
+      plot_ly() %>%
+        add_lines(x = time(act_data), y = act_data,
+                  color = I("#487caf"), name = "Actual number of attacks") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
+                    color = I("gray90"), name = "95% confidence") %>%
+        add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
+                    color = I("gray85"), name = "80% confidence") %>%
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        layout(legend = list(x = 0.1, y = 0.9)) 
+
+    })
+
+    output$tbl_fc_prediction_ets <- function() {
+
+      fore          <- ets_preds()
+      tbl           <- timetk::tk_tbl(fore$mean) 
+      names(tbl)    <- c("time_period", "forecast")
+      tbl$forecast  <- round(tbl$forecast)
+
+      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(2, bold = T, color = "white", background = "#a05050") 
+
+    }
 
   }) # End of shinyServer logic
 

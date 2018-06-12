@@ -20,12 +20,11 @@ sidebar <- dashboardSidebar(
       menuItem("Part 1: Impact Analysis", icon = icon("globe"),tabName = "part_1",
         menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
         menuSubItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps")),
-      menuItem("Part 2: Active Groups", tabName = "part_2", icon = icon("user"),
-        menuSubItem("Characteristics", icon = icon("user"),tabName = "eda_p2"),
-        menuSubItem("Animations", icon = icon("play"), tabName = "p1_animations")),
-      menuItem("Part 3: Statistical Analysis", tabName = "part_3", icon = icon("gears"),
-        menuSubItem("GUI", tabName = "gui", icon = icon("gears"))),
-      menuItem("Part 4: Modeling", tabName = "modelling", icon = icon("gears"),
+      menuItem("Part 2: Active Groups", tabName = "eda_p2", icon = icon("user")),
+      menuItem("Part 3: Statistical Analysis", tabName = "gui", icon = icon("gears")),
+      menuItem("Part 4: Time-series Analysis", tabName = "part_4", icon = icon("gears"),
+        menuSubItem("By attack counts", tabName = "ts_attack_counts", icon = icon("gears"))),
+      menuItem("Part 5: Modeling", tabName = "modelling", icon = icon("gears"),
         menuSubItem("Modelling_1", tabName = "m1", icon = icon("gears")),
         menuSubItem("Modelling_2", tabName = "m2", icon = icon("gears")),
         menuSubItem("Modelling_3", tabName = "m3", icon = icon("gears"))),
@@ -133,7 +132,7 @@ body <- dashboardBody(
     tabItem(tabName = "eda_p1_geographic",
       fluidPage(title = "tdg_eda_p1_geographic",
         fluidRow(h3("GUI: Exploration of Attack Characteristics"),
-          tags$style(HTML(".tab-panel{ background-color: black; color: white}")),
+          # tags$style(HTML(".tab-panel{ background-color: black; color: white}")),
             tabBox(width = 2, 
               tabPanel("Plot configurations:",  
                 uiOutput("radioBtn_ldata"),
@@ -180,8 +179,8 @@ body <- dashboardBody(
 
               tabPanel("By Terrorist Groups", 
                 fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
-                  box(title = "By Terrorist Groups",status = "primary", width = 12, solidHeader = TRUE, 
+                  # tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "By Terrorist Groups",status = "primary", width = 12, solidHeader = TRUE, background = "black",
                       fluidRow(
                           column(width = 4, uiOutput("slider_filter_year")),
                           column(width = 3, uiOutput("slider_filter_total_attacks")),
@@ -193,14 +192,14 @@ body <- dashboardBody(
 
               tabPanel("By Target, Attack and Weapon Types", 
                 fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  # tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
 
-                  box(title = "By Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                  box(title = "By Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, background = "black",
                     column(width = 12,
                       withSpinner(plotlyOutput("pattern_global_hmap2", width = "100%", height = 250)),
                       withSpinner(plotlyOutput("pattern_global_hmap3", width = "100%", height = 250))
                       )),
-                  box(title = "By Target Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                  box(title = "By Target Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, background = "black",
                     column(width = 12,
                       withSpinner(plotlyOutput("pattern_global_hmap1", width = "100%", height = 500))
                       ))
@@ -208,8 +207,8 @@ body <- dashboardBody(
 
               tabPanel("By Geographic Location", 
                 fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
-                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, 
+                  # tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, background = "black",
                     column(width = 6,
                       withSpinner(plotlyOutput("pattern_global_hmap_countries", width = "100%", height = 4000))
                       ),
@@ -228,12 +227,12 @@ body <- dashboardBody(
             tabBox(width = 12, title = "Characteristics of Top 10 Deadliest Groups", id = "t10_char", side = "left", 
               tabPanel("Snapshot", 
                 fluidRow(
-                  column(width = 9, withSpinner(highchartOutput("top10_hc1",height = 340))),
-                  column(width = 3, withSpinner(highchartOutput("top10_hc1_target_naltly", height = 340)))
+                  column(width = 9, withSpinner(highchartOutput("top10_hc1",height = 350))),
+                  column(width = 3, withSpinner(highchartOutput("top10_hc1_target_naltly", height = 350)))
                   ),
                 fluidRow(            
-                  column(width = 9, withSpinner(highchartOutput("top10_hc1_attack_type", height = 250))),
-                  column(width = 3, withSpinner(highchartOutput("top10_hc1_year",height = 250)))
+                  column(width = 9, withSpinner(highchartOutput("top10_hc1_attack_type", height = 350))),
+                  column(width = 3, withSpinner(highchartOutput("top10_hc1_year",height = 350)))
                   ) 
                 ),
 
@@ -259,9 +258,8 @@ body <- dashboardBody(
 
               tabPanel("Patterns by Number of Attcks Over Years", 
                 fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {}
-                                   .box.box-solid.box-primary{ background:black }")),
-                  box(title = "By Target, Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                  # tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "By Target, Attack and Weapon Types",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, background = "black",
                     column(width = 6,
                       withSpinner(plotlyOutput("pattern_hmap1", width = "100%", height = 450))
                       ),
@@ -273,9 +271,8 @@ body <- dashboardBody(
                       withSpinner(plotlyOutput("pattern_hmap4", width = "100%", height = 250))
                       ))),
                 fluidRow(
-                  tags$style(HTML(".box.box-solid.box-primary>.box-header {}
-                                   .box.box-solid.box-primary{ background:black }")),
-                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                  # tags$style(HTML(".box.box-solid.box-primary>.box-header {} .box.box-solid.box-primary{ background:black }")),
+                  box(title = "Geographic Patterns",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, background = "black",
                     column(width = 6,
                       withSpinner(plotlyOutput("pattern_hmap_countries", width = "100%", height = 1400))
                       ),
@@ -286,38 +283,18 @@ body <- dashboardBody(
               )
         ))),
 
-
-    tabItem(tabName = "p1_animations",
-      fluidPage(title = "Pattern Visualization",
-
-          tabBox(width = 9, title = "4 D animation", id = "animation_tab", side = "left", 
-            tabPanel("animation_1"
-              # highchartOutput("top10_hc1",height = 400)
-              ),
-            tabPanel("animation_1", "")
-              #highchartOutput("top10_hc2",height = 600))
-              ),
-
-          box(width = 3, title = "Frequent Targets",status = "primary", solidHeader = TRUE
-              # highchartOutput("top10_hc1_target_type", height = 300),
-              # highchartOutput("top10_hc1_target_naltly", height = 300)
-              )
-
-        )
-      ),
-
     #-----------------------------------------------------
     # section 3: GUI data exploration
     #-----------------------------------------------------
     tabItem(tabName = "gui",
       fluidPage(
         sidebarPanel(width = 3,
-          tabsetPanel(
+          tabsetPanel(type = "tabs",
 
             tabPanel("Plot configs",
               uiOutput("radioBtn_data_gui"),
               uiOutput("slider_year_gui"),
-              pickerInput(inputId = "Type", label = "Type of graph:", choices = c("Boxplot", "Density", "Histogram", "Scatter", "Violin"), selected = "Boxplot"),
+              pickerInput(inputId = "Type", label = "Type of graph:", choices = c("Boxplot", "Density", "Histogram", "Scatter", "Violin"), selected = "Violin"),
               pickerInput("y_var", "Y-variable", choices = ""),
               conditionalPanel(
                 condition = "input.Type!='Density' && input.Type!='Histogram'",
@@ -353,7 +330,7 @@ body <- dashboardBody(
               ), # End of plot config tab panel
 
             tabPanel("Aesthetics",
-              tabsetPanel(
+              tabsetPanel(type = "tabs",
 
                 tabPanel("Text",
                     checkboxInput(inputId = "label_axes", label = strong("Change labels axes"), value = FALSE),
@@ -426,7 +403,7 @@ body <- dashboardBody(
                     conditionalPanel(
                       condition = "input.fig_size", 
                       numericInput("fig_height", "Plot height (# pixels): ", value = 600),
-                      numericInput("fig_width", "Plot width (# pixels):", value = 600)
+                      numericInput("fig_width", "Plot width (# pixels):", value = 900)
                     ),
                     checkboxInput("fig_size_download", strong("Adjust plot size for download"), FALSE),
                     conditionalPanel(
@@ -445,76 +422,210 @@ body <- dashboardBody(
 
         mainPanel(width = 9, 
           h3("Statistical Analysis"),
-          tabsetPanel(
+          tabsetPanel(type = "tabs",
             tabPanel("Interactive",
-              withSpinner(plotlyOutput("out_plotly", width = "95%", height = 600))),
+              withSpinner(plotlyOutput("out_plotly", width = "100%", height = 600))),
             tabPanel("static plots",
-              withSpinner(plotOutput("out_ggplot", width = "95%", height = 600)))
+              withSpinner(plotOutput("out_ggplot", width = "100%", height = 600)))
             ))
 
         ) # End fluid page
     ),
 
 
-    tabItem(tabName = "p1_3",
-      fluidPage(title = "Market Explorer",
-        fluidPage(
-          column(width = 12,height = 300,
-            box(title = "Top 10 Countries By",status = "primary",width = 12,solidHeader = TRUE,collapsible = TRUE,
-              fluidRow(
-                box(title = "Fatalities",status = "primary",width = 4,solidHeader = FALSE,collapsible = FALSE,plotlyOutput("plot3",height = 250)),
-                box(title = "Damages",status = "primary",width = 4,solidHeader = FALSE,collapsible = FALSE,plotlyOutput("plot4",height = 250)),
-                box(title = "Attacks",status = "primary",width = 4,solidHeader = FALSE,collapsible = FALSE,plotlyOutput("plot2",height = 250))))),
-          column(width = 12,
-            box(title = "Time-series of Attacks",status = "primary",width = 6,solidHeader = TRUE,collapsible = TRUE,plotlyOutput("plot5")),
-            box(title = "Time-series of Fatalities",status = "primary",width = 6,solidHeader = TRUE,collapsible = TRUE,plotlyOutput("plot6")))))),
-
     #-------------------------------- 
-    # section 3: Interactive plots
+    # Part 4: time-series analysis
     #------------------------------- 
-    tabItem(tabName = "modelling",
+    tabItem(tabName = "ts_attack_counts",
+      fluidPage(title = "Time-series forecasting",
 
-      fluidPage(title = "Terrorism by Country",
-        column(width = 2,
-          box(title = "Query Builder", status = "primary", width = 12, solidHeader = TRUE, background = "navy",
-            box(width = 12, status = "primary", solidHeader = FALSE, background = "navy", uiOutput("levelQueryUi")),
-            conditionalPanel(
-              condition = "input.analysisLevel == 1",
-              box(status = "primary", solidHeader = FALSE, width = 12, background = "navy", uiOutput("regionlist"))),
-            conditionalPanel(condition = "input.analysisLevel == 2",
-              box(status = "primary", solidHeader = FALSE, width = 12, background = "navy", uiOutput("countrylist"))), 
-            box(status = "primary", solidHeader = FALSE, width = 12, background = "navy",
-              sliderInput("hviQuery", label = "Year Range", min = 1970, max = 2016, value = c(1970,2016))),
-            box(width = 12, status = "primary", solidHeader = FALSE, background = "navy", uiOutput("timeplot")),
-            actionButton("query", label = "Go"))),
+        sidebarPanel(width = 2,
+          uiOutput("ts_filter_country"),
+          uiOutput("ts_filter_year"), 
+          conditionalPanel(
+            condition = " input.ts_tabs ==  'Forecasts (Predictions)' || input.ts_tabs ==  'Model Evaluation' ",
+            uiOutput("ts_slider_horizon")),
+          conditionalPanel(
+            condition = " input.ts_tabs ==  'Model Evaluation' "),
+          conditionalPanel(
+            condition = " input.ts_tabs ==  'Forecasts (Predictions)' "),
+          conditionalPanel(
+            condition = " input.ts_mod_eval ==  'Neural Network' || input.ts_mod_preds ==  'Neural Network' ",
+            hr(),
+            h4("NeuralNet configs:"), 
+            uiOutput("ts_slider_nn_repeats"),
+            p("Number of networks to fit with different random starting weights"))
+          ),
 
-        conditionalPanel(
-          condition = "input.query", 
-          column(width = 10,
-            box(title = textOutput("Design"), status = "primary", width = 12, height = 1500, solidHeader = TRUE,collapsible = TRUE,
-              fluidRow(
-                box(status = "primary", width = 12, solidHeader = FALSE, collapsible = TRUE, 
-                  valueBoxOutput("totcity_country", width = 3),
-                  valueBoxOutput("totAttacks_country", width = 3),
-                  valueBoxOutput("totlife_country", width = 3),
-                  valueBoxOutput("totloss_country", width = 3))), 
-              fluidRow(
-                column(width = 12,
-                  box(title = "Attacks", status = "primary", width = 4, solidHeader = FALSE, collapsible = TRUE, plotlyOutput("plot7",height = 250)),
-                  box(title = "Targets", status = "primary", width = 4, solidHeader = FALSE, collapsible = TRUE, plotlyOutput("plot8",height = 250)),
-                  box(title = "Weapons", status = "primary", width = 4, solidHeader = FALSE, collapsible = TRUE, plotlyOutput("plot9",height = 250)))),
-              fluidRow(
-                column(width = 12,
-                  box(title = "Major Attacks", status = "primary", width = 6, height = 475, solidHeader = FALSE, collapsible = TRUE, style = "color: #444",
-                    leafletOutput("country_map")),
-                  box(title = "Major Terrorist Groups", status = "primary", width = 6, solidHeader = FALSE, collapsible = TRUE, style = "color: #444", 
-                    DT::dataTableOutput("groupnameTbl")))),
-              fluidRow(
-                column(width = 12,
-                  box(title = textOutput("tseries"), status = "primary", width = 12, solidHeader = FALSE, collapsible = TRUE, 
-                    plotlyOutput("plot10",height = 350)))))))
-            ) # Closing fluidpage
-        ), # Closing tabName = modelling
+        tabBox(width = 10, title = "Time-series Analysis by Attack Counts", id = "ts_tabs", side = "left", 
+
+          tabPanel("Seasonality analysis", 
+            tabsetPanel(type = "tabs", id = "ts_seas_analysis",
+              tabPanel("Part I: Seasonal patterns", 
+                fluidRow(
+                  box(title = "Seasonal pattern between cycles",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 12, 
+                      withSpinner(plotlyOutput("ts_box", width = "100%", height = 250)),
+                      withSpinner(plotlyOutput("ts_normal", width = "100%", height = 300)))
+                    ),
+                  box(title = "Seasonal pattern within the year",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 12,
+                      withSpinner(plotlyOutput("ts_line", width = "100%", height = 250)),
+                      withSpinner(plotlyOutput("ts_cycle", width = "100%", height = 300)))
+                    ))),
+
+                tabPanel("Part 2: 3-Dimensional view", 
+                  fluidRow(
+                    box(title = "Polar plot and Heatmap",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    column(width = 8, 
+                      withSpinner(plotlyOutput("ts_polar", width = "100%", height = 600))),
+                    column(width = 4, 
+                      withSpinner(plotlyOutput("ts_heatmap", width = "100%", height = 570)))
+                      ),
+                    box(title = "Surface plot",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_surface", width = "100%", height = 600)))
+                      ))) 
+                ) # end tabset panel 1
+              ),
+
+
+          tabPanel("Statistical Analysis", 
+              tabsetPanel(type = "tabs", id = "ts_stat_analysis",
+
+                tabPanel("Time-series Decomposition", 
+                  fluidRow(
+                    box(title = "Time-series Decomposition",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_decompose", width = "100%", height = 600)))))
+                  ), 
+
+                tabPanel("Correlation Analysis I", 
+                  fluidRow(
+                    box(title = "ACF (Autocorrelation Function)",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_acf", width = "100%", height = 275)))),
+                    box(title = "PACF (Partial Autocorrelation Function)",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_pacf", width = "100%", height = 275)))))
+                  ), 
+
+                tabPanel("Correlation Analysis II", 
+                  fluidRow(
+                    box(title = "Lag plot",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_lag", width = "100%", height = 600)))))))
+              ),
+
+
+          tabPanel("Model Evaluation", 
+            tabsetPanel(type = "tabs", id = "ts_mod_eval",
+
+                tabPanel("Auto-Arima", 
+                  fluidRow(
+                    box(title = "Evaluation: Forecast and Fitted vs Actual",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("ts_eval_arima", width = "100%", height = 500))),
+                      column(width = 2, br(), br(),
+                        withSpinner(tableOutput("acc_arima")))
+                      ),
+                    box(title = "Residuals analysis",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_res_arima", width = "100%", height = 500)))
+                      )
+                  )), 
+
+                tabPanel("Neural Network", 
+                  fluidRow(
+                    box(title = "Evaluation: Forecast and Fitted vs Actual",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("ts_eval_nn", width = "100%", height = 500))),
+                      column(width = 2, br(), br(),
+                        withSpinner(tableOutput("acc_nn")))
+                      ),
+                    box(title = "Residuals analysis",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_res_nn", width = "100%", height = 500)))
+                      )
+                  )),  
+
+                tabPanel("TBATS", 
+                  fluidRow(
+                    # box(title = "Residuals analysis",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                    #   column(width = 12, 
+                    #     withSpinner(plotlyOutput("ts_res_tbats", width = "100%", height = 500)))
+                    #   ),
+                    box(title = "Evaluation: Forecast and Fitted vs Actual",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("ts_eval_tbats", width = "100%", height = 500))),
+                      column(width = 2, br(), br(),
+                        withSpinner(tableOutput("acc_tbats")))
+                      )
+                  )), 
+
+                tabPanel("ETS", 
+                  fluidRow(
+                    box(title = "Evaluation: Forecast and Fitted vs Actual",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("ts_eval_ets", width = "100%", height = 500))),
+                      column(width = 2, br(), br(),
+                        withSpinner(tableOutput("acc_ets")))
+                      ),
+                    box(title = "Residuals analysis",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 12, 
+                        withSpinner(plotlyOutput("ts_res_ets", width = "100%", height = 500)))
+                      )
+                  ))
+                )
+              ),
+
+
+          tabPanel("Forecasts (Predictions)", 
+            tabsetPanel(type = "tabs", id = "ts_mod_preds",
+
+                tabPanel("Auto-Arima", 
+                  fluidRow(
+                    box(title = "Forecast from Auto Arima model",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("fc_prediction_arima", width = "100%", height = 550))),
+                      column(width = 2, 
+                        withSpinner(tableOutput("tbl_fc_prediction_arima")))
+                      )
+                  )), 
+
+                tabPanel("Neural Network", 
+                  fluidRow(
+                    box(title = "Forecast from Neural Network model",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("fc_prediction_nn", width = "100%", height = 550))),
+                      column(width = 2, 
+                        withSpinner(tableOutput("tbl_fc_prediction_nn")))
+                      )
+                  )),  
+
+                tabPanel("TBATS", 
+                  fluidRow(
+                    box(title = "Forecast from TBATS model",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("fc_prediction_tbats", width = "100%", height = 550))),
+                      column(width = 2, 
+                        withSpinner(tableOutput("tbl_fc_prediction_tbats")))
+                      )
+                  )), 
+
+                tabPanel("ETS", 
+                  fluidRow(
+                    box(title = "Forecast from ETS model",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 10, 
+                        withSpinner(plotlyOutput("fc_prediction_ets", width = "100%", height = 550))),
+                      column(width = 2, 
+                        withSpinner(tableOutput("tbl_fc_prediction_ets")))
+                      )
+                  ))
+                )
+              )
+          )
+        )),
 
 
     #------------------------------- 
