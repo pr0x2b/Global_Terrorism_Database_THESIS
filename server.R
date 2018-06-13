@@ -1169,8 +1169,9 @@ shinyServer(function(input, output, session) {
       # %>% layout(legend = list(orientation = "h", y = -10, x = 0))
     })
 
+
     #------------------------------------------------
-    # data for time-series analysis (attack counts)
+    # Sidebar : time-series analysis
     #------------------------------------------------
 
     output$ts_filter_country <- renderUI({    
@@ -1182,35 +1183,123 @@ shinyServer(function(input, output, session) {
           sliderInput("ts_filter_year", label = "Select year range", min = 1970, max = 2016, value = c("2000", "2016"))
         })
 
-    # reactive data
+    output$ts_attack_freq <- renderUI ({
+          radioButtons(inputId = "ts_attack_freq", label = "Attack frequency", 
+                       choices = c("Monthly", "Quarterly"), selected = "Monthly", inline = FALSE)
+      })
+
+    output$ts_slider_horizon <- renderUI({ 
+      req(input$ts_attack_freq)
+      sliderInput("ts_slider_horizon", label = "Horizon (months)", min = 6, max = 24, value = 12, step = 2)
+      })
+
+   observe({
+      input$ts_attack_freq
+      min   <- ifelse(input$ts_attack_freq == "Quarterly", 4, 6)
+      max   <- ifelse(input$ts_attack_freq == "Quarterly", 12, 24)
+      value <- ifelse(input$ts_attack_freq == "Quarterly", 8, 12)
+      label <- ifelse(input$ts_attack_freq == "Quarterly", "Horizon (quarters)", "Horizon (months)")
+      updateSliderInput(session, "ts_slider_horizon", label = label, min = min, max = max, value = value, step = 2)
+      })
+
+    output$ts_slider_nn_repeats <- renderUI({ 
+      sliderInput("ts_slider_nn_repeats", label = "nnet (repeats)", min = 5, max = 15, value = 10, step = 1)
+      })
+
+    #---------------------------------------
+    # Reactive time-series data
+    #---------------------------------------
     ts_data <- reactive({
 
       data <- df
       data <- data[data$year >= input$ts_filter_year[1] & data$year <= input$ts_filter_year[2], ]
       data <- data[data$country %in% input$ts_filter_country, ]
 
-      data <- data %>%
+      # Extract data by user selected attack frequency
+
+      if(input$ts_attack_freq == "Monthly") {
+
+          #---------------------------------------
+          # Monthly time-series data
+          #---------------------------------------
+          data <- data %>%
             mutate(month = month(date),
                    month_year = paste(year, month,sep="-"),
                    month_year = zoo::as.yearmon(month_year)) %>%
-        group_by(year, month) %>%
-        summarise(attack_count = n()) %>%
-        ungroup() %>%
-        group_by(year) %>%
-        tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(attack_count = 0)) %>%
-        ungroup()
+            group_by(year, month) %>%
+            summarise(attack_count = n()) %>%
+            ungroup() %>%
+            group_by(year) %>%
+            tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(attack_count = 0)) %>%
+            ungroup()
 
-      data <- data %>%
-        mutate(month_year = paste(year, month, sep="-"),
-               month_year = zoo::as.yearmon(month_year)) %>%
-        select(month_year, attack_count)
+          data <- data %>%
+            mutate(month_year = paste(year, month, sep="-"),
+                   month_year = zoo::as.yearmon(month_year)) %>%
+            select(month_year, attack_count)
 
-      # Create a ts object
-      data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
-      data <- na.kalman(data)
+          # Create a ts object
+          data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
+          data <- na.kalman(data)
+
+      }
+
+      if(input$ts_attack_freq == "Quarterly") {
+    
+          #---------------------------------------
+          # Quarterly time-series data
+          #---------------------------------------
+          data <- data %>%
+            mutate(quarter = Quarter(date),
+                   quarter_year = paste(year, quarter, sep="-"),
+                   quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+            group_by(year, quarter) %>%
+            summarise(attack_count = n()) %>%
+            ungroup() %>%
+            group_by(year) %>%
+            tidyr::complete(quarter = full_seq(seq(1:4), 1L), fill = list(attack_count = 0)) %>%
+            ungroup()
+
+          data <- data %>%
+            mutate(quarter_year = paste(year, quarter, sep="-"),
+                   quarter_year = zoo::as.yearqtr(quarter_year)) %>%
+            select(quarter_year, attack_count)
+
+          # Create a ts object
+          data <- ts(data[, 2], start = Year(min(data$quarter_year)), frequency = 4) # 1=annual, 4=quartly, 12=quarterly
+          data <- na.kalman(data)
+
+        }
+
+      # if(input$ts_attack_freq == "Annual") {
+
+      #     #---------------------------------------
+      #     # Yearly time-series data
+      #     #---------------------------------------
+      #     if(input$ts_filter_year[1] <= 1993){
+      #       data <- data %>%
+      #         add_row(date = as.Date("1993-01-01"), year = 1993) %>% # add missing year for timeseries purpose
+      #         group_by(year) %>%
+      #         summarise(attack_count = n()) %>%
+      #         mutate(attack_count = ifelse(year == 1993, 0, attack_count)) %>% # set 0 to attack_count where year is 1993 (which is missing)
+      #         ungroup() %>%
+      #         select(year, attack_count)
+      #     }
+      #     else{
+      #       data <- data %>%
+      #         group_by(year) %>%
+      #         summarise(attack_count = n()) %>%
+      #         ungroup() %>%
+      #         select(year, attack_count)
+      #     }
+
+      #     # Create a ts object
+      #     data <- ts(data[, 2], start = min(data$year), frequency = 1) # 1=annual, 4=quartly, 12=yearly
+      #     data <- na.kalman(data)
+
+      # }
 
       return(data)
-
     })
 
 
@@ -1250,7 +1339,7 @@ shinyServer(function(input, output, session) {
 
     output$ts_polar <- renderPlotly({
       attack_counts <- ts_data()
-      ts_polar(attack_counts)      
+      ts_polar(attack_counts, width = 470, height = 500)      
     })
 
     output$ts_decompose <- renderPlotly({
@@ -1292,13 +1381,11 @@ shinyServer(function(input, output, session) {
 
       # Building a models on the training set
       fit_arima <- auto.arima(train, lambda = BoxCox.lambda(train))
-      # fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats)
       fit_tbats <- tbats(train)
       fit_ets   <- ets(train)
 
       # Accuracy check/ Forecast evaluation for each models
       fc_arima <- forecast(fit_arima, h = input$ts_slider_horizon)
-      # fc_nn    <- forecast(fit_nn, h = input$ts_slider_horizon)
       fc_tbats <- forecast(fit_tbats, h = input$ts_slider_horizon)
       fc_ets   <- forecast(fit_ets, h = input$ts_slider_horizon)
 
@@ -1306,8 +1393,6 @@ shinyServer(function(input, output, session) {
                    test       = test,
                    fit_arima  = fit_arima,
                    fc_arima   = fc_arima,
-                   # fit_nn     = fit_nn,
-                   # fc_nn      = fc_nn,
                    fit_tbats  = fit_tbats,
                    fc_tbats   = fc_tbats,
                    fit_ets    = fit_ets,
@@ -1342,13 +1427,6 @@ shinyServer(function(input, output, session) {
 
     })
 
-    output$ts_slider_horizon <- renderUI({ 
-      sliderInput("ts_slider_horizon", label = "Horizon", min = 3, max = 18, value = 12, step = 3)
-    })
-
-    output$ts_slider_nn_repeats <- renderUI({ 
-      sliderInput("ts_slider_nn_repeats", label = "nnet (repeats)", min = 5, max = 15, value = 10, step = 1)
-    })
 
     output$ts_res_arima <- renderPlotly({
 
