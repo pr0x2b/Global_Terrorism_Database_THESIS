@@ -32,27 +32,10 @@ kable(metrics)
 #----------------------------------------------
 # timeseries data
 #----------------------------------------------
-df_monthyear <- df %>% arrange(date) %>%
-  mutate(month = months(date),
-         month_year = paste(year, month,sep="-"),
-         month_year = as.yearmon(month_year, "%Y-%b")) %>%
-  filter(country == "Afghanistan")
-
-#by number of attacks
-df_attacks.y <- group_by(df_monthyear, month_year) %>%  summarise(attack_counts = n())
-df_attacks.y$delta.flag <- ifelse((df_attacks.y$attack_counts - c(NA, df_attacks.y$attack_counts[-nrow(df_attacks.y)])) < 0, 1,0 ) 
-df_attacks.y$delta.flag <- ifelse(is.na(df_attacks.y$delta.flag), 0, df_attacks.y$delta.flag) 
-
-#by number of people killed
-df_nkill.y <- group_by(df_monthyear, month_year) %>%  summarise(nkill_counts = sum(nkill))
-df_nkill.y$delta.flag <- ifelse((df_nkill.y$nkill_counts - c(NA, df_nkill.y$nkill_counts[-nrow(df_nkill.y)])) < 0, 1,0 ) 
-df_nkill.y$delta.flag <- ifelse(is.na(df_nkill.y$delta.flag), 0, df_nkill.y$delta.flag) 
-
-df1 <- df %>% left_join(df_attacks.y) %>% left_join(df.unemp) # and unemployment rate
 
 # by attack counts
 tmp <- df %>% 
-  filter(country == "Iraq",year >= 2000) %>%
+  filter(country == "Afghanistan",year >= 2000) %>%
   # add_row(date = as.Date("1993-01-01"), year = 1993) %>% #add missing year for timeseries purpose
   mutate(
          month = month(date),
@@ -91,7 +74,7 @@ tmp <- tmp %>%
 
 #by nkill
 tmp <- df %>% 
-  filter(country == "Iraq" & year >= 2000) %>%
+  filter(country == "United States" & year >= 2000) %>%
   replace_na(list(nkill = 0)) %>% 
   group_by(group_name, region, year, month) %>% 
   filter(if_else(part_of_multiple_attacks == 1, nkill == max(nkill), nkill == nkill)) %>%
@@ -125,7 +108,7 @@ ts_seasonal(dfts, type = "all")
 
 ts_heatmap(dfts)
 ts_surface(dfts)
-ts_polar(dfts)
+ts_polar(dfts, width = 300, height = 500)
 
 ts_decompose(dfts, type = "both")
 ts_acf(dfts, lag.max = 36)
@@ -170,7 +153,7 @@ test_forecast(actual = dfts, forecast.obj = fc, test = test)
 # tbats
 #---------------------------------------
 fit_tbats = tbats(train)
-autoplot(fit_tbats) %>% ggplotly()
+autoplot(fit_tbats)
 plot(forecast(fit_tbats, h = h))
 fc = forecast(fit_tbats, h = h)
 test_forecast(actual = dfts, forecast.obj = fc, test = test)
@@ -205,5 +188,38 @@ plot_ly() %>%
               color = I("gray85"), name = "80% confidence") %>%
   add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "prediction")
 
+fit_arima <- auto.arima(train)
+fit_nn <- nnetar(train, repeats = 10)
+fit_tbats <- tbats(train)
+fit_ets <- ets(train)
 
+fc_arima      <- forecast(fit_arima, h = h)
+fc_nn         <- forecast(fit_nn, h = h)
+fc_tbats      <- forecast(fit_tbats, h = h)
+fc_ets        <- forecast(fit_ets, h = h)
+test          <- forecast_data$test
+
+metrics  <- cbind(
+  as.data.frame(t(round(accuracy(fc_arima$mean, test), 3))),
+  as.data.frame(t(round(accuracy(fc_nn$mean, test), 3))),
+  as.data.frame(t(round(accuracy(fc_tbats$mean, test), 3))),
+  as.data.frame(t(round(accuracy(fc_ets$mean, test), 3)))
+) %>% rownames_to_column(var = "metric")
+
+
+names(metrics) <- c("metric", "Auto Arima", "NeuralNet", "TBATS", "ETS")
+
+metrics  <- rbind(
+  as.data.frame(round(accuracy(fc_arima$mean, test), 3)),
+  as.data.frame(round(accuracy(fc_nn$mean, test), 3)),
+  as.data.frame(round(accuracy(fc_tbats$mean, test), 3)),
+  as.data.frame(round(accuracy(fc_ets$mean, test), 3))
+) %>% add_column(metric = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), .before = "ME") 
+
+metrics <- as.data.frame(metrics, row.names = FALSE)
+
+plot(metrics)
+barplot(c(ETS=m_ets$aic, ARIMA=m_aa$aic, TBATS=m_tbats$AIC),
+        col="light blue",
+        ylab="AIC")
 

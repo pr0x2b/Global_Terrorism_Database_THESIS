@@ -446,7 +446,8 @@ body <- dashboardBody(
             sidebarPanel(width = 2,
               uiOutput("ts_filter_country"),
               uiOutput("ts_filter_year"),
-              p("Observe trend on the plots and select accordingly for forecasting!"),
+              # p("Observe trend on the plots and select accordingly for forecasting!"),
+              uiOutput("ts_fc_goal"), 
               uiOutput("ts_attack_freq"), 
               conditionalPanel(
                 condition = " input.ts_tabs ==  'Forecasts (Predictions)' || input.ts_tabs ==  'Model Evaluation' ",
@@ -457,7 +458,6 @@ body <- dashboardBody(
                 condition = " input.ts_tabs ==  'Forecasts (Predictions)' "),
               conditionalPanel(
                 condition = " input.ts_mod_eval ==  'Neural Network' || input.ts_mod_preds ==  'Neural Network' ",
-                hr(),
                 h4("NeuralNet configs:"), 
                 uiOutput("ts_slider_nn_repeats"),
                 p("Number of networks to fit with different random starting weights"))
@@ -588,7 +588,22 @@ body <- dashboardBody(
                         column(width = 12, 
                           withSpinner(plotlyOutput("ts_res_ets", width = "100%", height = 500)))
                         )
-                    ))
+                    )),
+
+                  tabPanel("Comparison", 
+                    fluidRow(
+                      box(title = "Finding best model based on evaluation metrics",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                        column(width = 7, withSpinner(tableOutput("tbl_eval_compare")), hr(),
+                          p("Note: MAPE metric has been chosen to highlight the best model. Model with lowest MAPE score is on the top.")),
+                        column(width = 5, withSpinner(tableOutput("tbl_eval_text")))
+                        ),
+                    
+                      box(title = "Check if model is better than random guess or not",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                        column(width = 7, withSpinner(highchartOutput("eval_theilu", width = "100%", height = 350))),
+                        column(width = 5, withSpinner(tableOutput("tbl_eval_text_theilu")))
+                        )
+                      )
+                    )
                   )
                 ),
 

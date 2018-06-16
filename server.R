@@ -579,7 +579,7 @@ shinyServer(function(input, output, session) {
     highchart() %>% 
       hc_title(text = "Top 10 Deadliest Terrorist Groups") %>%
       hc_subtitle(text = "By total number of fatalities (nkill + nwound) and from year 2010 onward") %>%
-      hc_add_theme(hc_theme_sandsignika()) %>%
+      # hc_add_theme(hc_theme_sandsignika()) %>%
       hc_add_series_labels_values(by_groups$group_name, by_groups$total, name = "Show/ hide bar chart", showInLegend=F,
                                   dataLabels = list(align = "center", enabled = TRUE),
                                   colors = substr(heat.colors(10), 0 , 7),
@@ -612,7 +612,7 @@ shinyServer(function(input, output, session) {
 
     highchart() %>% 
       hc_title(text = "Frequent Attack Types and Target Types") %>%
-      hc_add_theme(hc_theme_sandsignika()) %>%
+      # hc_add_theme(hc_theme_sandsignika()) %>%
       hc_add_series_labels_values(group_attack_type$attack_type, group_attack_type$count, 
                                   colors = substr(heat.colors(9), 0 , 7),
                                   type = "pie", innerSize= '40%', size= "50%", showInLegend=F,
@@ -639,7 +639,7 @@ shinyServer(function(input, output, session) {
 
     highchart() %>% 
       hc_title(text = "Frequent Target Nationality") %>%
-      hc_add_theme(hc_theme_sandsignika()) %>%
+      # hc_add_theme(hc_theme_sandsignika()) %>%
       hc_add_series_labels_values(group_target_nalty$target_nalty, group_target_nalty$count, 
                                   colors = substr(heat.colors(10), 0 , 7),
                                   type = "bar", showInLegend=F,
@@ -661,7 +661,7 @@ shinyServer(function(input, output, session) {
     hchart(group_year, "line", hcaes(year, count)) %>%
       hc_yAxis(title = list(text = "Total attacks"), labels = list(format = "{value}"), max = 5000) %>% 
       hc_title(text = "Yearwise Activity") %>%
-      hc_add_theme(hc_theme_sandsignika()) %>%
+      # hc_add_theme(hc_theme_sandsignika()) %>%
       hc_tooltip(pointFormat = "{point.y}")
 
     })
@@ -1173,6 +1173,13 @@ shinyServer(function(input, output, session) {
     #------------------------------------------------
     # Sidebar : time-series analysis
     #------------------------------------------------
+    output$ts_fc_goal <- renderUI ({
+          radioButtons(inputId = "ts_fc_goal", label = "Forecasting goal", 
+                       choices = c("Number of attacks", 
+                                   "Fatalities (nkill)", 
+                                   "Fatalities (nwound)"), 
+                       selected = "Number of attacks", inline = FALSE)
+      })
 
     output$ts_filter_country <- renderUI({    
           selectizeInput(inputId = "ts_filter_country", label = "Select country", choices = sort(unique(df$country)), 
@@ -1184,7 +1191,7 @@ shinyServer(function(input, output, session) {
         })
 
     output$ts_attack_freq <- renderUI ({
-          radioButtons(inputId = "ts_attack_freq", label = "Attack frequency", 
+          radioButtons(inputId = "ts_attack_freq", label = "Time-series frequency", 
                        choices = c("Monthly", "Quarterly"), selected = "Monthly", inline = FALSE)
       })
 
@@ -1203,7 +1210,7 @@ shinyServer(function(input, output, session) {
       })
 
     output$ts_slider_nn_repeats <- renderUI({ 
-      sliderInput("ts_slider_nn_repeats", label = "nnet (repeats)", min = 5, max = 15, value = 10, step = 1)
+      sliderInput("ts_slider_nn_repeats", label = "nnet (repeats)", min = 1, max = 15, value = 10, step = 1)
       })
 
     #---------------------------------------
@@ -1211,94 +1218,211 @@ shinyServer(function(input, output, session) {
     #---------------------------------------
     ts_data <- reactive({
 
+      # filtered data based on year and country selected
       data <- df
       data <- data[data$year >= input$ts_filter_year[1] & data$year <= input$ts_filter_year[2], ]
       data <- data[data$country %in% input$ts_filter_country, ]
 
-      # Extract data by user selected attack frequency
+      #----------------------------------------------
+      # Choice 1: Extract data for number of attacks
+      #----------------------------------------------
+      if(input$ts_fc_goal == "Number of attacks") {
 
-      if(input$ts_attack_freq == "Monthly") {
+        # Extract data by user selected attack frequency
+        if(input$ts_attack_freq == "Monthly") {
 
-          #---------------------------------------
-          # Monthly time-series data
-          #---------------------------------------
-          data <- data %>%
-            mutate(month = month(date),
-                   month_year = paste(year, month,sep="-"),
-                   month_year = zoo::as.yearmon(month_year)) %>%
-            group_by(year, month) %>%
-            summarise(attack_count = n()) %>%
-            ungroup() %>%
-            group_by(year) %>%
-            tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(attack_count = 0)) %>%
-            ungroup()
+            #---------------------------------------
+            # Monthly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(month = month(date),
+                     month_year = paste(year, month,sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              group_by(year, month) %>%
+              summarise(total_count = n()) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
 
-          data <- data %>%
-            mutate(month_year = paste(year, month, sep="-"),
-                   month_year = zoo::as.yearmon(month_year)) %>%
-            select(month_year, attack_count)
+            data <- data %>%
+              mutate(month_year = paste(year, month, sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              select(month_year, total_count)
 
-          # Create a ts object
-          data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
-          data <- na.kalman(data)
-
-      }
-
-      if(input$ts_attack_freq == "Quarterly") {
-    
-          #---------------------------------------
-          # Quarterly time-series data
-          #---------------------------------------
-          data <- data %>%
-            mutate(quarter = Quarter(date),
-                   quarter_year = paste(year, quarter, sep="-"),
-                   quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
-            group_by(year, quarter) %>%
-            summarise(attack_count = n()) %>%
-            ungroup() %>%
-            group_by(year) %>%
-            tidyr::complete(quarter = full_seq(seq(1:4), 1L), fill = list(attack_count = 0)) %>%
-            ungroup()
-
-          data <- data %>%
-            mutate(quarter_year = paste(year, quarter, sep="-"),
-                   quarter_year = zoo::as.yearqtr(quarter_year)) %>%
-            select(quarter_year, attack_count)
-
-          # Create a ts object
-          data <- ts(data[, 2], start = Year(min(data$quarter_year)), frequency = 4) # 1=annual, 4=quartly, 12=quarterly
-          data <- na.kalman(data)
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
+            data <- na.kalman(data)
 
         }
 
-      # if(input$ts_attack_freq == "Annual") {
+        if(input$ts_attack_freq == "Quarterly") {
+      
+            #---------------------------------------
+            # Quarterly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(quarter = Quarter(date),
+                     quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              group_by(year, quarter) %>%
+              summarise(total_count = n()) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(quarter = full_seq(seq(1:4), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
 
-      #     #---------------------------------------
-      #     # Yearly time-series data
-      #     #---------------------------------------
-      #     if(input$ts_filter_year[1] <= 1993){
-      #       data <- data %>%
-      #         add_row(date = as.Date("1993-01-01"), year = 1993) %>% # add missing year for timeseries purpose
-      #         group_by(year) %>%
-      #         summarise(attack_count = n()) %>%
-      #         mutate(attack_count = ifelse(year == 1993, 0, attack_count)) %>% # set 0 to attack_count where year is 1993 (which is missing)
-      #         ungroup() %>%
-      #         select(year, attack_count)
-      #     }
-      #     else{
-      #       data <- data %>%
-      #         group_by(year) %>%
-      #         summarise(attack_count = n()) %>%
-      #         ungroup() %>%
-      #         select(year, attack_count)
-      #     }
+            data <- data %>%
+              mutate(quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = zoo::as.yearqtr(quarter_year)) %>%
+              select(quarter_year, total_count)
 
-      #     # Create a ts object
-      #     data <- ts(data[, 2], start = min(data$year), frequency = 1) # 1=annual, 4=quartly, 12=yearly
-      #     data <- na.kalman(data)
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$quarter_year)), frequency = 4) # 1=annual, 4=quartly, 12=quarterly
+            data <- na.kalman(data)
 
-      # }
+          }
+      }
 
+      #----------------------------------------------
+      # Choice 2: Extract data for nkills
+      #----------------------------------------------
+      if(input$ts_fc_goal == "Fatalities (nkill)") {
+
+        # if multiple channels report different count for same attack then select the one which is maximumn
+        data <- data %>% 
+          replace_na(list(nkill = 0)) %>% 
+          group_by(group_name, region, year, month) %>% 
+          filter(if_else(part_of_multiple_attacks == 1, nkill == max(nkill), nkill == nkill)) %>%
+          ungroup()
+
+        # Extract data by user selected attack frequency
+        if(input$ts_attack_freq == "Monthly") {
+
+            #---------------------------------------
+            # Monthly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(month = month(date),
+                     month_year = paste(year, month,sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              group_by(year, month) %>%
+              summarise(total_count = sum(nkill)) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
+
+            data <- data %>%
+              mutate(month_year = paste(year, month, sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              select(month_year, total_count)
+
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
+            data <- na.kalman(data)
+
+        }
+
+        if(input$ts_attack_freq == "Quarterly") {
+      
+            #---------------------------------------
+            # Quarterly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(quarter = Quarter(date),
+                     quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              group_by(year, quarter) %>%
+              summarise(total_count = sum(nkill)) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(quarter = full_seq(seq(1:4), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
+
+            data <- data %>%
+              mutate(quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = zoo::as.yearqtr(quarter_year)) %>%
+              select(quarter_year, total_count)
+
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$quarter_year)), frequency = 4) # 1=annual, 4=quartly, 12=quarterly
+            data <- na.kalman(data)
+
+          }
+
+      }
+
+
+      #----------------------------------------------
+      # Choice 3: Extract data for nwounds
+      #----------------------------------------------
+      if(input$ts_fc_goal == "Fatalities (nwound)") {
+
+        # if multiple channels report different count for same attack then select the one which is maximumn
+        data <- data %>% 
+          replace_na(list(nwound = 0)) %>% 
+          group_by(group_name, region, year, month) %>% 
+          filter(if_else(part_of_multiple_attacks == 1, nwound == max(nwound), nwound == nwound)) %>%
+          ungroup()
+
+        # Extract data by user selected attack frequency
+        if(input$ts_attack_freq == "Monthly") {
+
+            #---------------------------------------
+            # Monthly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(month = month(date),
+                     month_year = paste(year, month,sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              group_by(year, month) %>%
+              summarise(total_count = sum(nwound)) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
+
+            data <- data %>%
+              mutate(month_year = paste(year, month, sep="-"),
+                     month_year = zoo::as.yearmon(month_year)) %>%
+              select(month_year, total_count)
+
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$month_year)), frequency = 12) # 1=annual, 4=quartly, 12=monthly
+            data <- na.kalman(data)
+
+        }
+
+        if(input$ts_attack_freq == "Quarterly") {
+      
+            #---------------------------------------
+            # Quarterly time-series data
+            #---------------------------------------
+            data <- data %>%
+              mutate(quarter = Quarter(date),
+                     quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              group_by(year, quarter) %>%
+              summarise(total_count = sum(nwound)) %>%
+              ungroup() %>%
+              group_by(year) %>%
+              tidyr::complete(quarter = full_seq(seq(1:4), 1L), fill = list(total_count = 0)) %>%
+              ungroup()
+
+            data <- data %>%
+              mutate(quarter_year = paste(year, quarter, sep="-"),
+                     quarter_year = zoo::as.yearqtr(quarter_year)) %>%
+              select(quarter_year, total_count)
+
+            # Create a ts object
+            data <- ts(data[, 2], start = Year(min(data$quarter_year)), frequency = 4) # 1=annual, 4=quartly, 12=quarterly
+            data <- na.kalman(data)
+
+          }
+      }
+
+      # return data based on choice (by attack counts/ nkills/ nwounds)
       return(data)
     })
 
@@ -1308,58 +1432,58 @@ shinyServer(function(input, output, session) {
     #-------------------------------------
 
     output$ts_line <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_plot(attack_counts, line.mode = "lines+markers")
+      total_counts <- ts_data()
+      ts_plot(total_counts, line.mode = "lines+markers")
     })
 
     output$ts_cycle <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_seasonal(attack_counts, type = "cycle")      
+      total_counts <- ts_data()
+      ts_seasonal(total_counts, type = "cycle")      
     })
 
     output$ts_normal <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_seasonal(attack_counts, type = "normal")      
+      total_counts <- ts_data()
+      ts_seasonal(total_counts, type = "normal")      
     })
 
     output$ts_box <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_seasonal(attack_counts, type = "box")      
+      total_counts <- ts_data()
+      ts_seasonal(total_counts, type = "box")      
     })
 
     output$ts_heatmap <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_heatmap(attack_counts)      
+      total_counts <- ts_data()
+      ts_heatmap(total_counts)      
     })
 
     output$ts_surface <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_surface(attack_counts)      
+      total_counts <- ts_data()
+      ts_surface(total_counts)      
     })
 
     output$ts_polar <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_polar(attack_counts, width = 470, height = 500)      
+      total_counts <- ts_data()
+      ts_polar(total_counts, width = 470, height = 500)      
     })
 
     output$ts_decompose <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_decompose(attack_counts, type = "both")     
+      total_counts <- ts_data()
+      ts_decompose(total_counts, type = "both")     
     })
   
     output$ts_acf <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_acf(attack_counts, lag.max = 36)      
+      total_counts <- ts_data()
+      ts_acf(total_counts, lag.max = 36)      
     })
 
     output$ts_pacf <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_pacf(attack_counts, lag.max = 36)      
+      total_counts <- ts_data()
+      ts_pacf(total_counts, lag.max = 36)      
     })
     
     output$ts_lag <- renderPlotly({
-      attack_counts <- ts_data()
-      ts_lags(attack_counts)      
+      total_counts <- ts_data()
+      ts_lags(total_counts)      
     })
 
 
@@ -1381,8 +1505,8 @@ shinyServer(function(input, output, session) {
 
       # Building a models on the training set
       fit_arima <- auto.arima(train, lambda = BoxCox.lambda(train))
-      fit_tbats <- tbats(train)
-      fit_ets   <- ets(train)
+      fit_tbats <- tbats(train, lambda = BoxCox.lambda(train))
+      fit_ets   <- ets(train, lambda = BoxCox.lambda(train))
 
       # Accuracy check/ Forecast evaluation for each models
       fc_arima <- forecast(fit_arima, h = input$ts_slider_horizon)
@@ -1414,7 +1538,7 @@ shinyServer(function(input, output, session) {
       test  <- data$test
 
       # Building a models on the training set
-      fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats)
+      fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats, lambda = BoxCox.lambda(train))
 
       # Accuracy check/ Forecast evaluation for each models
       fc_nn    <- forecast(fit_nn, h = input$ts_slider_horizon)
@@ -1518,7 +1642,7 @@ shinyServer(function(input, output, session) {
       fc_arima      <- forecast_data$fc_arima
       test          <- forecast_data$test
 
-      knitr::kable(t(round(accuracy(fc_arima$mean, test), 3)), caption = "Mean accuracy") %>% 
+      knitr::kable(t(round(accuracy(fc_arima$mean, test), 3)), caption = "Validation result: ") %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "black", background = "#dee2ed")
 
@@ -1530,7 +1654,7 @@ shinyServer(function(input, output, session) {
       fc_nn         <- forecast_data$fc_nn
       test          <- forecast_data$test
 
-      knitr::kable(t(round(accuracy(fc_nn$mean, test), 3)), caption = "Mean accuracy") %>% 
+      knitr::kable(t(round(accuracy(fc_nn$mean, test), 3)), caption = "Validation result: ") %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "black", background = "#dee2ed")
 
@@ -1542,7 +1666,7 @@ shinyServer(function(input, output, session) {
       fc_tbats      <- forecast_data$fc_tbats
       test          <- forecast_data$test
 
-      knitr::kable(t(round(accuracy(fc_tbats$mean, test), 3)), caption = "Mean accuracy") %>% 
+      knitr::kable(t(round(accuracy(fc_tbats$mean, test), 3)), caption = "Validation result: ") %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "black", background = "#dee2ed")
 
@@ -1554,9 +1678,110 @@ shinyServer(function(input, output, session) {
       fc_ets        <- forecast_data$fc_ets
       test          <- forecast_data$test
 
-      knitr::kable(t(round(accuracy(fc_ets$mean, test), 3)), caption = "Mean accuracy") %>% 
+      knitr::kable(t(round(accuracy(fc_ets$mean, test), 3)), caption = "Validation result: ") %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    # reactive data for model comparison
+    data_model_compare <- reactive({
+
+      fc_arima  <- ts_forecast_data()$fc_arima
+      fc_nn     <- ts_forecast_data_nn()$fc_nn
+      fc_tbats  <- ts_forecast_data()$fc_tbats
+      fc_ets    <- ts_forecast_data()$fc_ets
+      test      <- ts_forecast_data()$test
+
+      metrics  <- rbind(as.data.frame(round(accuracy(fc_arima$mean, test), 3)),
+                        as.data.frame(round(accuracy(fc_nn$mean, test), 3)),
+                        as.data.frame(round(accuracy(fc_tbats$mean, test), 3)),
+                        as.data.frame(round(accuracy(fc_ets$mean, test), 3))) %>% 
+                  add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), .before = "ME") %>% 
+                  arrange(MAPE)
+
+      return(metrics)
+
+    })
+
+    # Performance evaluation (accurace comparison)
+    output$tbl_eval_compare <- function() {
+
+      metrics <- data_model_compare()
+
+      knitr::kable(metrics) %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = T, position = "left") %>%
+        column_spec(1, bold = T, color = "black") %>%
+        column_spec(2:8, color = "black", background = "#dee2ed") %>%
+        column_spec(6, color = "black", background = "#c7cfe5") %>%
+        row_spec(1, background = "#c7cfe5")
+
+    }
+
+    output$eval_theilu <- renderHighchart({
+
+      metrics <- data_model_compare()
+
+      colnames(metrics)[8] <- "theils_U"
+      metrics <- metrics %>% arrange(theils_U)
+      highchart() %>% 
+        hc_subtitle(text = "Model evaluation by Theil's U statistic score") %>%
+        hc_xAxis(categories = metrics$models, 
+                 title = list(text = "Name of the model")) %>% 
+        hc_yAxis(title = list(text = "Theil's U Score"),
+                              plotLines = list(list(
+                                          color = "#FF0000",
+                                          width = 2,
+                                          value = 1)),
+                              plotBands = list(list(
+                                          # label = list(text = "Any model in this region is worst than random guess as per Theil's U"),
+                                          from = 1, 
+                                          to = JS("Infinity"), 
+                                          color = "rgba(100, 0, 0, 0.1)"))) %>%
+        hc_add_series(data = metrics$theils_U, colorByPoint = TRUE, type = "column", showInLegend = F)
+
+    })
+
+    output$tbl_eval_text <- function() {
+
+      text_tbl <- data.frame(
+                    Metric = c("ME", "RMSE", "MAE", "MPE", "MAPE", "ACF1", "Theil’s U"),
+                    Interpretation = c(
+                      "Mean Error: Scale-dependent error, lower better",
+                      "Root Mean Squared Error: Scale-dependent error, lower better", 
+                      "Mean Absolute Error: Scale-dependent error, lower better",
+                      "Mean Percentage Error: Percentage error, lower better", 
+                      "Mean Absolute Percent Error: Percentage error, lower better", 
+                      "First-order autocorrelation", 
+                      "Relative accuracy. Less than one means better than guessing"
+                       )
+                  )
+      knitr::kable(text_tbl) %>%
+        kable_styling(full_width = F) %>%
+        column_spec(1, bold = T, border_right = F) %>%
+        column_spec(2, background = "#dee2ed")%>%
+        row_spec(5, background = "#dee2ed")
+
+    }
+
+    output$tbl_eval_text_theilu <- function() {
+
+      text_tbl <- data.frame(
+                    Term = c("Theil’s U statistic: ", "score < 1", "score = 1", "score > 1"),
+                    Interpretation = c(
+                      "Theil’s U statistic is a relative accuracy measure that compares the forecasted results with the results of forecasting 
+                       with minimal historical data. It also squares the deviations to give more weight to large errors and to exaggerate errors, 
+                       which can help eliminate methods with large errors.",
+                      "The forecasting technique is better than guessing", 
+                      "The forecasting technique is about as good as guessing",
+                      "The forecasting technique is worse than guessing"
+                       )
+                  )
+      knitr::kable(text_tbl) %>%
+        kable_styling(full_width = F) %>%
+        column_spec(1, bold = T, border_right = F) %>%
+        column_spec(2, background = "#dee2ed") %>%
+        row_spec(2, background = "#dee2ed")
 
     }
 
@@ -1579,14 +1804,20 @@ shinyServer(function(input, output, session) {
       act_data  <- ts_data()
       fore      <- arima_preds()
 
+      act_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Actual number of attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
+
+      fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
-                  color = I("#487caf"), name = "Actual number of attacks") %>%
+                  color = I("#487caf"), name = act_label) %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
                     color = I("gray90"), name = "95% confidence") %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
                     color = I("gray85"), name = "80% confidence") %>%
-        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = fore_label) %>% 
         layout(legend = list(x = 0.1, y = 0.9)) 
 
     })
@@ -1598,7 +1829,10 @@ shinyServer(function(input, output, session) {
       names(tbl)    <- c("time_period", "forecast")
       tbl$forecast  <- round(tbl$forecast)
 
-      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+      cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
+      knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "white", background = "#a05050") 
 
@@ -1619,14 +1853,20 @@ shinyServer(function(input, output, session) {
       act_data  <- ts_data()
       fore      <- nnetar_preds()
 
+      act_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Actual number of attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
+
+      fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
-                  color = I("#487caf"), name = "Actual number of attacks") %>%
+                  color = I("#487caf"), name = act_label) %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
                     color = I("gray90"), name = "95% confidence") %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
                     color = I("gray85"), name = "80% confidence") %>%
-        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = fore_label) %>% 
         layout(legend = list(x = 0.1, y = 0.9)) 
 
     })
@@ -1638,7 +1878,10 @@ shinyServer(function(input, output, session) {
       names(tbl)    <- c("time_period", "forecast")
       tbl$forecast  <- round(tbl$forecast)
 
-      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+      cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
+      knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "white", background = "#a05050") 
 
@@ -1659,14 +1902,20 @@ shinyServer(function(input, output, session) {
       act_data  <- ts_data()
       fore      <- tbats_preds()
 
+      act_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Actual number of attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
+
+      fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
-                  color = I("#487caf"), name = "Actual number of attacks") %>%
+                  color = I("#487caf"), name = act_label) %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
                     color = I("gray90"), name = "95% confidence") %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
                     color = I("gray85"), name = "80% confidence") %>%
-        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = fore_label) %>% 
         layout(legend = list(x = 0.1, y = 0.9)) 
 
     })
@@ -1678,7 +1927,10 @@ shinyServer(function(input, output, session) {
       names(tbl)    <- c("time_period", "forecast")
       tbl$forecast  <- round(tbl$forecast)
 
-      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+      cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
+      knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "white", background = "#a05050") 
 
@@ -1699,14 +1951,20 @@ shinyServer(function(input, output, session) {
       act_data  <- ts_data()
       fore      <- ets_preds()
 
+      act_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Actual number of attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
+
+      fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
-                  color = I("#487caf"), name = "Actual number of attacks") %>%
+                  color = I("#487caf"), name = act_label) %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 2], ymax = fore$upper[, 2],
                     color = I("gray90"), name = "95% confidence") %>%
         add_ribbons(x = time(fore$mean), ymin = fore$lower[, 1], ymax = fore$upper[, 1],
                     color = I("gray85"), name = "80% confidence") %>%
-        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = "Forecasted number of attacks") %>% 
+        add_lines(x = time(fore$mean), y = fore$mean, color = I("orange"), name = fore_label) %>% 
         layout(legend = list(x = 0.1, y = 0.9)) 
 
     })
@@ -1718,11 +1976,15 @@ shinyServer(function(input, output, session) {
       names(tbl)    <- c("time_period", "forecast")
       tbl$forecast  <- round(tbl$forecast)
 
-      knitr::kable(tbl, caption = "Forecasted attacks") %>% 
+      cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+
+      knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
         column_spec(2, bold = T, color = "white", background = "#a05050") 
 
     }
+
 
   }) # End of shinyServer logic
 
