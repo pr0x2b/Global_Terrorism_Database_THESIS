@@ -649,6 +649,18 @@ body <- dashboardBody(
                         column(width = 2, 
                           withSpinner(tableOutput("tbl_fc_prediction_ets")))
                         )
+                    )), 
+
+                  tabPanel("Ensemble", 
+                    fluidRow(
+                      box(title = "Ensemble of all models",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                        fluidRow(
+                          column(width = 12, 
+                            withSpinner(highchartOutput("plot_ensemble", width = "100%", height = 350)))),
+                        fluidRow(
+                          column(width = 6, 
+                          withSpinner(tableOutput("tbl_fc_prediction_ensemble"))))
+                        )
                     ))
                   )
                 ) # end of tab panels

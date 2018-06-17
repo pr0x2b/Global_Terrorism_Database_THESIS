@@ -1985,7 +1985,54 @@ shinyServer(function(input, output, session) {
 
     }
 
+    # reactive data for ensemble
+    ensemble_data <- reactive({
 
+      tbl_arima   <- timetk::tk_tbl(round(arima_preds()$mean)) 
+      tbl_nn      <- timetk::tk_tbl(round(nnetar_preds()$mean))
+      tbl_tbats   <- timetk::tk_tbl(round(tbats_preds()$mean))
+      tbl_ets     <- timetk::tk_tbl(round(ets_preds()$mean))
+
+      tbl <- tbl_arima %>% 
+          left_join(tbl_nn, by = "index") %>% 
+          left_join(tbl_tbats, by = "index") %>% 
+          left_join(tbl_ets, by = "index")
+
+      names(tbl) <- c("Time period", "Arima", "NN", "TBATS", "ETS")
+      tbl$Ensemble <- round(rowMeans(tbl[,2:5]))
+
+      return(tbl)
+
+    })
+
+    output$tbl_fc_prediction_ensemble <- function() {
+
+      tbl <- ensemble_data()
+      cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Ensembled forecast for future attacks", 
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Ensembled forecast for future fatalities (nkill)", 
+                             "Ensembled forecast for future fatalities (nwound)"))
+
+      knitr::kable(tbl, caption = cap_label) %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(1:5, color = "black", background = "#dee2ed") %>%
+        column_spec(6, bold = T, color = "black", background = "#c7cfe5") 
+
+    }
+
+    output$plot_ensemble <- renderHighchart({
+
+      tbl <- ensemble_data()
+
+      highchart() %>% 
+        hc_subtitle(text = "Ensembled forecast") %>%
+        hc_xAxis(categories = as.character(tbl$"Time period"), 
+                 title = list(text = "Time period")) %>% 
+        hc_yAxis(title = list(text = "Ensembled forcast")) %>%
+        hc_add_series(data = tbl$Ensemble, type = "line", showInLegend = F) %>%
+        hc_add_theme(hc_theme_ffx()) %>%
+        hc_tooltip(pointFormat = "{point.y}") 
+
+    })
   }) # End of shinyServer logic
 
 
