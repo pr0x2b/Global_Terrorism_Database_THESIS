@@ -1503,6 +1503,8 @@ shinyServer(function(input, output, session) {
       train <- data$train
       test  <- data$test
 
+      set.seed(84)
+
       # Building a models on the training set
       fit_arima <- auto.arima(train, lambda = BoxCox.lambda(train))
       fit_tbats <- tbats(train, lambda = BoxCox.lambda(train))
@@ -1538,6 +1540,7 @@ shinyServer(function(input, output, session) {
       test  <- data$test
 
       # Building a models on the training set
+      set.seed(84)
       fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats, lambda = BoxCox.lambda(train))
 
       # Accuracy check/ Forecast evaluation for each models
@@ -1792,6 +1795,7 @@ shinyServer(function(input, output, session) {
     # reactive data
     arima_preds <- reactive({
 
+      set.seed(84)
       act_data  <- ts_data()
       fit       <- auto.arima(act_data)
       fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
@@ -1841,6 +1845,7 @@ shinyServer(function(input, output, session) {
     # reactive data
     nnetar_preds <- reactive({
 
+      set.seed(84)
       act_data  <- ts_data()
       fit       <- nnetar(act_data, repeats = input$ts_slider_nn_repeats)
       fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95), PI = TRUE)
@@ -1889,7 +1894,7 @@ shinyServer(function(input, output, session) {
 
     # reactive data
     tbats_preds <- reactive({
-
+      set.seed(84)
       act_data  <- ts_data()
       fit       <- tbats(act_data)
       fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
@@ -1938,7 +1943,7 @@ shinyServer(function(input, output, session) {
 
     # reactive data
     ets_preds <- reactive({
-
+      set.seed(84)
       act_data  <- ts_data()
       fit       <- ets(act_data)
       fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
@@ -2033,7 +2038,213 @@ shinyServer(function(input, output, session) {
         hc_tooltip(pointFormat = "{point.y}") 
 
     })
+
+    #--------------------------------------------------------
+    # Part 5: Classification with LightGBM
+    #--------------------------------------------------------
+
+    output$lgb_filter_country <- renderUI({    
+          selectizeInput(inputId = "lgb_filter_country", label = "Select country", choices = sort(unique(df_class$country)), 
+                         selected = sort(unique(df_class$country))[1], multiple = TRUE)
+        })
+
+    output$lgb_target_var <- renderUI({    
+          pickerInput(inputId = "lgb_target_var", label = "Target variable", 
+                      choices = list(Binary = c("suicide_attack", "attack_success", "extended", "part_of_multiple_attacks", 
+                                                 "crit1_pol_eco_rel_soc", "crit2_publicize", "crit3_os_intl_hmn_law")), 
+                      selected = "suicide_attack", options = list(`actions-box` = TRUE), inline = FALSE, multiple = FALSE)
+        })
+
+
+    # reactive data for target var
+    target_var_data <- reactive({
+
+      if(input$lgb_target_var == "suicide_attack"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(suicide_attack) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "attack_success"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(attack_success) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "extended"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(extended) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "part_of_multiple_attacks"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(part_of_multiple_attacks) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "crit1_pol_eco_rel_soc"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit1_pol_eco_rel_soc) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "crit2_publicize"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit2_publicize) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+      if(input$lgb_target_var == "crit3_os_intl_hmn_law"){
+        data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit3_os_intl_hmn_law) %>% summarize(count = n())
+        names(data) <- c("target_var", "count")
+      }
+
+      return(data)
+
+    })
+
+    output$plot_target_var <- renderHighchart({
+
+      data  <- target_var_data() 
+      label <- ifelse(input$lgb_target_var == "suicide_attack", "Suicide attack",
+               ifelse(input$lgb_target_var == "attack_success", "Attack success",
+               ifelse(input$lgb_target_var == "extended", "Extended attack (>24 hours)",
+               ifelse(input$lgb_target_var == "part_of_multiple_attacks", "Part of multiple attacks",
+               ifelse(input$lgb_target_var == "crit1_pol_eco_rel_soc", "Political/ Eco/ Religious goal",
+               ifelse(input$lgb_target_var == "crit2_publicize", "Intention to publicize",
+               ifelse(input$lgb_target_var == "crit3_os_intl_hmn_law", "Outside humanitarian law", "")))))))
+
+      highchart() %>% 
+        hc_title(text = paste0("Variable: ", label)) %>%
+        hc_xAxis(categories = data$target_var, title = list(text = label)) %>% 
+        hc_yAxis(title = list(text = "Total count")) %>%
+        hc_add_series(data = data$count, type = "column", showInLegend = F, colorByPoint = TRUE, dataLabels = list(enabled = TRUE, format='{point.y}')) %>%
+        hc_add_theme(hc_theme_ffx()) %>%
+        hc_tooltip(pointFormat = "{point.y}") 
+
+    })
+
+   output$vbox_tot_obs <- renderValueBox({
+
+    req(input$lgb_filter_country)
+    valueBox(df_class %>% filter(country %in% input$lgb_filter_country) %>% nrow(), "Total number of observations", icon = icon("database"), color = 'blue') 
+
+    })
+
+   output$vbox_year_range <- renderValueBox({
+
+    req(input$lgb_filter_country)
+    data <- df_class %>% filter(country %in% input$lgb_filter_country)
+    min_year <- min(data$year)
+    max_year <- max(data$year)
+    valueBox(paste0(min_year, " - ", max_year), "Data availability by years", icon = icon("calendar"), color = 'olive') 
+
+    })
+
+    output$dt_out_1 <- DT::renderDataTable({
+
+      df_class %>% 
+        filter(country %in% input$lgb_filter_country) %>% 
+        tail(20) %>% 
+        datatable(class="display", options = list(scrollX = TRUE, pageLength = 7, dom = "tp"))
+    })
+
+    #-----------------------------------------------------------------------------------------
+    # reactive data (feature engineered) 
+    #-----------------------------------------------------------------------------------------
+    data_lgb_model <- reactive({
+
+      data <- df_class %>% filter(country %in% input$lgb_filter_country)
+
+      #-------------------------------------------------------------
+      # Step 1: log transformation
+      #-------------------------------------------------------------
+      data <- data %>%  
+        mutate(nkill = log1p(nkill), 
+               nwound= log1p(nwound),
+               arms_export = log1p(arms_export + 0.01),
+               arms_import = log1p(arms_import + 0.01),
+               population = log1p(population + 0.01))
+
+      #--------------------------------------------------------------
+      # Step 2: label encode categorical data (lightgbm requirement)
+      #--------------------------------------------------------------
+      features= names(data)
+      for (f in features) {
+        if (class(data[[f]])=="character") {
+          levels <- unique(c(data[[f]]))
+          data[[f]] <- as.integer(factor(data[[f]], levels=levels))
+        }
+      }
+
+      #--------------------------------------------------------------
+      # Step 3: Add frequency count features
+      #--------------------------------------------------------------
+      data <- as.data.table(data)
+      data[, n_group_year:=.N,            by=list(group_name, year)]
+      data[, n_region_year:=.N,           by=list(region, year)]
+      data[, n_city_year:=.N,             by=list(city, year)]
+      data[, n_attack_year:=.N,           by=list(attack_type, year)]
+      data[, n_target_year:=.N,           by=list(target_type, year)]
+      data[, n_weapon_year:=.N,           by=list(weapon_type, year)]
+      data[, n_group_region_year:=.N,     by=list(group_name, region, year)]
+      data[, n_group:=.N,                 by=list(group_name)]
+      data[, n_provstate:=.N,             by=list(provstate)]
+      data[, n_city:=.N,                  by=list(city)]
+      data <- as.data.frame(data)
+
+      data[] <- lapply(data, as.numeric)
+      
+      #-------------------------------------------------------------
+      # Step 4: drop columns with near zero variance
+      #-------------------------------------------------------------
+      data <- data[,-nearZeroVar(data)]
+      
+      #--------------------------------------------------------------
+      # Step 5: Create train, test and validation split
+      #--------------------------------------------------------------
+
+      train <- data %>% filter(year <= 2014)
+      valid <- data %>% filter(year == 2015)
+      test  <- data %>% filter(year == 2016) 
+
+      data <- list(dfall = data,
+                   training_data = train, 
+                   validation_data = valid,
+                   test_data  = test)
+
+      return(data)
+
+    })
+
+    output$lgb_independent_vars <- renderUI({  
+      data <- data_lgb_model()$dfall
+      independent_vars <- names(data)[!(names(data) %in% input$lgb_target_var)]
+      pickerInput(inputId = "lgb_independent_vars", label = "Independent variables", 
+                  choices = independent_vars, 
+                  selected = independent_vars, options = list(`actions-box` = TRUE), inline = FALSE, multiple = TRUE)
+    })
+
+
+   output$vbox_train <- renderValueBox({
+    data <- data_lgb_model()$training_data
+    min_year <- min(data$year)
+    max_year <- max(data$year)
+    valueBox(paste0(min_year, " - ", max_year), "Training data", icon = icon("table"), color = 'olive') 
+
+    })
+
+   output$vbox_valid <- renderValueBox({
+    data <- data_lgb_model()$validation_data
+    valueBox(unique(data$year), "Validation data", icon = icon("table"), color = 'blue') 
+
+    })  
+
+   output$vbox_test <- renderValueBox({
+    data <- data_lgb_model()$test_data
+    valueBox(unique(data$year), "Test data", icon = icon("table"), color = 'red') 
+
+    })
+
+   output$lgb_split_str_train <- renderPrint({ 
+    str(data_lgb_model()$training_data)
+    })
+
+   output$lgb_split_str_valid <- renderPrint({ 
+    str(data_lgb_model()$validation_data)
+    })
+
+   output$lgb_split_str_test <- renderPrint({ 
+    str(data_lgb_model()$test_data)
+    })
+
   }) # End of shinyServer logic
-
-
-

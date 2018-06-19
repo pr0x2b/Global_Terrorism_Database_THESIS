@@ -20,15 +20,15 @@ sidebar <- dashboardSidebar(
       menuItem("Part 1: Impact Analysis", icon = icon("globe"),tabName = "part_1",
         menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
         menuSubItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps")),
-      menuItem("Part 2: Active Groups", tabName = "eda_p2", icon = icon("user")),
-      menuItem("Part 3: Statistical Analysis", tabName = "gui", icon = icon("gears")),
-      menuItem("Part 4: Time-series Analysis", tabName = "part_4", icon = icon("home"),
-        menuSubItem("By attacks", tabName = "ts_analysis_01_season", icon = icon("gears"))),
-      menuItem("Part 5: Modeling", tabName = "modelling", icon = icon("gears"),
+      menuItem("Part 2: Active Groups", tabName = "eda_p2", icon = icon("users")),
+      menuItem("Part 3: Statistical Analysis", tabName = "gui", icon = icon("bar-chart-o")),
+      menuItem("Part 4: Time-series Analysis", tabName = "ts_analysis_01_season", icon = icon("calendar")),
+      menuItem("Part 5: classification", tabName = "classification", icon = icon("gears")),
+      menuItem("Part 6: Modelling", tabName = "modelling", icon = icon("gears"),
         menuSubItem("Modelling_1", tabName = "m1", icon = icon("gears")),
         menuSubItem("Modelling_2", tabName = "m2", icon = icon("gears")),
         menuSubItem("Modelling_3", tabName = "m3", icon = icon("gears"))),
-      menuItem("Part 5: Insights", tabName = "predictions", icon = icon("globe")),
+      menuItem("Part 7: Insights", tabName = "predictions", icon = icon("globe")),
       menuItem("Next steps", tabName = "predictions6", icon = icon("globe")),
       br(), br(), br(), 
       menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
@@ -669,17 +669,97 @@ body <- dashboardBody(
         ))),
 
 
+
+    #-------------------------------- 
+    # Part 5: Classification Models
     #------------------------------- 
-    # section 4: Predictions tab
-    #------------------------------- 
-    tabItem(tabName = "predictions",
-      fluidPage(title = "To dos....",
-        column(width = 12,
-          box(title = "To dos...", status = "primary", width = 12, collapsible = TRUE, solidHeader = TRUE,
-            box(width = 6, status = "warning", title = "To dos...")),
-          box(width = 12, title = "To dos part 2...", status = "primary", solidHeader = TRUE, collapsible = TRUE,
-            box(width = 6, style = "font-size: 120%;", style = "color: #444", status = "primary", withMathJax())),
-          box(width = 6, status = "warning", solidHeader = F, p("")))))
+    tabItem(tabName = "classification",
+      fluidPage(title = "classification",
+        fluidRow(
+            sidebarPanel(width = 2,
+              uiOutput("lgb_filter_country"),
+              uiOutput("lgb_target_var"),
+              conditionalPanel(
+                condition = " input.classification_lgb ==  'Data preparation' ",
+                uiOutput("lgb_independent_vars"))              
+              ),
+
+        column(width = 10,  
+          navbarPage("Classification", id = "classification_lgb", 
+
+            tabPanel("Overview", 
+                  fluidRow(
+                    box(title = "Overview of target variable and data",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 4,
+                        withSpinner(highchartOutput("plot_target_var", width = "100%", height = 450))),
+                      column(width = 8,
+                        fluidRow(
+                          withSpinner(valueBoxOutput("vbox_tot_obs", width = 6)), 
+                          withSpinner(valueBoxOutput("vbox_year_range", width = 6))), 
+                        h4("Observations (last 20)"),
+                        tags$head(tags$style("#dt_out_1  {white-space: nowrap;  }")),
+                          withSpinner(dataTableOutput("dt_out_1", width = "100%", height = 350)))
+                      )
+                    )),
+
+            tabPanel("Data preparation", 
+                  fluidRow(
+                    box(title = "Overview of data after feature engineering and transformations",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      fluidRow(
+                        column(width = 4,
+                          box(
+                            h4("Feature engineering steps applied:"), hr(),
+                            style = "font-size: 110%; ", width = 15, solidHeader = FALSE,
+                            tags$ul(
+                              tags$li("log transformation"), 
+                              tags$li("label enconding for categorical features"), 
+                              tags$li("added frequency count features"), 
+                              tags$li("dropped features with near zero variance"), 
+                              tags$li("created train, valid and test split")))
+                          ),
+
+                        # column(width = 8,
+                        #   fluidRow(
+                        #     withSpinner(valueBoxOutput("vbox_train", width = 6)), 
+                        #     withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
+                        #     withSpinner(valueBoxOutput("vbox_test", width = 3)))
+                        #   )),
+
+                        column(width = 8,
+                          fluidRow(
+                            withSpinner(valueBoxOutput("vbox_train", width = 6)), 
+                            withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
+                            withSpinner(valueBoxOutput("vbox_test", width = 3))
+                            ),
+                          h4("Glimpse of prepared data"), 
+                          tabsetPanel(type = "tabs", id = "lgb_split_str",
+                              tabPanel("Training data", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(verbatimTextOutput("lgb_split_str_train"))
+                                  ))),
+                              tabPanel("Validation data", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(verbatimTextOutput("lgb_split_str_valid"))
+                                  ))),
+                              tabPanel("Test data", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(verbatimTextOutput("lgb_split_str_test"))
+                                  )))
+                              )
+                            )
+                        )
+
+                      )
+                    )
+                  ) # end of tab panel
+
+
+            )))))
+
+
 
     ) # End tab items
   ) # End dashboard body
