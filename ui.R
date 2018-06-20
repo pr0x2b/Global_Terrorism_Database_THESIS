@@ -680,59 +680,76 @@ body <- dashboardBody(
               uiOutput("lgb_filter_country"),
               uiOutput("lgb_target_var"),
               conditionalPanel(
-                condition = " input.classification_lgb ==  'Data preparation' ",
-                uiOutput("lgb_independent_vars"))              
-              ),
+                condition = " input.classification_lgb ==  'Data preparation' ", 
+                hr(),
+                h4("Help text:"),
+                p("Goal of this part is to predict class probabilities (Yes/No) for attacks in selected region")
+                )       
+              ), #end of sidebar panel
 
         column(width = 10,  
           navbarPage("Classification", id = "classification_lgb", 
 
-            tabPanel("Overview", 
-                  fluidRow(
-                    box(title = "Overview of target variable and data",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
-                      column(width = 4,
-                        withSpinner(highchartOutput("plot_target_var", width = "100%", height = 450))),
-                      column(width = 8,
-                        fluidRow(
-                          withSpinner(valueBoxOutput("vbox_tot_obs", width = 6)), 
-                          withSpinner(valueBoxOutput("vbox_year_range", width = 6))), 
-                        h4("Observations (last 20)"),
-                        tags$head(tags$style("#dt_out_1  {white-space: nowrap;  }")),
-                          withSpinner(dataTableOutput("dt_out_1", width = "100%", height = 350)))
-                      )
-                    )),
-
             tabPanel("Data preparation", 
                   fluidRow(
+                    box(title = "Overview of target variable and ASIS data",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      column(width = 4,
+                        withSpinner(highchartOutput("plot_target_var", width = "100%", height = 400))),
+                      column(width = 8,
+                        fluidRow(
+                          tags$div(title= paste("A value to consider, in order to control the balance of positive and negative weights."),
+                            valueBoxOutput("vbox_spw", width = 3)), 
+                          valueBoxOutput("vbox_tot_obs", width = 4), 
+                          valueBoxOutput("vbox_year_range", width = 5)), 
+                        h4("Observations (last 20)"),
+                        tags$head(tags$style("#dt_out_1  {white-space: nowrap;  }")),
+                          withSpinner(dataTableOutput("dt_out_1", width = "100%", height = 275)))
+                      ),
+
                     box(title = "Overview of data after feature engineering and transformations",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
                       fluidRow(
                         column(width = 4,
-                          box(
-                            h4("Feature engineering steps applied:"), hr(),
-                            style = "font-size: 110%; ", width = 15, solidHeader = FALSE,
-                            tags$ul(
-                              tags$li("log transformation"), 
-                              tags$li("label enconding for categorical features"), 
-                              tags$li("added frequency count features"), 
-                              tags$li("dropped features with near zero variance"), 
-                              tags$li("created train, valid and test split")))
+                          fluidRow(
+                            box(width = 12, status = "primary", title = "Data transformation overview:", style = "font-size: 115%; ",
+                              h4("Feature Engineering:"), 
+                              tags$ol(
+                                tags$li("log transformation"), 
+                                tags$li("categorical encoding"), 
+                                tags$li("added frequency count features")), 
+                                # tags$li("dropped features with near zero variance")),
+                              br(),
+                              h4("Validation strategy:"), 
+                              tags$ul(
+                                tags$li("create time based split"),
+                                tags$li("train model on training data"),
+                                tags$li("evaluate model performance on validation data"),
+                                tags$li("predict on test data")), br(),
+                              h4("Split strategy:"), 
+                              tags$ul(
+                                tags$li("training data: upto year 2014 only"),
+                                tags$li("validation data: year 2015"),
+                                tags$li("test data: year 2016"))
+                              )
+                            )
                           ),
-
-                        # column(width = 8,
-                        #   fluidRow(
-                        #     withSpinner(valueBoxOutput("vbox_train", width = 6)), 
-                        #     withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
-                        #     withSpinner(valueBoxOutput("vbox_test", width = 3)))
-                        #   )),
 
                         column(width = 8,
                           fluidRow(
-                            withSpinner(valueBoxOutput("vbox_train", width = 6)), 
-                            withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
-                            withSpinner(valueBoxOutput("vbox_test", width = 3))
-                            ),
+                            box(width = 12, status = "warning",
+                              title = "Time based split for modelling", 
+                              withSpinner(valueBoxOutput("vbox_train", width = 6)), 
+                              tags$head(tags$style(HTML("#vbox_valid .fa { font-size: 55px; }"))),
+                              withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
+                              tags$head(tags$style(HTML("#vbox_test .fa { font-size: 55px; }"))),
+                              withSpinner(valueBoxOutput("vbox_test", width = 3))
+                            )),
                           h4("Glimpse of prepared data"), 
                           tabsetPanel(type = "tabs", id = "lgb_split_str",
+                              tabPanel("All data (glimpse)", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(dataTableOutput("dt_out_all_split", width = "100%", height = 275))
+                                  ))),
                               tabPanel("Training data", 
                                 fluidRow(
                                   column(width = 12,
@@ -750,11 +767,64 @@ body <- dashboardBody(
                                   )))
                               )
                             )
-                        )
+                        ))
+                    )),
 
-                      )
-                    )
-                  ) # end of tab panel
+            tabPanel("Modeling", 
+              fluidRow(
+                box(title = "LightGBM Classifier", status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                      fluidRow(
+                        column(width = 4,
+                          fluidRow(
+                            box(width = 12, status = "primary", title = "Parameters tuning:",
+                            column(width = 6, 
+                              uiOutput("lgb_num_leaves"),
+                              uiOutput("lgb_max_depth"),
+                              uiOutput("lgb_bagging_fraction"), # subsample
+                              uiOutput("lgb_bagging_freq"),     # subsample_freq
+                              uiOutput("lgb_feature_fraction") # colsample_bytree
+                              ),
+                            column(width = 6, 
+                              uiOutput("lgb_scale_pos_weight"), 
+                              uiOutput("lgb_learning_rate"),
+                              uiOutput("lgb_nrounds"),
+                              uiOutput("lgb_early_stopping_rounds"),
+                              uiOutput("lgb_eval_freq"), hr(),
+                              tags$head(tags$style(HTML('#btn_lgb_model{background-color:orange}'))),
+                              actionButton(inputId = "btn_lgb_model", label = "Run model", icon = icon("cogs"), width = "100%")
+                              )
+                            )
+                            )
+                          ),
+
+                        column(width = 8,
+                          # fluidRow(
+                          #   box(width = 12, status = "success",
+                          #     title = "Model output", 
+                          #     tags$head(tags$style(HTML("#vbox_nthread .fa { font-size: 45px; }"))),
+                          #     withSpinner(valueBoxOutput("vbox_nthread", width = 4)), 
+                          #     tags$head(tags$style(HTML("#vbox_avil_mem .fa { font-size: 45px; }"))),
+                          #     withSpinner(valueBoxOutput("vbox_avil_mem", width = 4)), 
+                          #     tags$head(tags$style(HTML("#vbox_used_mem .fa { font-size: 45px; }"))),
+                          #     withSpinner(valueBoxOutput("vbox_used_mem", width = 4))
+                          #   )),
+                          tabsetPanel(type = "tabs", id = "lgb_model_output",
+                              tabPanel("log", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(highchartOutput("lgb_console_out", width = "100%", height = 300))
+                                  ))),
+                              tabPanel("Feature importance", 
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(highchartOutput("lgb_fi", width = "100%", height = 300))
+                                  )))
+                              )
+                            )
+                        ))
+
+                  )
+              ) # end of tab panel Modeling
 
 
             )))))

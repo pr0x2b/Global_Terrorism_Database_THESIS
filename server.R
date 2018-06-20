@@ -484,7 +484,7 @@ shinyServer(function(input, output, session) {
 
   output$slider_filter_total_attacks <- renderUI({ 
 
-      sliderInput("slider_filter_total_attacks", label = "Total number of attacks", min = 0, max = 1500, , value = c("0", "1500"))
+      sliderInput("slider_filter_total_attacks", label = "Total number of attacks", min = 0, max = 1500, value = c("0", "1500"))
 
     })
 
@@ -2048,42 +2048,73 @@ shinyServer(function(input, output, session) {
                          selected = sort(unique(df_class$country))[1], multiple = TRUE)
         })
 
-    output$lgb_target_var <- renderUI({    
-          pickerInput(inputId = "lgb_target_var", label = "Target variable", 
-                      choices = list(Binary = c("suicide_attack", "attack_success", "extended", "part_of_multiple_attacks", 
-                                                 "crit1_pol_eco_rel_soc", "crit2_publicize", "crit3_os_intl_hmn_law")), 
-                      selected = "suicide_attack", options = list(`actions-box` = TRUE), inline = FALSE, multiple = FALSE)
-        })
+    # output$lgb_target_var <- renderUI({    
+    #       pickerInput(inputId = "lgb_target_var", label = "Target variable", 
+    #                   choices = list(Binary = c("suicide_attack", "attack_success", "extended", "part_of_multiple_attacks", 
+    #                                              "crit1_pol_eco_rel_soc", "crit2_publicize", "crit3_os_intl_hmn_law")), 
+    #                   selected = "suicide_attack", options = list(`actions-box` = TRUE), inline = FALSE, multiple = FALSE)
+    #     })
 
+
+    output$lgb_target_var <- renderUI({    
+          prettyRadioButtons(inputId = "lgb_target_var", 
+                             label = "Target variable", 
+                             status = "success",
+                             choiceNames = c("Suicide attack", 
+                                              "Attack success", 
+                                              "Extended attack ", 
+                                              "Part of multiple attacks", 
+                                              "Pol/Eco goal", 
+                                              "Intention to publicize", 
+                                              "Outside humanitarian law"), 
+                             choiceValues = c("suicide_attack", 
+                                              "attack_success", 
+                                              "extended", 
+                                              "part_of_multiple_attacks", 
+                                              "crit1_pol_eco_rel_soc", 
+                                              "crit2_publicize", 
+                                              "crit3_os_intl_hmn_law"),
+                             selected = "suicide_attack",
+                             animation = "pulse",
+                             shape = "round")
+        })
 
     # reactive data for target var
     target_var_data <- reactive({
+      req(input$lgb_target_var)
 
       if(input$lgb_target_var == "suicide_attack"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(suicide_attack) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "attack_success"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(attack_success) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "extended"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(extended) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "part_of_multiple_attacks"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(part_of_multiple_attacks) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "crit1_pol_eco_rel_soc"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit1_pol_eco_rel_soc) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "crit2_publicize"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit2_publicize) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
       if(input$lgb_target_var == "crit3_os_intl_hmn_law"){
+        req(input$lgb_filter_country)
         data <- df_class %>% filter(country %in% input$lgb_filter_country) %>% group_by(crit3_os_intl_hmn_law) %>% summarize(count = n())
         names(data) <- c("target_var", "count")
       }
@@ -2097,14 +2128,14 @@ shinyServer(function(input, output, session) {
       data  <- target_var_data() 
       label <- ifelse(input$lgb_target_var == "suicide_attack", "Suicide attack",
                ifelse(input$lgb_target_var == "attack_success", "Attack success",
-               ifelse(input$lgb_target_var == "extended", "Extended attack (>24 hours)",
+               ifelse(input$lgb_target_var == "extended", "Extended attack (>24 hrs)",
                ifelse(input$lgb_target_var == "part_of_multiple_attacks", "Part of multiple attacks",
-               ifelse(input$lgb_target_var == "crit1_pol_eco_rel_soc", "Political/ Eco/ Religious goal",
+               ifelse(input$lgb_target_var == "crit1_pol_eco_rel_soc", "Political/ Eco/ Rel/ Social goal",
                ifelse(input$lgb_target_var == "crit2_publicize", "Intention to publicize",
-               ifelse(input$lgb_target_var == "crit3_os_intl_hmn_law", "Outside humanitarian law", "")))))))
+               ifelse(input$lgb_target_var == "crit3_os_intl_hmn_law", "Outside intl humanitarian law", "")))))))
 
       highchart() %>% 
-        hc_title(text = paste0("Variable: ", label)) %>%
+        hc_title(text = paste0(label)) %>%
         hc_xAxis(categories = data$target_var, title = list(text = label)) %>% 
         hc_yAxis(title = list(text = "Total count")) %>%
         hc_add_series(data = data$count, type = "column", showInLegend = F, colorByPoint = TRUE, dataLabels = list(enabled = TRUE, format='{point.y}')) %>%
@@ -2113,10 +2144,19 @@ shinyServer(function(input, output, session) {
 
     })
 
+   output$vbox_spw <- renderValueBox({
+    data <- df_class %>% filter(country %in% input$lgb_filter_country)
+    data <- data[, colnames(data) == input$lgb_target_var]
+    spw <- as.data.frame(table(data[,1])) 
+    spw <- round(spw$Freq[1]/spw$Freq[2], 1)
+    valueBox(spw, "scale_pos_weight", icon = icon("plus"), color = 'orange') 
+
+    })
+
    output$vbox_tot_obs <- renderValueBox({
 
     req(input$lgb_filter_country)
-    valueBox(df_class %>% filter(country %in% input$lgb_filter_country) %>% nrow(), "Total number of observations", icon = icon("database"), color = 'blue') 
+    valueBox(df_class %>% filter(country %in% input$lgb_filter_country) %>% nrow(), "Total observations", icon = icon("database"), color = 'blue') 
 
     })
 
@@ -2126,7 +2166,7 @@ shinyServer(function(input, output, session) {
     data <- df_class %>% filter(country %in% input$lgb_filter_country)
     min_year <- min(data$year)
     max_year <- max(data$year)
-    valueBox(paste0(min_year, " - ", max_year), "Data availability by years", icon = icon("calendar"), color = 'olive') 
+    valueBox(paste0(min_year, "-", max_year), "Data availability by years", icon = icon("calendar"), color = 'olive') 
 
     })
 
@@ -2135,7 +2175,7 @@ shinyServer(function(input, output, session) {
       df_class %>% 
         filter(country %in% input$lgb_filter_country) %>% 
         tail(20) %>% 
-        datatable(class="display", options = list(scrollX = TRUE, pageLength = 7, dom = "tp"))
+        datatable(class="display", options = list(scrollX = TRUE, pageLength = 5, dom = "tp"))
     })
 
     #-----------------------------------------------------------------------------------------
@@ -2187,7 +2227,11 @@ shinyServer(function(input, output, session) {
       #-------------------------------------------------------------
       # Step 4: drop columns with near zero variance
       #-------------------------------------------------------------
-      data <- data[,-nearZeroVar(data)]
+
+      #Ensure that target variable is not removed in nonZeroVars
+      # near_zero_vars <- nearZeroVar(data)
+      # near_zero_vars <- near_zero_vars[!near_zero_vars %in% input$lgb_target_var]
+      # data <- data[ , -near_zero_vars]
       
       #--------------------------------------------------------------
       # Step 5: Create train, test and validation split
@@ -2197,42 +2241,75 @@ shinyServer(function(input, output, session) {
       valid <- data %>% filter(year == 2015)
       test  <- data %>% filter(year == 2016) 
 
+      #--------------------------------------------------------------
+      # Step 6: Prepare data for lightgbm model
+      #--------------------------------------------------------------
+      dtest <- as.matrix(test[, colnames(test)])
+      
+      # define all categorical features
+      all_cat_vars <- df %>% select(year, month, day, conflict_index, region, country, provstate, city, 
+                                    attack_type, target_type, weapon_type, target_nalty, group_name,
+                                    crit1_pol_eco_rel_soc, crit2_publicize, crit3_os_intl_hmn_law,
+                                    part_of_multiple_attacks, individual_attack, attack_success, intl_logistical_attack,
+                                    intl_ideological_attack) %>% names()
+      
+      # Select features that are present in prepared data
+      categorical_features <- names(data)[names(data) %in% all_cat_vars]
+
+      train_label <- train[, input$lgb_target_var]
+      valid_label <- valid[, input$lgb_target_var]
+      
+      dtrain = lgb.Dataset(data = as.matrix(train[, colnames(train) != input$lgb_target_var]), 
+                           label = train_label, categorical_feature = categorical_features)
+      dvalid = lgb.Dataset(data = as.matrix(valid[, colnames(valid) != input$lgb_target_var]), 
+                           label = valid_label, categorical_feature = categorical_features)
+
       data <- list(dfall = data,
                    training_data = train, 
                    validation_data = valid,
-                   test_data  = test)
+                   test_data  = test,
+                   dtrain = dtrain,
+                   dvalid = dvalid)
 
       return(data)
 
     })
 
-    output$lgb_independent_vars <- renderUI({  
-      data <- data_lgb_model()$dfall
-      independent_vars <- names(data)[!(names(data) %in% input$lgb_target_var)]
-      pickerInput(inputId = "lgb_independent_vars", label = "Independent variables", 
-                  choices = independent_vars, 
-                  selected = independent_vars, options = list(`actions-box` = TRUE), inline = FALSE, multiple = TRUE)
-    })
+    # output$lgb_independent_vars <- renderUI({  
+    #   data <- data_lgb_model()$dfall
+    #   independent_vars <- names(data)[!(names(data) %in% input$lgb_target_var)]
+    #   pickerInput(inputId = "lgb_independent_vars", label = "Independent variables", 
+    #               choices = independent_vars, 
+    #               selected = independent_vars, options = list(`actions-box` = TRUE), inline = FALSE, multiple = TRUE)
+    # })
+
 
 
    output$vbox_train <- renderValueBox({
     data <- data_lgb_model()$training_data
     min_year <- min(data$year)
     max_year <- max(data$year)
-    valueBox(paste0(min_year, " - ", max_year), "Training data", icon = icon("table"), color = 'olive') 
+    valueBox(paste0(min_year, " - ", max_year), "Training data", icon = icon("database"), color = 'olive') 
 
     })
 
    output$vbox_valid <- renderValueBox({
     data <- data_lgb_model()$validation_data
-    valueBox(unique(data$year), "Validation data", icon = icon("table"), color = 'blue') 
+    valueBox(unique(data$year), "Validation data", icon = icon("database"), color = 'olive') 
 
     })  
 
    output$vbox_test <- renderValueBox({
     data <- data_lgb_model()$test_data
-    valueBox(unique(data$year), "Test data", icon = icon("table"), color = 'red') 
+    valueBox(unique(data$year), "Test data", icon = icon("database"), color = 'olive') 
 
+    })
+
+    output$dt_out_all_split <- DT::renderDataTable({
+
+      data_lgb_model()$dfall %>% 
+        head(20) %>% 
+        datatable(class="display", options = list(scrollX = TRUE, pageLength = 5, dom = "tp"))
     })
 
    output$lgb_split_str_train <- renderPrint({ 
@@ -2245,6 +2322,62 @@ shinyServer(function(input, output, session) {
 
    output$lgb_split_str_test <- renderPrint({ 
     str(data_lgb_model()$test_data)
+    })
+
+  #--------------------------------------------------------------
+  # Classification: Lightgbm model tab
+  #--------------------------------------------------------------
+
+  #Sidebar Parameters tuning
+
+  output$lgb_learning_rate <- renderUI({ 
+        sliderTextInput(inputId = "lgb_learning_rate", label = "Learning rate", choices = c(0.001, 0.05, 0.01, 0.1), selected = 0.05, grid = TRUE)
+    })
+
+  output$lgb_num_leaves <- renderUI({ 
+    sliderInput("lgb_num_leaves", label = "Number of leaves", min = 4, max = 255, value = 7, step = 1)
+    })
+
+  output$lgb_max_depth <- renderUI({ 
+    sliderInput("lgb_max_depth", label = "Max depth", min = -1, max = 8, value = 4, step = 1)
+    })
+
+  output$lgb_bagging_fraction <- renderUI({ 
+    sliderInput("lgb_bagging_fraction", label = "Bagging fraction", min = 0.4, max = 1, value = 0.8, step = 0.1)
+    })
+
+  output$lgb_bagging_freq <- renderUI({ 
+    sliderInput("lgb_bagging_freq", label = "Bagging freq", min = 0, max = 5, value = 1, step = 1)
+    })
+
+  output$lgb_feature_fraction <- renderUI({ 
+    sliderInput("feature_fraction", label = "Feature fraction", min = 0.4, max = 1, value = 0.9, step = 0.1)
+    })
+
+  output$lgb_nrounds <- renderUI({ 
+    sliderInput("lgb_nrounds", label = "nrounds", min = 500, max = 5000, value = 3000, step = 500)
+    })
+
+  output$lgb_early_stopping_rounds <- renderUI({ 
+    sliderInput("lgb_early_stopping_rounds", label = "Early stopping rounds", min = 10, max = 100, value = 50, step = 10)
+    })
+
+  output$lgb_eval_freq <- renderUI({ 
+    sliderInput("lgb_eval_freq", label = "Evaluation freq", min = 1, max = 100, value = 10, step = 10)
+    })
+
+
+
+   output$vbox_nthread <- renderValueBox({
+    valueBox(detectCores(), "Number of CPU cores", icon = icon("microchip"), color = 'green') 
+    })
+
+   output$vbox_avil_mem <- renderValueBox({
+    valueBox(paste0(round(memory.limit()/1000,2), " GB"), "Memory available", icon = icon("microchip"), color = 'blue') 
+    })
+
+    output$vbox_used_mem <- renderValueBox({
+    valueBox(paste0(round(mem_used()/1000000000,2), " GB"), "Memory in use", icon = icon("microchip"), color = 'maroon') 
     })
 
   }) # End of shinyServer logic

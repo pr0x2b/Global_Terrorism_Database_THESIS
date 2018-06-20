@@ -15,7 +15,7 @@ pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr
                countrycode, WDI, purrr, igraph, visNetwork, randomcoloR,
                shiny, ggmap, maptools, maps, eply, 
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, tidyverse,
-               caret, lightgbm)
+               parallel, caret, lightgbm)
 
 options(warn = -1, digits = 4, scipen = 999)
 set.seed(84)
