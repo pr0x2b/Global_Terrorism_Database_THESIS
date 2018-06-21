@@ -6,9 +6,11 @@
 # devtools::install_github("RamiKrispin/MLstudio")
 # library(MLstudio)
 
+# devtools::install_github("lantanacamara/lightgbmExplainer")
+
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, kableExtra,
+pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, kableExtra, R.utils, 
                DescTools, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
                viridis, viridisLite, RColorBrewer, ggfortify, plotly, highcharter, treemap, d3heatmap, 
                TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
@@ -89,7 +91,9 @@ df_class <- df %>%
          crit1_pol_eco_rel_soc = if_else(crit1_pol_eco_rel_soc == 1, "Yes", "No"),
          crit2_publicize = if_else(crit2_publicize == 1, "Yes", "No"),
          crit3_os_intl_hmn_law = if_else(crit3_os_intl_hmn_law == 1, "Yes", "No"),
-         intl_logistical_attack = if_else(intl_logistical_attack == 1, "Yes", "No"),
-         intl_ideological_attack = if_else(intl_ideological_attack == 1, "Yes", "No", "Unknown")) %>%
+         intl_logistical_attack = if_else(intl_logistical_attack == 1, "Yes", 
+                                    if_else(intl_logistical_attack == 0, "No", "Unknown")),
+         intl_ideological_attack = if_else(intl_ideological_attack == 1, "Yes", 
+                                      if_else(intl_ideological_attack == 0,"No", "Unknown"))) %>%
   na.omit()
 

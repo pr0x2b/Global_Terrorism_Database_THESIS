@@ -789,15 +789,17 @@ body <- dashboardBody(
                               uiOutput("lgb_learning_rate"),
                               uiOutput("lgb_nrounds"),
                               uiOutput("lgb_early_stopping_rounds"),
-                              uiOutput("lgb_eval_freq"), hr(),
+                              uiOutput("lgb_eval_freq"),
+                              hr(),
                               tags$head(tags$style(HTML('#btn_lgb_model{background-color:orange}'))),
-                              actionButton(inputId = "btn_lgb_model", label = "Run model", icon = icon("cogs"), width = "100%")
+                              actionButton(inputId = "btn_lgb_model", label = "Initialize", icon = icon("cogs"), width = "100%")
                               )
                             )
                             )
                           ),
 
                         column(width = 8,
+                          box(width = 12, status = "warning", title = "Model output:",
                           # fluidRow(
                           #   box(width = 12, status = "success",
                           #     title = "Model output", 
@@ -809,17 +811,31 @@ body <- dashboardBody(
                           #     withSpinner(valueBoxOutput("vbox_used_mem", width = 4))
                           #   )),
                           tabsetPanel(type = "tabs", id = "lgb_model_output",
-                              tabPanel("log", 
+                              tabPanel("log", value = "tab_log",
                                 fluidRow(
-                                  column(width = 12,
-                                    withSpinner(highchartOutput("lgb_console_out", width = "100%", height = 300))
+                                  column(width = 12, 
+                                    tags$style(type='text/css', '#lgb_console_out {background-color: black; color: rgb(113, 214, 55); font-size: 14px;}'), 
+                                    withSpinner(verbatimTextOutput("lgb_console_out"))
                                   ))),
-                              tabPanel("Feature importance", 
+                              tabPanel("Feature importance (by gain)", value = "tab_fi",
                                 fluidRow(
                                   column(width = 12,
-                                    withSpinner(highchartOutput("lgb_fi", width = "100%", height = 300))
-                                  )))
-                              )
+                                    withSpinner(highchartOutput("plot_lgb_fi", width = "100%", height = 500)))
+                                    )
+                                ),
+                              tabPanel("Feature importance (detailed)", value = "tab_fid",
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(highchartOutput("plot_lgb_fi_all", width = "100%", height = 500)))
+                                  )
+                                ),
+                              tabPanel("table", value = "tab_tbl",
+                                fluidRow(
+                                  column(width = 12,
+                                    withSpinner(tableOutput("tbl_lgb_fi")))
+                                  )
+                                  )
+                              ))
                             )
                         ))
 

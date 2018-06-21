@@ -2183,7 +2183,20 @@ shinyServer(function(input, output, session) {
     #-----------------------------------------------------------------------------------------
     data_lgb_model <- reactive({
 
-      data <- df_class %>% filter(country %in% input$lgb_filter_country)
+      data <- df_class %>% 
+        filter(country %in% input$lgb_filter_country) %>%
+        mutate(suicide_attack = if_else(suicide_attack == "Yes", 1, 0),
+               attack_success = if_else(attack_success == "Yes", 1, 0),
+               extended = if_else(extended == "Yes", 1, 0),
+               individual_attack = if_else(individual_attack == "Yes", 1, 0),
+               part_of_multiple_attacks = if_else(part_of_multiple_attacks == "Yes", 1, 0),
+               crit1_pol_eco_rel_soc = if_else(crit1_pol_eco_rel_soc == "Yes", 1, 0),
+               crit2_publicize = if_else(crit2_publicize == "Yes", 1, 0),
+               crit3_os_intl_hmn_law = if_else(crit3_os_intl_hmn_law == "Yes", 1, 0),
+               intl_logistical_attack = if_else(intl_logistical_attack == "Yes", 1, 
+                                            if_else(intl_logistical_attack == "No", 0, 9)),
+               intl_ideological_attack = if_else(intl_ideological_attack == "Yes", 1, 
+                                            if_else(intl_ideological_attack == "No", 0, 9)))                                                   
 
       #-------------------------------------------------------------
       # Step 1: log transformation
@@ -2198,6 +2211,7 @@ shinyServer(function(input, output, session) {
       #--------------------------------------------------------------
       # Step 2: label encode categorical data (lightgbm requirement)
       #--------------------------------------------------------------
+
       features= names(data)
       for (f in features) {
         if (class(data[[f]])=="character") {
@@ -2240,36 +2254,11 @@ shinyServer(function(input, output, session) {
       train <- data %>% filter(year <= 2014)
       valid <- data %>% filter(year == 2015)
       test  <- data %>% filter(year == 2016) 
-
-      #--------------------------------------------------------------
-      # Step 6: Prepare data for lightgbm model
-      #--------------------------------------------------------------
-      dtest <- as.matrix(test[, colnames(test)])
-      
-      # define all categorical features
-      all_cat_vars <- df %>% select(year, month, day, conflict_index, region, country, provstate, city, 
-                                    attack_type, target_type, weapon_type, target_nalty, group_name,
-                                    crit1_pol_eco_rel_soc, crit2_publicize, crit3_os_intl_hmn_law,
-                                    part_of_multiple_attacks, individual_attack, attack_success, intl_logistical_attack,
-                                    intl_ideological_attack) %>% names()
-      
-      # Select features that are present in prepared data
-      categorical_features <- names(data)[names(data) %in% all_cat_vars]
-
-      train_label <- train[, input$lgb_target_var]
-      valid_label <- valid[, input$lgb_target_var]
-      
-      dtrain = lgb.Dataset(data = as.matrix(train[, colnames(train) != input$lgb_target_var]), 
-                           label = train_label, categorical_feature = categorical_features)
-      dvalid = lgb.Dataset(data = as.matrix(valid[, colnames(valid) != input$lgb_target_var]), 
-                           label = valid_label, categorical_feature = categorical_features)
-
+     
       data <- list(dfall = data,
                    training_data = train, 
                    validation_data = valid,
-                   test_data  = test,
-                   dtrain = dtrain,
-                   dvalid = dvalid)
+                   test_data  = test)
 
       return(data)
 
@@ -2351,7 +2340,7 @@ shinyServer(function(input, output, session) {
     })
 
   output$lgb_feature_fraction <- renderUI({ 
-    sliderInput("feature_fraction", label = "Feature fraction", min = 0.4, max = 1, value = 0.9, step = 0.1)
+    sliderInput("lgb_feature_fraction", label = "Feature fraction", min = 0.4, max = 1, value = 0.9, step = 0.1)
     })
 
   output$lgb_nrounds <- renderUI({ 
@@ -2368,16 +2357,181 @@ shinyServer(function(input, output, session) {
 
 
 
-   output$vbox_nthread <- renderValueBox({
+  output$vbox_nthread <- renderValueBox({
     valueBox(detectCores(), "Number of CPU cores", icon = icon("microchip"), color = 'green') 
     })
 
-   output$vbox_avil_mem <- renderValueBox({
+  output$vbox_avil_mem <- renderValueBox({
     valueBox(paste0(round(memory.limit()/1000,2), " GB"), "Memory available", icon = icon("microchip"), color = 'blue') 
     })
 
-    output$vbox_used_mem <- renderValueBox({
+  output$vbox_used_mem <- renderValueBox({
     valueBox(paste0(round(mem_used()/1000000000,2), " GB"), "Memory in use", icon = icon("microchip"), color = 'maroon') 
     })
 
+
+    model_data <- eventReactive(c(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country),{
+
+      if(is.null(c(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country))){
+        return()
+      }
+
+      dfall <- data_lgb_model()$dfall
+      train <- data_lgb_model()$training_data
+      valid <- data_lgb_model()$validation_data
+      test  <- data_lgb_model()$test_data
+
+      dtest <- as.matrix(test[, colnames(test)])
+      
+      # define all categorical features
+      all_cat_vars <- df %>% select(year, month, day, conflict_index, region, country, provstate, city, 
+                                    attack_type, target_type, weapon_type, target_nalty, group_name,
+                                    crit1_pol_eco_rel_soc, crit2_publicize, crit3_os_intl_hmn_law,
+                                    part_of_multiple_attacks, individual_attack, attack_success, intl_logistical_attack,
+                                    intl_ideological_attack) %>% names()
+      
+      # Select features that are present in prepared data
+      categorical_features <- names(dfall)[names(dfall) %in% all_cat_vars]
+      categorical_features <- categorical_features[!categorical_features %in% input$lgb_target_var]
+
+      train_label <- train[, input$lgb_target_var]
+      valid_label <- valid[, input$lgb_target_var]
+
+      dtrain = lgb.Dataset(data = as.matrix(train[, colnames(train) != input$lgb_target_var]), 
+                           label = train_label, categorical_feature = categorical_features)
+      dvalid = lgb.Dataset(data = as.matrix(valid[, colnames(valid) != input$lgb_target_var]), 
+                           label = valid_label, categorical_feature = categorical_features)
+
+      params <- list(objective = "binary", 
+                    metric = "auc", 
+                    num_leaves = input$lgb_num_leaves,
+                    max_depth = input$lgb_max_depth,
+                    bagging_fraction = input$lgb_bagging_fraction,
+                    bagging_freq = input$lgb_bagging_freq,
+                    feature_fraction = input$lgb_feature_fraction,
+                    learning_rate = input$lgb_learning_rate
+                    # scale_pos_weight = spw
+                    ) 
+
+
+      cat("--------------------------------------", "\n")
+      cat("Model performance on validation data: ", "\n")
+      cat("--------------------------------------", "\n")
+
+      tic("Total time for modeling: ")
+      model <- try(
+                lgb.train(params, 
+                  dtrain, 
+                  valids = list(validation = dvalid), 
+                  nrounds = input$lgb_nrounds, 
+                  early_stopping_rounds = input$lgb_early_stopping_rounds,
+                  eval_freq = input$lgb_eval_freq)
+                )
+      toc()
+
+      cat("--------------------------------------", "\n")
+      cat("Validation AUC @ best iter: ", max(unlist(model$record_evals[["validation"]][["auc"]][["eval"]])), "\n")
+      cat("--------------------------------------", "\n", "\n")
+
+      # get feature importance
+      fi <- lgb.importance(model, percentage = TRUE)
+      fi <- as.data.frame(fi, rownames = FALSE)
+
+      # cat("--------------------------------------", "\n")
+      # cat("Feature Importance Matrix: ", "\n")
+      # cat("--------------------------------------", "\n")
+      # print(fi)
+
+      data <- list(model = model,
+                   test = test,
+                   dtrain = dtrain,
+                   dvalid = dvalid,
+                   fi = fi)
+
+      return(data)
+
+    })
+
+  observe({
+      if (input$lgb_model_output %in% c("tab_fi", "tab_fid", "tab_tbl")) {
+        disable("lgb_filter_country")
+        disable("lgb_target_var")
+      } else {
+        enable("lgb_filter_country")
+        enable("lgb_target_var")
+      }
+    })
+
+  output$lgb_console_out <- renderPrint({
+
+      req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
+
+      cat("Target country : ", input$lgb_filter_country, "\n")
+      cat("Target variable: ", input$lgb_target_var, "\n")
+
+      model <- model_data()$model
+    })
+
+
+  output$tbl_lgb_fi <-  function() {
+
+      req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
+
+      tbl <- model_data()$fi 
+
+      knitr::kable(tbl) %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(1:4, color = "black", background = "#dee2ed") %>%
+        column_spec(1, bold = T, color = "black", background = "#dee2ed") %>%
+        column_spec(2, color = "black", background = "#c7cfe5") 
+
+    }
+
+    output$plot_lgb_fi <- renderHighchart({
+
+      req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
+
+      fi <- model_data()$fi %>% head(15)
+
+      label <- ifelse(input$lgb_target_var == "suicide_attack", "Suicide attack",
+               ifelse(input$lgb_target_var == "attack_success", "Attack success",
+               ifelse(input$lgb_target_var == "extended", "Extended attack (>24 hrs)",
+               ifelse(input$lgb_target_var == "part_of_multiple_attacks", "Part of multiple attacks",
+               ifelse(input$lgb_target_var == "crit1_pol_eco_rel_soc", "Political/ Eco/ Rel/ Social goal",
+               ifelse(input$lgb_target_var == "crit2_publicize", "Intention to publicize",
+               ifelse(input$lgb_target_var == "crit3_os_intl_hmn_law", "Outside intl humanitarian law", "")))))))
+
+      highchart() %>% 
+        hc_title(text = "Top 15 Most Important Features") %>%
+        hc_subtitle(text = paste0("Target variable : ", label)) %>%
+        hc_xAxis(categories = fi$Feature) %>%
+        hc_add_series(name = "Gain", data = fi, type = "bar", hcaes(x = Feature, y = Gain)) %>%
+        hc_add_theme(hc_theme_ffx())
+
+    })
+
+    output$plot_lgb_fi_all <- renderHighchart({
+
+      req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
+
+      fi <- model_data()$fi %>% head(10)
+
+      label <- ifelse(input$lgb_target_var == "suicide_attack", "Suicide attack",
+               ifelse(input$lgb_target_var == "attack_success", "Attack success",
+               ifelse(input$lgb_target_var == "extended", "Extended attack (>24 hrs)",
+               ifelse(input$lgb_target_var == "part_of_multiple_attacks", "Part of multiple attacks",
+               ifelse(input$lgb_target_var == "crit1_pol_eco_rel_soc", "Political/ Eco/ Rel/ Social goal",
+               ifelse(input$lgb_target_var == "crit2_publicize", "Intention to publicize",
+               ifelse(input$lgb_target_var == "crit3_os_intl_hmn_law", "Outside intl humanitarian law", "")))))))
+
+      highchart() %>%
+        hc_title(text = "Feature importance by Cover, Gain and Frequency") %>%
+        hc_subtitle(text = paste0("Target variable : ", label)) %>%
+        hc_xAxis(categories = fi$Feature) %>%
+        hc_add_series(name = "Cover", data = fi, type = "bar", hcaes(x = Feature, y = Cover)) %>%
+        hc_add_series(name = "Gain", data = fi, type = "bar", hcaes(x = Feature, y= Gain)) %>%
+        hc_add_series(name = "Frequency", data = fi, type = "bar", hcaes(x = Feature, y = Frequency)) %>%
+        hc_add_theme(hc_theme_ffx()) 
+
+    })
   }) # End of shinyServer logic
