@@ -1,6 +1,9 @@
 
 shinyServer(function(input, output, session) {
 
+  options(warn = -1, digits = 5, scipen = 999)
+  set.seed(84)
+
   # Collapse sidebar by default
   # addClass(selector = "body", class = "sidebar-collapse")
 
@@ -146,7 +149,7 @@ shinyServer(function(input, output, session) {
         })
 
     output$checkBtn3_log_int <- renderUI({ 
-          checkboxGroupButtons(inputId = "checkBtn3_log_int", label = "Logistically intl?", choices = c("Yes", "No"), selected = c("Yes", "No"),
+          checkboxGroupButtons(inputId = "checkBtn3_log_int", label = "Logistically intl?", choices = c("Yes", "No", "Unknown"), selected = c("Yes", "No", "Unknown"),
                                size = "xs", checkIcon = list(yes = icon("ok", lib = "glyphicon"))) 
         })
 
@@ -1491,13 +1494,18 @@ shinyServer(function(input, output, session) {
     # Time-series train test validation
     #------------------------------------------------
 
+    selected_horizon <- reactive({as.numeric(input$ts_slider_horizon)})
+    selected_nn_repeats <- reactive({as.numeric(input$ts_slider_nn_repeats)})
+
     # reactive data for arima, tbats and ets
     ts_forecast_data <- reactive({
+
+      # req(input$ts_attack_freq, input$ts_slider_horizon)
 
       data <- ts_data()
       
       # crete split for train and test set
-      data <- ts_split(data, sample.out = input$ts_slider_horizon)
+      data <- ts_split(data, sample.out = selected_horizon())
       
       # Split the data into training and testing sets
       train <- data$train
@@ -1511,9 +1519,9 @@ shinyServer(function(input, output, session) {
       fit_ets   <- ets(train, lambda = BoxCox.lambda(train))
 
       # Accuracy check/ Forecast evaluation for each models
-      fc_arima <- forecast(fit_arima, h = input$ts_slider_horizon)
-      fc_tbats <- forecast(fit_tbats, h = input$ts_slider_horizon)
-      fc_ets   <- forecast(fit_ets, h = input$ts_slider_horizon)
+      fc_arima <- forecast(fit_arima, h = selected_horizon())
+      fc_tbats <- forecast(fit_tbats, h = selected_horizon())
+      fc_ets   <- forecast(fit_ets, h = selected_horizon())
 
       data <- list(train      = train, 
                    test       = test,
@@ -1533,7 +1541,7 @@ shinyServer(function(input, output, session) {
       data <- ts_data()
       
       # crete split for train and test set
-      data <- ts_split(data, sample.out = input$ts_slider_horizon)
+      data <- ts_split(data, sample.out = selected_horizon())
       
       # Split the data into training and testing sets
       train <- data$train
@@ -1541,10 +1549,10 @@ shinyServer(function(input, output, session) {
 
       # Building a models on the training set
       set.seed(84)
-      fit_nn    <- nnetar(train, repeats = input$ts_slider_nn_repeats, lambda = BoxCox.lambda(train))
+      fit_nn    <- nnetar(train, repeats = selected_nn_repeats(), lambda = BoxCox.lambda(train))
 
       # Accuracy check/ Forecast evaluation for each models
-      fc_nn    <- forecast(fit_nn, h = input$ts_slider_horizon)
+      fc_nn    <- forecast(fit_nn, h = selected_horizon())
 
       data <- list(train      = train, 
                    test       = test,
@@ -1798,7 +1806,7 @@ shinyServer(function(input, output, session) {
       set.seed(84)
       act_data  <- ts_data()
       fit       <- auto.arima(act_data)
-      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      fore      <- forecast(fit, h = selected_horizon(), level = c(80, 95))
       return(fore)
 
     })
@@ -1847,8 +1855,8 @@ shinyServer(function(input, output, session) {
 
       set.seed(84)
       act_data  <- ts_data()
-      fit       <- nnetar(act_data, repeats = input$ts_slider_nn_repeats)
-      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95), PI = TRUE)
+      fit       <- nnetar(act_data, repeats = selected_nn_repeats())
+      fore      <- forecast(fit, h = selected_horizon(), level = c(80, 95), PI = TRUE)
       return(fore)
 
     })
@@ -1897,7 +1905,7 @@ shinyServer(function(input, output, session) {
       set.seed(84)
       act_data  <- ts_data()
       fit       <- tbats(act_data)
-      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      fore      <- forecast(fit, h = selected_horizon(), level = c(80, 95))
       return(fore)
 
     })
@@ -1946,7 +1954,7 @@ shinyServer(function(input, output, session) {
       set.seed(84)
       act_data  <- ts_data()
       fit       <- ets(act_data)
-      fore      <- forecast(fit, h = input$ts_slider_horizon, level = c(80, 95))
+      fore      <- forecast(fit, h = selected_horizon(), level = c(80, 95))
       return(fore)
 
     })
@@ -2060,7 +2068,7 @@ shinyServer(function(input, output, session) {
           prettyRadioButtons(inputId = "lgb_target_var", 
                              label = "Target variable", 
                              status = "success",
-                             choiceNames = c("Suicide attack", 
+                             choiceNames =  c("Suicide attack", 
                                               "Attack success", 
                                               "Extended attack ", 
                                               "Part of multiple attacks", 
@@ -2145,6 +2153,7 @@ shinyServer(function(input, output, session) {
     })
 
    output$vbox_spw <- renderValueBox({
+    req(input$lgb_filter_country, input$lgb_target_var)
     data <- df_class %>% filter(country %in% input$lgb_filter_country)
     data <- data[, colnames(data) == input$lgb_target_var]
     spw <- as.data.frame(table(data[,1])) 
@@ -2179,7 +2188,7 @@ shinyServer(function(input, output, session) {
     })
 
     #-----------------------------------------------------------------------------------------
-    # reactive data (feature engineered) 
+    # reactive data (feature engineering + split) 
     #-----------------------------------------------------------------------------------------
     data_lgb_model <- reactive({
 
@@ -2194,9 +2203,10 @@ shinyServer(function(input, output, session) {
                crit2_publicize = if_else(crit2_publicize == "Yes", 1, 0),
                crit3_os_intl_hmn_law = if_else(crit3_os_intl_hmn_law == "Yes", 1, 0),
                intl_logistical_attack = if_else(intl_logistical_attack == "Yes", 1, 
-                                            if_else(intl_logistical_attack == "No", 0, 9)),
+                                        if_else(intl_logistical_attack == "No", 0, 9)),
                intl_ideological_attack = if_else(intl_ideological_attack == "Yes", 1, 
-                                            if_else(intl_ideological_attack == "No", 0, 9)))                                                   
+                                         if_else(intl_ideological_attack == "No", 0, 9)))  
+
 
       #-------------------------------------------------------------
       # Step 1: log transformation
@@ -2209,19 +2219,7 @@ shinyServer(function(input, output, session) {
                population = log1p(population + 0.01))
 
       #--------------------------------------------------------------
-      # Step 2: label encode categorical data (lightgbm requirement)
-      #--------------------------------------------------------------
-
-      features= names(data)
-      for (f in features) {
-        if (class(data[[f]])=="character") {
-          levels <- unique(c(data[[f]]))
-          data[[f]] <- as.integer(factor(data[[f]], levels=levels))
-        }
-      }
-
-      #--------------------------------------------------------------
-      # Step 3: Add frequency count features
+      # Step 2: Add frequency count features
       #--------------------------------------------------------------
       data <- as.data.table(data)
       data[, n_group_year:=.N,            by=list(group_name, year)]
@@ -2235,6 +2233,22 @@ shinyServer(function(input, output, session) {
       data[, n_provstate:=.N,             by=list(provstate)]
       data[, n_city:=.N,                  by=list(city)]
       data <- as.data.frame(data)
+
+      #--------------------------------------------------------------
+      # save raw test for model interpretation part
+      raw_test_data  <- data %>% filter(year == 2016)   
+
+      #--------------------------------------------------------------
+      # Step 3: label encode categorical data (lightgbm requirement)
+      #--------------------------------------------------------------
+
+      features= names(data)
+      for (f in features) {
+        if (class(data[[f]])=="character") {
+          levels <- unique(c(data[[f]]))
+          data[[f]] <- as.integer(factor(data[[f]], levels=levels))
+        }
+      }
 
       data[] <- lapply(data, as.numeric)
       
@@ -2258,7 +2272,8 @@ shinyServer(function(input, output, session) {
       data <- list(dfall = data,
                    training_data = train, 
                    validation_data = valid,
-                   test_data  = test)
+                   test_data  = test,
+                   raw_test_data = raw_test_data)
 
       return(data)
 
@@ -2320,15 +2335,15 @@ shinyServer(function(input, output, session) {
   #Sidebar Parameters tuning
 
   output$lgb_learning_rate <- renderUI({ 
-        sliderTextInput(inputId = "lgb_learning_rate", label = "Learning rate", choices = c(0.001, 0.05, 0.01, 0.1), selected = 0.05, grid = TRUE)
+        sliderTextInput(inputId = "lgb_learning_rate", label = "Learning rate", choices = c(0.001, 0.01, 0.05, 0.1, 0.15), selected = 0.01, grid = TRUE)
     })
 
   output$lgb_num_leaves <- renderUI({ 
-    sliderInput("lgb_num_leaves", label = "Number of leaves", min = 4, max = 255, value = 7, step = 1)
+    sliderInput("lgb_num_leaves", label = "Number of leaves", min = 1, max = 500, value = 7, step = 1)
     })
 
   output$lgb_max_depth <- renderUI({ 
-    sliderInput("lgb_max_depth", label = "Max depth", min = -1, max = 8, value = 4, step = 1)
+    sliderInput("lgb_max_depth", label = "Max depth", min = -1, max = 12, value = 6, step = 1)
     })
 
   output$lgb_bagging_fraction <- renderUI({ 
@@ -2343,6 +2358,19 @@ shinyServer(function(input, output, session) {
     sliderInput("lgb_feature_fraction", label = "Feature fraction", min = 0.4, max = 1, value = 0.9, step = 0.1)
     })
 
+  output$lgb_scale_pos_weight <- renderUI({ 
+    searchInput(inputId = "lgb_scale_pos_weight", 
+                label = "scale_pos_weight", 
+                placeholder = "Enter numeric value...", 
+                value = "1",
+                btnSearch = icon("plus-square"), 
+                # btnReset = icon("remove"), 
+                width = "100%"
+              )
+    })
+
+  spw_input <- reactive({as.numeric(input$lgb_scale_pos_weight)})
+
   output$lgb_nrounds <- renderUI({ 
     sliderInput("lgb_nrounds", label = "nrounds", min = 500, max = 5000, value = 3000, step = 500)
     })
@@ -2352,24 +2380,13 @@ shinyServer(function(input, output, session) {
     })
 
   output$lgb_eval_freq <- renderUI({ 
-    sliderInput("lgb_eval_freq", label = "Evaluation freq", min = 1, max = 100, value = 10, step = 10)
+    sliderInput("lgb_eval_freq", label = "Evaluation freq", min = 1, max = 100, value = 50, step = 10)
     })
 
 
-
-  output$vbox_nthread <- renderValueBox({
-    valueBox(detectCores(), "Number of CPU cores", icon = icon("microchip"), color = 'green') 
-    })
-
-  output$vbox_avil_mem <- renderValueBox({
-    valueBox(paste0(round(memory.limit()/1000,2), " GB"), "Memory available", icon = icon("microchip"), color = 'blue') 
-    })
-
-  output$vbox_used_mem <- renderValueBox({
-    valueBox(paste0(round(mem_used()/1000000000,2), " GB"), "Memory in use", icon = icon("microchip"), color = 'maroon') 
-    })
-
-
+    #-----------------------------------------------------------------------------------------
+    # reactive data (model, evaluation, predictions) 
+    #-----------------------------------------------------------------------------------------
     model_data <- eventReactive(c(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country),{
 
       if(is.null(c(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country))){
@@ -2381,7 +2398,7 @@ shinyServer(function(input, output, session) {
       valid <- data_lgb_model()$validation_data
       test  <- data_lgb_model()$test_data
 
-      dtest <- as.matrix(test[, colnames(test)])
+      dtest <- as.matrix(test[, colnames(test) != input$lgb_target_var])
       
       # define all categorical features
       all_cat_vars <- df %>% select(year, month, day, conflict_index, region, country, provstate, city, 
@@ -2409,8 +2426,8 @@ shinyServer(function(input, output, session) {
                     bagging_fraction = input$lgb_bagging_fraction,
                     bagging_freq = input$lgb_bagging_freq,
                     feature_fraction = input$lgb_feature_fraction,
-                    learning_rate = input$lgb_learning_rate
-                    # scale_pos_weight = spw
+                    learning_rate = input$lgb_learning_rate,
+                    scale_pos_weight = spw_input()
                     ) 
 
 
@@ -2429,28 +2446,35 @@ shinyServer(function(input, output, session) {
                 )
       toc()
 
+      cat("\n")
       cat("--------------------------------------", "\n")
       cat("Validation AUC @ best iter: ", max(unlist(model$record_evals[["validation"]][["auc"]][["eval"]])), "\n")
       cat("--------------------------------------", "\n", "\n")
+
+      # get predictions on validation data (for model interpretation)
+      test_preds <- predict(model, data = dtest, n = model$best_iter)
 
       # get feature importance
       fi <- lgb.importance(model, percentage = TRUE)
       fi <- as.data.frame(fi, rownames = FALSE)
 
-      # cat("--------------------------------------", "\n")
-      # cat("Feature Importance Matrix: ", "\n")
-      # cat("--------------------------------------", "\n")
-      # print(fi)
+      cat("--------------------------------------", "\n")
+      cat("Feature Importance Matrix (Top 5): ", "\n")
+      cat("--------------------------------------")
+      print(knitr::kable(head(fi, 5), format = "markdown"))
 
       data <- list(model = model,
                    test = test,
+                   dtest = dtest,
                    dtrain = dtrain,
                    dvalid = dvalid,
+                   test_preds = test_preds,
                    fi = fi)
 
       return(data)
 
     })
+
 
   observe({
       if (input$lgb_model_output %in% c("tab_fi", "tab_fid", "tab_tbl")) {
@@ -2462,12 +2486,26 @@ shinyServer(function(input, output, session) {
       }
     })
 
+  # output$vbox_nthread <- renderValueBox({
+  #   valueBox(detectCores(), "CPU cores", icon = icon("microchip"), color = 'green') 
+  #   })
+
+  output$vbox_avil_mem <- renderValueBox({
+    valueBox(paste0(round(memory.limit()/1000,0), " GB"), "RAM capacity", icon = icon("microchip"), color = 'olive') 
+    })
+
+  output$vbox_used_mem <- renderValueBox({
+    req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
+    valueBox(paste0(round(mem_used()/1000000000,1), " GB"), "RAM in use", icon = icon("microchip"), color = 'blue') 
+    })
+
+
   output$lgb_console_out <- renderPrint({
 
       req(input$btn_lgb_model, input$lgb_target_var, input$lgb_filter_country)
 
       cat("Target country : ", input$lgb_filter_country, "\n")
-      cat("Target variable: ", input$lgb_target_var, "\n")
+      cat("Target variable: ", input$lgb_target_var, "\n", "\n")
 
       model <- model_data()$model
     })
@@ -2534,4 +2572,76 @@ shinyServer(function(input, output, session) {
         hc_add_theme(hc_theme_ffx()) 
 
     })
+
+    output$dt_out_lgb_test <- DT::renderDataTable({
+
+      raw_test_data <- data_lgb_model()$raw_test_data
+
+      raw_test_data %>% 
+        datatable(class="display", options = list(scrollX = TRUE, pageLength = 5, dom = "tp"))
+    })
+
+    output$lgb_select_test_obs <- renderUI({  
+
+      test <- model_data()$test
+
+      selectInput(inputId = "lgb_select_test_obs", 
+                  label = "Select an observation from test set", 
+                  choices = seq(1:nrow(test)), 
+                  selected = 1) 
+    })
+
+    test_pred_index <- reactive({as.numeric(input$lgb_select_test_obs)})
+
+    output$tbl_lgb_test_obs_predicted <- renderPrint({
+
+      test_preds <- model_data()$test_preds
+      cat(paste("Predicted value from the model: ", round(test_preds[[test_pred_index()]], 3)))
+
+    })
+
+    output$tbl_lgb_test_obs <- function() {
+
+      test <- model_data()$test
+      observation <- t(test[test_pred_index(), ])
+
+      knitr::kable(observation) %>% 
+        kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
+        column_spec(1, bold = T, color = "black", background = "#dee2ed")
+
+    }
+
+    output$plot_lgb_explainer <- renderHighchart({
+
+      #extract interpretation for 1st observation in validation data
+      test_matrix <- model_data()$dtest
+      model <- model_data()$model
+      tree_interpretation <- lgb.interprete(model, data = test_matrix, idxset = test_pred_index())
+      
+      tree_interpretation <- as.data.frame(rbindlist(tree_interpretation)) %>% head(10)
+      tree_interpretation$Contribution <- round(tree_interpretation$Contribution, 2)
+
+      highchart() %>% 
+        hc_title(text = "Model/ Tree Interpretation by Features Contribution") %>%
+        hc_subtitle(text = "Red/ Positive value means support | Blue/ Negative vlaue means contradict") %>%
+        hc_add_series_labels_values(tree_interpretation$Feature, tree_interpretation$Contribution, showInLegend=F,
+                                    dataLabels = list(enabled = TRUE),
+                                    colors = ifelse(tree_interpretation$Contribution >= 0, "#ce1e36", "#0d6bc6"),
+                                    type = "bar") %>% 
+        hc_yAxis(title = list(text = "Contribution"), labels = list(format = "{value}")) %>% 
+        hc_xAxis(categories = tree_interpretation$Feature, title = list(text = "Feature")) %>% 
+        hc_add_theme(hc_theme_ffx()) %>%
+        hc_tooltip(pointFormat = "{point.y}")
+
+
+    })
+
+    output$gtd_codebook <- renderUI({
+
+      tags$iframe(style="height:650px; width:100%", src="Codebook.pdf")
+
+
+    })
+
+
   }) # End of shinyServer logic

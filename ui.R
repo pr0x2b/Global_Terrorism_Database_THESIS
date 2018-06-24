@@ -4,7 +4,13 @@
 # Dashboard header
 #---------------------------------------------------------------------------------------------------------------------  
 header <- dashboardHeader(
-    title = "Global Terrorism Database",
+    title = "Data-driven Counter Terrorism Support",
+    # Set height of dashboardHeader
+    tags$li(class = "dropdown",
+            tags$style(".main-header {max-height: 55px}"),
+            tags$style(".main-header .logo {height: 55px; }"),
+            tags$style(".navbar {min-height:55px !important}")),
+    titleWidth = 400,
     # links to my social and professional profiles
     tags$li(class = "dropdown", tags$a(href = "https://www.kaggle.com/pranav84", target = "_blank", tags$img(height = "25px", src = "kaggle.png"))),
     tags$li(class = "dropdown", tags$a(href = "https://twitter.com/pranavpandya84", target = "_blank", tags$img(height = "25px", src = "twitter.png"))),
@@ -14,6 +20,7 @@ header <- dashboardHeader(
 # Dashboard sidebar
 #---------------------------------------------------------------------------------------------------------------------  
 sidebar <- dashboardSidebar(
+    # width = 280,
     sidebarMenu(id = "gtd_pranav",
         # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
@@ -24,12 +31,7 @@ sidebar <- dashboardSidebar(
       menuItem("Part 3: Statistical Analysis", tabName = "gui", icon = icon("bar-chart-o")),
       menuItem("Part 4: Time-series Analysis", tabName = "ts_analysis_01_season", icon = icon("calendar")),
       menuItem("Part 5: classification", tabName = "classification", icon = icon("gears")),
-      menuItem("Part 6: Modelling", tabName = "modelling", icon = icon("gears"),
-        menuSubItem("Modelling_1", tabName = "m1", icon = icon("gears")),
-        menuSubItem("Modelling_2", tabName = "m2", icon = icon("gears")),
-        menuSubItem("Modelling_3", tabName = "m3", icon = icon("gears"))),
-      menuItem("Part 7: Insights", tabName = "predictions", icon = icon("globe")),
-      menuItem("Next steps", tabName = "predictions6", icon = icon("globe")),
+      menuItem("Part 6: Insights", tabName = "predictions", icon = icon("globe")),
       br(), br(), br(), 
       menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
       # h5("Pranav Pandya", style="text-align:center;"),
@@ -58,73 +60,88 @@ body <- dashboardBody(
     #---------------------------------------
     # Home page: Quick overview about GTD
     #---------------------------------------
+
     tabItem(tabName = "about_gtd",
-      fluidPage(title = "about_gtd", 
+      navbarPage("Global Terrorism Database", id = "about_Gtd", 
+        tabPanel("Overview", 
+          fluidPage(title = "about_gtd", 
 
-        fluidRow(
-          column(width = 4,
-            box(
-              h3("App summary"),
-              style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE,
-              tags$ul(
-                tags$li("Part 1: Global impact analysis"), 
-                tags$li("Part 2: Determining most active groups"), 
-                tags$li("Part 3: Statistical analysis"), 
-                tags$li("Part 4: Algorithmic decision support"), 
-                tags$li("Part 5: Interpretations/ Insights")), 
-              p("Note: Algorithmic decision support will include various binary and multiclass classification models.")),
+            fluidRow(
+              column(width = 4,
+                box(
+                  h3("App summary"),
+                  style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE,
+                  tags$ul(
+                    tags$li("Part 1: Global impact analysis"), 
+                    tags$li("Part 2: Determining most active groups"), 
+                    tags$li("Part 3: Statistical analysis"), 
+                    tags$li("Part 4: Algorithmic decision support"), 
+                    tags$li("Part 5: Interpretations/ Insights")), 
+                  p("Note: Algorithmic decision support will include various binary and multiclass classification models.")),
 
-            box(
-              style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE, collapsible = FALSE, collapsed = FALSE,
-              h3("About data source: "),
-              tags$ul(
-                tags$li("Time period: 1970-2016, except 1993"), 
-                tags$li("Variables: based on location, tactics, perpetrators, targets and outcomes"), 
-                tags$li("Sources: Unclassified media articles")), p(""), 
-              p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world 
-                 from 1970 through 2016. It is the most comprehensive unclassified database on terrorist events in the world."), 
-              p("GTD is maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), 
-                  headquartered at the University of Maryland."), 
-              p("Note: Some of the variable names have been renamed to keep the analysis informative for audience."))
-            ),
+                box(
+                  style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE, collapsible = FALSE, collapsed = FALSE,
+                  h3("About data source: "),
+                  tags$ul(
+                    tags$li("Time period: 1970-2016, except 1993"), 
+                    tags$li("Variables: based on location, tactics, perpetrators, targets and outcomes"), 
+                    tags$li("Sources: Unclassified media articles")), p(""), 
+                  p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world 
+                     from 1970 through 2016. It is the most comprehensive unclassified database on terrorist events in the world."), 
+                  p("GTD is maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), 
+                      headquartered at the University of Maryland."), 
+                  p("Note: Some of the variable names have been renamed to keep the analysis informative for audience."))
+                ),
 
-          column(width = 8,
-            img(src = "munich_image.jpg",height = 140, width = 950, style="display: block; margin-left: auto; margin-right: auto;"), 
-            withSpinner(highchartOutput("world_hchart",height = 520)))
-          ),
+              column(width = 8,
+                img(src = "munich_image.jpg",height = 140, width = 950, style="display: block; margin-left: auto; margin-right: auto;"), 
+                withSpinner(highchartOutput("world_hchart",height = 520)))
+              ),
 
-        fluidRow(
-          column(width = 12,
-            # actionButton("info_box", " Detailed information", icon = icon("info-circle")),
-            # bsModal("modalExample", "info_box", size = "large", 
-              box(
-                h3("Definition of Terrorism: "),
-                style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
-                p("The GTD defines a terrorist attack as the threatened or actual use of illegal force and violence by a non-state actor to attain a 
-                    political, economic, religious, or social goal through fear, coercion, or intimidation."),
-                p("In practice this means in order to consider an incident for inclusion in the GTD, all three of the following attributes must be present:"),
-                tags$ul(
-                  tags$li("The incident must be intentional – the result of a conscious calculation on the part of a perpetrator."), p(""),
-                  tags$li("The incident must entail some level of violence or immediate threat of violence including property violence, as well as violence against people."),  p(""),
-                  tags$li("The perpetrators of the incidents must be sub-national actors. GTD does not include acts of state terrorism.")),
-                p("Additionally, at least two of the following three criteria must be present for an incident to be included in the GTD:"),
-                tags$ul(
-                  tags$li("Criterion 1: The act must be aimed at attaining a political, economic, religious, or 
-                       social goal. In terms of economic goals, the exclusive pursuit of profit does not satisfy this 
-                       criterion. It must involve the pursuit of more profound, systemic economic change."), p(""),
-                  tags$li("Criterion 2: There must be evidence of an intention to coerce, intimidate, or convey some other message 
-                       to a larger audience (or audiences) than the immediate victims. It is the act taken as a totality that is 
-                       considered, irrespective if every individual involved in carrying out the act was aware of this intention. 
-                       As long as any of the planners or decision-makers behind the attack intended to coerce, intimidate or publicize, 
-                       the intentionality criterion is met."),  p(""),
-                  tags$li("Criterion 3: The action must be outside the context of legitimate warfare activities. That is, the act must be 
-                         outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
-                         targeting civilians or non-combatants)."))
-                  ))
+            fluidRow(
+              column(width = 12,
+                # actionButton("info_box", " Detailed information", icon = icon("info-circle")),
+                # bsModal("modalExample", "info_box", size = "large", 
+                  box(
+                    h3("Definition of Terrorism: "),
+                    style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
+                    p("The GTD defines a terrorist attack as the threatened or actual use of illegal force and violence by a non-state actor to attain a 
+                        political, economic, religious, or social goal through fear, coercion, or intimidation."),
+                    p("In practice this means in order to consider an incident for inclusion in the GTD, all three of the following attributes must be present:"),
+                    tags$ul(
+                      tags$li("The incident must be intentional – the result of a conscious calculation on the part of a perpetrator."), p(""),
+                      tags$li("The incident must entail some level of violence or immediate threat of violence including property violence, as well as violence against people."),  p(""),
+                      tags$li("The perpetrators of the incidents must be sub-national actors. GTD does not include acts of state terrorism.")),
+                    p("Additionally, at least two of the following three criteria must be present for an incident to be included in the GTD:"),
+                    tags$ul(
+                      tags$li("Criterion 1: The act must be aimed at attaining a political, economic, religious, or 
+                           social goal. In terms of economic goals, the exclusive pursuit of profit does not satisfy this 
+                           criterion. It must involve the pursuit of more profound, systemic economic change."), p(""),
+                      tags$li("Criterion 2: There must be evidence of an intention to coerce, intimidate, or convey some other message 
+                           to a larger audience (or audiences) than the immediate victims. It is the act taken as a totality that is 
+                           considered, irrespective if every individual involved in carrying out the act was aware of this intention. 
+                           As long as any of the planners or decision-makers behind the attack intended to coerce, intimidate or publicize, 
+                           the intentionality criterion is met."),  p(""),
+                      tags$li("Criterion 3: The action must be outside the context of legitimate warfare activities. That is, the act must be 
+                             outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
+                             targeting civilians or non-combatants)."))
+                      ))
+                  )
+            )), # End of overview tab panel
+
+
+        tabPanel("Codebook/ Reference Manual", 
+          fluidPage(title = "GTD Reference Manual", 
+            fluidRow(
+              column(width = 12,
+                uiOutput("gtd_codebook"))
               )
+            )
+          )
 
-            ) # End of fluid page
-        ),
+
+      ) 
+    ),
 
 
     #-------------------------------------------- 
@@ -684,7 +701,13 @@ body <- dashboardBody(
                 hr(),
                 h4("Help text:"),
                 p("Goal of this part is to predict class probabilities (Yes/No) for attacks in selected region")
-                )       
+                ),
+              conditionalPanel(
+                condition = " input.classification_lgb ==  'Model Interpretation' ", 
+                hr(),
+                h4("Model Explainer:"),
+                uiOutput("lgb_select_test_obs")
+                )     
               ), #end of sidebar panel
 
         column(width = 10,  
@@ -698,7 +721,7 @@ body <- dashboardBody(
                       column(width = 8,
                         fluidRow(
                           tags$div(title= paste("A value to consider, in order to control the balance of positive and negative weights."),
-                            valueBoxOutput("vbox_spw", width = 3)), 
+                            withSpinner(valueBoxOutput("vbox_spw", width = 3))), 
                           valueBoxOutput("vbox_tot_obs", width = 4), 
                           valueBoxOutput("vbox_year_range", width = 5)), 
                         h4("Observations (last 20)"),
@@ -785,15 +808,23 @@ body <- dashboardBody(
                               uiOutput("lgb_feature_fraction") # colsample_bytree
                               ),
                             column(width = 6, 
-                              uiOutput("lgb_scale_pos_weight"), 
                               uiOutput("lgb_learning_rate"),
                               uiOutput("lgb_nrounds"),
                               uiOutput("lgb_early_stopping_rounds"),
-                              uiOutput("lgb_eval_freq"),
-                              hr(),
-                              tags$head(tags$style(HTML('#btn_lgb_model{background-color:orange}'))),
-                              actionButton(inputId = "btn_lgb_model", label = "Initialize", icon = icon("cogs"), width = "100%")
+                              uiOutput("lgb_eval_freq"), 
+                              uiOutput("lgb_scale_pos_weight")),
+                            column(width = 12, 
+                              tags$head(tags$style(HTML('#btn_lgb_model{background-color:orange;}'))),
+                              actionButton(inputId = "btn_lgb_model", label = "Initialize Model", icon = icon("cogs"), width = "95%")
                               )
+                            ),
+                            box(width = 12, status = "success", title = "Machine Capacity: ", 
+                              # tags$head(tags$style(HTML("#vbox_nthread .fa { font-size: 60px; }"))),
+                              # withSpinner(valueBoxOutput("vbox_nthread", width = 4)), 
+                              tags$head(tags$style(HTML("#vbox_avil_mem .fa { font-size: 50px; }"))),
+                              withSpinner(valueBoxOutput("vbox_avil_mem", width = 6)),
+                              tags$head(tags$style(HTML("#vbox_used_mem .fa { font-size: 50px; }"))),
+                              withSpinner(valueBoxOutput("vbox_used_mem", width = 6))
                             )
                             )
                           ),
@@ -820,13 +851,13 @@ body <- dashboardBody(
                               tabPanel("Feature importance (by gain)", value = "tab_fi",
                                 fluidRow(
                                   column(width = 12,
-                                    withSpinner(highchartOutput("plot_lgb_fi", width = "100%", height = 500)))
+                                    withSpinner(highchartOutput("plot_lgb_fi", width = "100%", height = 650)))
                                     )
                                 ),
                               tabPanel("Feature importance (detailed)", value = "tab_fid",
                                 fluidRow(
                                   column(width = 12,
-                                    withSpinner(highchartOutput("plot_lgb_fi_all", width = "100%", height = 500)))
+                                    withSpinner(highchartOutput("plot_lgb_fi_all", width = "100%", height = 650)))
                                   )
                                 ),
                               tabPanel("table", value = "tab_tbl",
@@ -840,10 +871,31 @@ body <- dashboardBody(
                         ))
 
                   )
-              ) # end of tab panel Modeling
+              ), # end of tab panel Modeling
 
+            tabPanel("Model Interpretation", 
+              fluidRow(
+                box(title = "Model Interpretation", status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
+                  fluidRow(
+                    column(width = 8,
+                      box(width = 12, status = "success", title = "Test data:",
+                        tags$head(tags$style("#dt_out_lgb_test  {white-space: nowrap;  }")),
+                          withSpinner(dataTableOutput("dt_out_lgb_test", width = "100%", height = 275))),
+                      box(width = 12, status = "warning", title = "Model Explainer:",
+                        wellPanel(
+                          withSpinner(verbatimTextOutput("tbl_lgb_test_obs_predicted"))
+                          ),
+                        withSpinner(highchartOutput("plot_lgb_explainer", width = "100%", height = 550)))
+                      ),
+                    column(width = 4,
+                      box(width = 12, status = "primary", title = "Selected observation from Test set",
+                        withSpinner(tableOutput("tbl_lgb_test_obs")))
+                      )
+                    )
+                  ))
+              ) # end of tab panel Model interpretation
 
-            )))))
+            ))))) # end of classification menu
 
 
 
