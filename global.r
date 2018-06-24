@@ -1,12 +1,28 @@
 
+#--------------------------------
+# For thesisdown (writing part)
+#--------------------------------
+# if (!require("pacman")) install.packages("pacman")
+# pacman::p_load(tinytex)
+# tinytex::install_tinytex()
+# after restarting RStudio, confirm that you have LaTeX with 
+# tinytex:::is_tinytex()
+
+# Thesisdown template of Uni. of Washington
+# devtools::install_github("rstudio/bookdown")
+# devtools::install_github("benmarwick/huskydown")
+
+
+#--------------------------------
+# For shiny dashborad
+#--------------------------------
+
 # special installation requirement
 # devtools::install_github('ropensci/plotly')
 # devtools::install_github("jbkunst/highcharter")
 
 # devtools::install_github("RamiKrispin/MLstudio")
 # library(MLstudio)
-
-# devtools::install_github("lantanacamara/lightgbmExplainer")
 
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
@@ -17,7 +33,7 @@ pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr
                countrycode, WDI, purrr, igraph, visNetwork, randomcoloR,
                shiny, ggmap, maptools, maps, eply, 
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, tidyverse,
-               parallel, caret, lightgbm)
+               parallel, caret, pROC, lightgbm)
 
 options(warn = -1, digits = 4, scipen = 999)
 set.seed(84)
@@ -59,8 +75,10 @@ df_leaflet <- df %>%
          crit2_publicize = if_else(crit2_publicize == 1, "Yes", "No"),
          crit3_os_intl_hmn_law = if_else(crit3_os_intl_hmn_law == 1, "Yes", "No"),
          part_of_multiple_attacks = if_else(part_of_multiple_attacks == 1, "Yes", "No"),
-         intl_logistical_attack = if_else(intl_logistical_attack == 1, "Yes", "No"),
-         intl_ideological_attack = if_else(intl_ideological_attack == 1, "Yes", "No", "Unknown")
+         intl_logistical_attack = if_else(intl_logistical_attack == 1, "Yes", 
+                                  if_else(intl_logistical_attack == 0, "No", "Unknown")),
+         intl_ideological_attack = if_else(intl_ideological_attack == 1, "Yes", 
+                                   if_else(intl_ideological_attack == 0,"No", "Unknown"))
          )
 
 df_leaflet_t10 <- df_leaflet %>% filter(group_name %in% top10_groups)
