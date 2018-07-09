@@ -5,12 +5,16 @@
 # if (!require("pacman")) install.packages("pacman")
 # pacman::p_load(tinytex)
 # tinytex::install_tinytex()
-# after restarting RStudio, confirm that you have LaTeX with 
+##after restarting RStudio, confirm that you have LaTeX with
 # tinytex:::is_tinytex()
 
-# Thesisdown template of Uni. of Washington
+# Thesisdown
 # devtools::install_github("rstudio/bookdown")
-# devtools::install_github("benmarwick/huskydown")
+# devtools::install_github("ismayc/thesisdown")
+# devtools::install_github("ismayc/reedtemplates")
+# devtools::install_github("crsh/citr")
+# install.packages("webshot")
+# webshot::install_phantomjs()
 
 
 #--------------------------------
@@ -20,6 +24,7 @@
 # special installation requirement
 # devtools::install_github('ropensci/plotly')
 # devtools::install_github("jbkunst/highcharter")
+# devtools::install_github('rstudio/DT')
 
 # devtools::install_github("RamiKrispin/MLstudio")
 # library(MLstudio)
@@ -27,10 +32,10 @@
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, kableExtra, R.utils, 
-               DescTools, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
+               DescTools, GGally, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
                viridis, viridisLite, RColorBrewer, ggfortify, plotly, highcharter, treemap, d3heatmap, 
-               TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
-               countrycode, WDI, purrr, igraph, visNetwork, randomcoloR,
+               arules, arulesViz, TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
+               countrycode, WDI, purrr, igraph, visNetwork, randomcoloR, treemapify,
                shiny, ggmap, maptools, maps, eply, 
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, tidyverse,
                parallel, caret, pROC, lightgbm)
@@ -39,10 +44,10 @@ options(warn = -1, digits = 4, scipen = 999)
 set.seed(84)
 
 # load clean data (GTD)
-df <- readRDS("gtd_clean_v2.rds")
+df <- readRDS("index/data/gtd_clean_v2.rds")
 
 # countries mapped with iso3c codes for worldmap
-countries <- readRDS("countries.rds") 
+countries <- readRDS("index/data/countries.rds") 
 
 #-------------------------------------
 # Deadlist group top10_hc1
