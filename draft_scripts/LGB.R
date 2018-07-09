@@ -112,6 +112,7 @@ cat("Validation AUC @ best iter: ", max(unlist(model$record_evals[["validation"]
 # get feature importance
 fi = lgb.importance(model, percentage = TRUE)
 
+
 # highchart() %>% 
 #   hc_title(text = "Feature importance by Gain (important for generating a prediction)") %>%
 #   hc_xAxis(categories = fi$Feature) %>%
