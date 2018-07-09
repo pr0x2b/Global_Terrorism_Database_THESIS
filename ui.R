@@ -23,6 +23,7 @@ sidebar <- dashboardSidebar(
     # width = 280,
     sidebarMenu(id = "gtd_pranav",
         # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
+      menuItem("Master Thesis", tabName = "master_thesis", icon = icon("home")),
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
       menuItem("Part 1: Impact Analysis", icon = icon("globe"),tabName = "part_1",
         menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
@@ -61,9 +62,31 @@ body <- dashboardBody(
     # Home page: Quick overview about GTD
     #---------------------------------------
 
+    tabItem(tabName = "master_thesis",
+      navbarPage("Master Thesis", id = "master_thesis", 
+        tabPanel("pdf version", 
+          fluidPage(title = "thesis_pdf", 
+            fluidRow(
+              column(width = 12,
+                uiOutput("thesis_pdf"))
+              )
+            )
+          ), 
+        tabPanel("gitbook version", 
+          fluidPage(title = "thesis_gitbook", 
+            fluidRow(
+              # column(width = 12,
+              #   uiOutput("thesis_gitbook"))
+              )
+            )
+          )
+        )
+      ),
+
     tabItem(tabName = "about_gtd",
-      navbarPage("Global Terrorism Database", id = "about_Gtd", 
-        tabPanel("Overview", 
+      navbarPage("Global Terrorism Database", id = "about_gtd", 
+
+        tabPanel("App Overview", 
           fluidPage(title = "about_gtd", 
 
             fluidRow(

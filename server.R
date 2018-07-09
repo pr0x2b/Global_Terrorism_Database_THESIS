@@ -7,13 +7,25 @@ shinyServer(function(input, output, session) {
   # Collapse sidebar by default
   # addClass(selector = "body", class = "sidebar-collapse")
 
+  output$thesis_pdf <- renderUI({
+
+    tags$iframe(style="height:650px; width:100%", src="thesis_copy.pdf")
+
+  })
+
+  output$thesis_gitbook <- renderUI({
+
+    bookdown::render_book("index.Rmd")  
+
+  })
+
   #-------------------------------------
   # globe chart (About page) 
   #-------------------------------------
   output$world_hchart <- renderHighchart({
     
     data(worldgeojson)
-    readRDS("countries.rds")
+    # readRDS("countries.rds")
     dshmstops <- data.frame(q = c(0, exp(1:7)/exp(7)), c = substring(viridis(7 + 1, option = "D", direction = -1), 0, 7)) %>%  list_parse2()
     
     highchart() %>% 
@@ -581,8 +593,8 @@ shinyServer(function(input, output, session) {
     
     highchart() %>% 
       hc_title(text = "Top 10 Deadliest Terrorist Groups") %>%
-      hc_subtitle(text = "By total number of fatalities (nkill + nwound) and from year 2010 onward") %>%
-      # hc_add_theme(hc_theme_sandsignika()) %>%
+      hc_subtitle(text = "By total number of fatalities and injured (nkill + nwound), and from year 2010 onward") %>%
+      hc_add_theme(hc_theme_ffx()) %>%
       hc_add_series_labels_values(by_groups$group_name, by_groups$total, name = "Show/ hide bar chart", showInLegend=F,
                                   dataLabels = list(align = "center", enabled = TRUE),
                                   colors = substr(heat.colors(10), 0 , 7),
@@ -597,9 +609,11 @@ shinyServer(function(input, output, session) {
       #                             type = "pie", innerSize= '40%', size= "25%", showInLegend=F,
       #                             colorByPoint = TRUE, center = c('85%', '20%'),
       #                             size = 100, dataLabels = list(align = "center", enabled = TRUE)) %>% 
-      hc_yAxis(title = list(text = "Total number of fatalities (nkill + nwound)"),
+      hc_yAxis(title = list(text = "Total fatalities + injured"),
                labels = list(format = "{value}"), max = 40000) %>% 
-      hc_xAxis(categories = by_groups$group_name, title = list(text = "Name of the terrorist group")) %>% 
+      hc_xAxis(categories = by_groups$group_name, 
+               title = list(text = "Name of the terrorist group"), 
+               labels = list(style = list(fontSize = "10px", autoRotation = -10))) %>% 
       hc_legend(enabled = T, align= "left", verticalAlign = "bottom") %>% 
       hc_tooltip(pointFormat = "{point.y}") 
 
@@ -642,7 +656,7 @@ shinyServer(function(input, output, session) {
 
     highchart() %>% 
       hc_title(text = "Frequent Target Nationality") %>%
-      # hc_add_theme(hc_theme_sandsignika()) %>%
+      hc_add_theme(hc_theme_ffx()) %>%
       hc_add_series_labels_values(group_target_nalty$target_nalty, group_target_nalty$count, 
                                   colors = substr(heat.colors(10), 0 , 7),
                                   type = "bar", showInLegend=F,
@@ -2335,7 +2349,7 @@ shinyServer(function(input, output, session) {
   #Sidebar Parameters tuning
 
   output$lgb_learning_rate <- renderUI({ 
-        sliderTextInput(inputId = "lgb_learning_rate", label = "Learning rate", choices = c(0.001, 0.01, 0.05, 0.1, 0.15), selected = 0.01, grid = TRUE)
+        sliderTextInput(inputId = "lgb_learning_rate", label = "Learning rate", choices = c(0.001, 0.01, 0.05, 0.1, 0.15), selected = 0.05, grid = TRUE)
     })
 
   output$lgb_num_leaves <- renderUI({ 
