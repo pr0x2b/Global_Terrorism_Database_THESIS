@@ -1252,9 +1252,7 @@ shinyServer(function(input, output, session) {
             # Monthly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(month = month(date),
-                     month_year = paste(year, month,sep="-"),
-                     month_year = zoo::as.yearmon(month_year)) %>%
+              mutate(month = month(date)) %>%
               group_by(year, month) %>%
               summarise(total_count = n()) %>%
               ungroup() %>%
@@ -1279,9 +1277,7 @@ shinyServer(function(input, output, session) {
             # Quarterly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(quarter = Quarter(date),
-                     quarter_year = paste(year, quarter, sep="-"),
-                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              mutate(quarter = Quarter(date)) %>%
               group_by(year, quarter) %>%
               summarise(total_count = n()) %>%
               ungroup() %>%
@@ -1320,9 +1316,7 @@ shinyServer(function(input, output, session) {
             # Monthly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(month = month(date),
-                     month_year = paste(year, month,sep="-"),
-                     month_year = zoo::as.yearmon(month_year)) %>%
+              mutate(month = month(date)) %>%
               group_by(year, month) %>%
               summarise(total_count = sum(nkill)) %>%
               ungroup() %>%
@@ -1347,9 +1341,7 @@ shinyServer(function(input, output, session) {
             # Quarterly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(quarter = Quarter(date),
-                     quarter_year = paste(year, quarter, sep="-"),
-                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              mutate(quarter = Quarter(date)) %>%
               group_by(year, quarter) %>%
               summarise(total_count = sum(nkill)) %>%
               ungroup() %>%
@@ -1390,9 +1382,7 @@ shinyServer(function(input, output, session) {
             # Monthly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(month = month(date),
-                     month_year = paste(year, month,sep="-"),
-                     month_year = zoo::as.yearmon(month_year)) %>%
+              mutate(month = month(date)) %>%
               group_by(year, month) %>%
               summarise(total_count = sum(nwound)) %>%
               ungroup() %>%
@@ -1417,9 +1407,7 @@ shinyServer(function(input, output, session) {
             # Quarterly time-series data
             #---------------------------------------
             data <- data %>%
-              mutate(quarter = Quarter(date),
-                     quarter_year = paste(year, quarter, sep="-"),
-                     quarter_year = as.yearqtr(quarter_year, "%Y-%q")) %>%
+              mutate(quarter = Quarter(date)) %>%
               group_by(year, quarter) %>%
               summarise(total_count = sum(nwound)) %>%
               ungroup() %>%
@@ -1528,9 +1516,9 @@ shinyServer(function(input, output, session) {
       set.seed(84)
 
       # Building a models on the training set
-      fit_arima <- auto.arima(train, lambda = BoxCox.lambda(train))
-      fit_tbats <- tbats(train, lambda = BoxCox.lambda(train))
-      fit_ets   <- ets(train, lambda = BoxCox.lambda(train))
+      fit_arima <- auto.arima(train)
+      fit_tbats <- tbats(train)
+      fit_ets   <- ets(train)
 
       # Accuracy check/ Forecast evaluation for each models
       fc_arima <- forecast(fit_arima, h = selected_horizon())
@@ -1563,7 +1551,7 @@ shinyServer(function(input, output, session) {
 
       # Building a models on the training set
       set.seed(84)
-      fit_nn    <- nnetar(train, repeats = selected_nn_repeats(), lambda = BoxCox.lambda(train))
+      fit_nn    <- nnetar(train, repeats = selected_nn_repeats())
 
       # Accuracy check/ Forecast evaluation for each models
       fc_nn    <- forecast(fit_nn, h = selected_horizon())

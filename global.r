@@ -26,6 +26,7 @@
 # devtools::install_github("jbkunst/highcharter")
 # devtools::install_github('rstudio/DT')
 
+# devtools::install_github("RamiKrispin/TSstudio")
 # devtools::install_github("RamiKrispin/MLstudio")
 # library(MLstudio)
 
