@@ -1,0 +1,157 @@
+
+# Literature review {#literature-review}
+
+I use structured approach to aseess theoritical framework for the reserach context in order to narrow down and examine relevant literature. Terrorism research in broad context suggests that intelligence toward counter terrorism support comes in many form. The primary objective of this research is achieve actionable intelligence through machine learning apporach so it is important identify the type of intelligence. In this chapter, first we distinguish between intelligence disciplines, justify reliability and relevance of chosen data and then review the relevant literature in counter terrorism research within machine learning context. 
+
+## Intelligence Disciplines
+
+An extensive research by [@Tanner_2014] suggests that establishing methodologies for collecting intelligence is important for authorities/ policy makers to combat terrorism. The Intelligence Officer’s Bookshelf from CIA ^[https://www.cia.gov/library/center-for-the-study-of-intelligence/csi-publications/csi-studies/studies/vol-60-no-1/pdfs/Peake-IO-Bookshelf-March-2016.pdf] recognizes Human Intelligence (HUMINT), Signals Intelligence (SIGINT), Geospatial Intelligence (GEOINT), Measurement and Signature Intelligence (MASINT) and Open Source Intelligence (OSINT) as five main disciplines of intelligence collection [@Lowenthal_2015].
+
+**Human Intelligence (HUMINT)**
+
+As the name suggests, HUMINT comes from human sources and remains synonymous with espionage and clandestine activities. This is one of the oldest intelligence technique which uses covert as well as overt individuals to gather information. Example of such individuals can be diplomats, special agents, field operatives or captured prisoners [@TheInteragencyOPSECSupportStaff_1996]. According to [@CIA_2013], human intelligence plays vital role in developing and implementing U.S. national security policy and foreign policy to protect U.S. interests. 
+
+**Signals Intelligence (SIGNIT)**
+
+SIGNIT is derived from electronic transmissions such as by intercepting communications between two channels/ parties. In the US, National Security Agency (NSA) is primarily responsible for signals intelligence [@Groce_2018]. An example of SIGNIT is NSAs mass surveillance program PRISM which is widely criticized due to dangers associated with it in terms of misuse. 
+
+> Edward Snowden, a former NSA contractor and source of the Guardian’s investigation on systematic data trawling by the US government, suggests that, "The reality is this: if an NSA, FBI, CIA, DIA [Defence Intelligence Agency], etc analyst has access to query raw SIGINT [signals intelligence] databases, they can enter and get results for anything they want. Phone number, email, user id, cell phone handset id (IMEI), and so on – it's all the same. The restrictions against this are policy based, not technically based, and can change at any time." [@Siddique_2013]
+
+
+**Geospatial Intelligence (GEOINT)**
+
+GEOINT makes use of geo-spatial analysis and visual reprsentation of activities on the earth to examine suspicious activities. This is usually carried out by observation flights, UAVs, drones and satellites [@Brennan_2016]. 
+
+**Measurement and Signature Intelligence (MASINT)**
+
+MASINT is comparatively less known methodology however it’s becomeing extremely important when concerns about WMDs (Weapons of Mass Destruction) are growing. This approach peforms analyses of data from specific sensors for the purpose of identifying any distinctive features associated with the source emitter or sender. This analysis serves as a scientific and technical intelligence information. An example of MASINT is FBI’s extensive forensic work that helps detecting traces of nuclear materials, checmial and biological weapons [@Groce_2018]. 
+
+**Open Source Intelligence (OSINT)**
+
+OSINT is relatively new approach that focuses on publicly available information and sources such as newspaper articles, academic recods and open-source data made available to public from government or researchers. The key advantage of open source intelligence is accessibility and makes it possible for individuals researchers to contribute positively toward counter terrorism support as a part of community. It is important to note that reliability of data source can be complicated and thus requires review in order to be a use to policy makers [@Tanner_2014; @Groce_2018]. 
+
+Focus and scope of work for this research is limited to Open Source Intelligence only. 
+
+## OSINT and Data Relevance
+
+Despite the huge (and technically limitless) potential for counter terrorism support, the reason as to why open source intelligence is often reviewed and analysed before it can be used by policy makers is because of complications related to authenticity of data source and methodology used to compile data for hypothesis testing by a researcher. In simple words what it means is, it is extremely important for policy makers to ensure that there is no selection bias or cherry-picking from a researcher to claim the success of particular theory or results [@Brennan_2016]. A research paper from [@Geddes_1990] namely "How the Cases You Choose Affect the Answers You Get: Selection Bias in Comparative Politics" explains the danger of biased conclusions when the cases that have achieved the outcome of interest are studied. This clearly forms the need for reproducible research and allows authorities to sets the standard/ mechanism to safe guard against selection bias. This is particularly important in terrorism research. This critical issue can be taken care by codes/ scripts shared through git repositories. Nowadays, making use of tools such as rmarkdown and bookdown to deliver reproducible research [@Bauer_2018; @Xie_2016] makes it even more easy to identify selection bias.
+
+In one of the most recent article which reviews research methodologies and data in terrorism between 2007-2016, researcher [@Schuurman_2018] argues that the tendency to design research based on available data rather than gathering data required to address the research question is a matter of concern in terms of quality of quantitative research being conducted. 
+
+### Open-source Databases on Terrorism
+
+In the context of terrorism research, there are many databases available for academic research. Such databases extracts and compile information from variety of sources (mainly open-source/ publicly available sources such as news articles) on regular interval and makes it easy to use for research. Some of the well-known databases that are open-source and widely used in academic research for counter terrorism support are as below:
+
+**1. Global Terrorism Database (GTD)** ^[http://www.start.umd.edu/gtd/about/]
+
+- Currently the most comprehensive unclassified database on terrorist events in the world
+- maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), headquartered at the University of Maryland in the USA
+
+**2. Armed Conflict Location and Event Data Project (ACLED)** ^[https://www.acleddata.com/data/]
+
+- provides realtime data on all reported political violence and protest events however limited to developing countries i.e. Africa, South Asia, South East Asia and the Middle East
+
+**3. UCDP/PRIO Armed Conflict Database** ^[https://www.prio.org/Data/Armed-Conflict/UCDP-PRIO/]
+
+- a joint project between the UCDP and PRIO that records armed conflicts from 1946–2016 
+- maintained by Uppsala University in Sweden
+
+**4. SIPRI Databases** ^[https://www.sipri.org/databases]
+
+- provides databases on military expenditures, arms transfers, arms embargoes and peacekeeping operations
+- maintained by Stockholm International Peace Research Institute
+
+In order to address the research objective, I find the Global Terrorism Database most relevant and it is the primary source of data for this research. As mentioned in [Research Design and Data] section, main data is futher enriched with world development indicators for each countries by year from World Bank Open Data. ^[https://data.worldbank.org/]  
+
+
+
+## What’s Important in Terrorism Research Analysis?
+
+Aim of any research can be seen as an effort toward creating new knowledge, insights or a perspective. In this regard, careful selection of data source and corresponding statistical analysis based on research objective is extremely important. Equally important aspect is to share the data and codes so that research claims or findings can be reproduced. This also forms the basis for the trustworthiness and usefulness of the research outcome. 
+
+### Primary vs Secondary Sources
+
+The term "sources" refers to data or materials used in research and has two distinct categories. The primary sources provide first hand information about an incident. Secondary sources are normally based on primary sources and provides interpretive information about an incident [@IndianaUniversityLibraries_2007]. For example, propaganda video/ speech released by ISIL or any other terrorist group is a primary source whereas newspaper article that publishes journalist’s interpretation of that speech becomes secondary source. Researcher [@Schuurman_2018] suggests that, in such scenarios, the difference is not always distinguishable because it depends on the type of question being asked. Contrary to popular belief, newspaper or media articles are considered a secondary source of information about terrorism and terrorists. However news or media articles can be considered as primary source of information when the research focuses on how media reports on terrorism [@Schuurman_2018]. In our case, the main source of data is through news and media articles about reported terrorist incidents and fits the category of primary source of data based on research objective.
+
+
+### Use of Statistical Analysis
+
+In most areas of scientific analysis, statistics is often considered as an important and accepted way to ensure that claims made by researchers meet defined quality statndards [@Ranstorp_2006]. To be specific, descriptive statistics helps describing variables within data and often used to perform initial data analysis in most research. On the other hand, inferential statistics helps drawing conclusions/ decisions based on observed patterns [@Patel_2009]. 
+
+
+ A prominent researcher [@Silke_2004], in his book "Research on Terrorism: Trends, Achievements and Failures", explains why inferential statistics is significantly important in terrorism research context. The author suggests that inferential statistics is useful to introduce element of control into research. In an experimental research, control is usually obtained by random assignment of research subjects to experimental and control groups however it’s difficult achieve in real world research. As a result, lack of control element raises doubt any relations between variables which the research claims to find. As a solution, inferential statistics can help to introduce recognized control element within research and so that less doubt and more confidence can be achieved over the veracity of research outcome. 
+
+
+## Overview of Prior Research
+
+Scientific research in the field of terrorism is heavily impacted by research continuance issue. According to [@Gordon_2007], there is indeed a growing amount of literature in terrorism field but majority of contributors are one-timers who visit and study this field, contribute few articles, and then move to another field. Researcher [@Schuurman_2018] points out another aspect that the terrorism research has been criticized for a long time for being unable to overcome methodological issues such as high dependency on secondary sources, corresponding literature review methods and relatively insufficient statistical analyses. This argument is further supported number of prominent researchers in this field. Compared to other similar fields such as Criminology, terrorism research suffers a lot due to complications in data availability, reliability and corresponding analysis to make the research useful to policy makers [@Brennan_2016].
+
+### Harsh Realities
+
+One of the harsh realities in terrorism research is that the use of statistical analysis is failry uncommon. In late 80s, [@Jongman_1988] in his book "Political Terrorism: A New Guide To Actors, Authors, Concepts, Data Bases, Theories, And Literature" identified serious concerns in terrorism research related to methodologies used by the researcher to prepare data and corresponding level of analysis. [@Silke_2001] reviewed the articles in terrorism research between 1995 and 2000 and suggests that key issues raised by [@Jongman_1988] remains unchanged in that period as well. Their research findings indicates that only 3% of research papers involved the use of inferential analysis in the major terrorism journals. Similar research was carried out by [@Lum_2006] on qulity of research articles in terrorism research and their research finding suggests that, much has been written on terrorism between 1971 to 2003 and around 14,006 articles were published however the research that can help/support counter terrorism strategy was extremely low. This study also suggests that only 3% of the articles were based on some form of empirical analysis, 1% of articles were identified as case studies and rest of the articles (96%) were just thought pieces. 
+
+Very recently, researcher [@Schuurman_2018] also conducted an extensive research to review all the articles (3442) published from 2007 to 2016 in nine academic journals on terrorism and provides an insight on whether or not the trend (as mentioned) in terrorism research continues. Their research outcome suggests upward trend in on the use of statistical analysis however major proportion is related to descriptive analysis only. They selected 2552 articles for analysis and their findings suggests that:
+
+* only **1.3%** articles made use of inferential statistics
+* 5.8% articles used mix of descriptive and inferential statistics
+* 14.7% articles used descriptive statistics and 
+* 78.1% articles did not use any kind of statistical analysis 
+
+```{r stats1, echo=FALSE, fig.height=3, out.width="100%", fig.cap= "Use of statistics in terrorism research between 2007 to 2016"}
+include_graphics(path = "figure/research_stats.jpg")
+```
+[@Schuurman_2018]
+
+### Review of Relevant Literature
+
+In this section, we take a look at previous research that is intended toward counter terrorism support while making sure that the chosen research article/ literature contains at least some form of statistical modelling. 
+
+Simple linear regression was one of the approach for prediction models in early days but soon it was realized that such models are weak in capturing complex interactions. Emergence of machine learning algorithms and advancement in deep learning made it possible to develop fairly complex models however country-level analysis with resolution at year level contributes majority of research work in conflict prediction [@Cederman_2017]. 
+
+[@Beck_2000] carried out an research to stress the important of the causes of confict. Researchers claims that empirical findings in the literature global conflict are often unsatisfying, and accurate forecasts are unrealistic despite availability immense data collections, notable journals and complex analyses. Their approach uses a version of neural network model and argues that their forecasts are significantly better than previous effort. 
+
+In a study to investigate the factors that explain when terrorist groups are most or least likely to target civilians, researcher [@Heger_2010] examines why terrorist groups need community support and introduces new data on terrorist groups. The research then uses logit analysis to test the relationship between independent variables and civilian attacks between 1960-2000. 
+
+In a unique and interesting approach, a researcher from ETH Zürich [@Chadefaux_2014] examines a comprehensive dataset of historical newspaper articles and introduces weekly risk index. This new variable is then applied to a dataset of all wars reported since 1990. Outcome of this study suggests that the number of conflict-related news items increases dramatically prior to the onset of conflict. Researcher claims that the onset of a war within the next few months could be predicted with up to 85% confidence using only information available at the time. Another researcher [@Cederman_2017] supports the hypothesis and suggests that news reports are capable to capture political tension at a much higher temporal resolution and so that such variables have much stronger predictive power on war onset compared to traditional structural variables.
+
+One of the notable (and publicly known) research in terrorism predicted the military coup in Thailand 1 month before its actual occurrence on 7 May 2014. In a report commissioned by the CIA-funded Political Instability Task Force, researchers [@WardLab_2014] forecasted irregular regime changes for coups, successful protest campaigns and armed rebellions, for 168 countries around the world for the 6-month period from April to September 2014. Researchers claims that Thailand was number 4 on their forecast list. They used an ensemble model (Ensemble Bayesian Model Averaging) that combines seven different split-population duration models. 
+
+Researchers [@Fujita_2016] uses high temporal resolution data across multiple cities in Syria and time-series forecasting method to predict future event of deaths in Syrian armed conflict. Their approach uses day level data of death tolls from Violations Documentation Center (VDC) in Syria. Using Auto-regression (AR) and Vector Auto-regression (VAR) models, their study identifies strong positive auto-correlations in Syrian cities and non-trivial cross-correlations across some of them. Researchers suggests that strong positive auto-correlations possibly reflects a sequence of attacks within short periods triggered by a single attack, as well as significant cross-correlation in some of the Syrian cities implies that deaths in one city were accompanied by deaths at another city. 
+
+Within a pattern recognition context, researchers [@Klausen_2016] from MIT Sloan developed a behavioral model to predict which Twitter users are likely belonged to the Islamic state group. Using data of approximately 5,000 Twitter users who were linked with Islamic state group members, they created dataset of 1.3 million users by associating friends and followers of target users. At the same time, they monitored Twitter over few months to identify which profiles are getting suspended. Researchers claims that they were able to train a machine learning model that matched suspended accounts with the specifics of the profile and creating a framework to identify likely members of ISIS.
+
+A similar research from [@Ceron_2018] examines over 25 million tweets in Arabic language when Islamic State was at its peak strength (between Jan 2014 to Jan 2015) and was expanding regions unders its control. Researchers assessed the share of support from online Arab community toward ISIS and investigated time time-granularity of tweets while linking the tweet opinions with daily events and geo location of tweets. Outcome of their research finds relationship between foreign fighters joining ISIS and online opinions across the regions.
+
+One of the research evaluates the targeting patterns and preferences of 480 terrorist groups that were operational between 1980 and 2011 in order to find the impact of longetivity of terrorist groups based on their lethality. Based on group-specific case studies on the Afghan and Pakistani Taliban and Harmony Database from Combat Terrorism Center, researcher [@Nawaz_2017] uses Bivariate Probit Model to assess endogenous relationship and finds significant correlationship between negative group reputation and group mortality. Researcher also uses Cox Proportional Hazard Model to estimate longetivity of group. 
+
+[@Colaresi_2017] carried out a research to identify and avoid the problem of overfitting sample data. Researchers used the models of civil war onset data and came up with tool (R package: ModelCriticism) to illustrate how machine learning based research design can improve out of fold forecasting performance. Their study recommends making use of validation split along with train and test split to benefit from iterative model critisism. 
+
+Researchers [@Muchlinski_2016] uses The Civil War Data (1945-2000) and compared the performance of Random Forests model with three different versions of logistic regression. Outcome of their study suggests that Random Forests model provides significantly more accurate predictions on the occurrences of rare events in out of sample data compared to logistic regression models on chosen dataset. However in an experimental research to reproduce this claims, [@Neunhoeffer_2018] ran re-analysis and finds problematic usage of cross-validation strategy. They contests the claim and suggests that there is no evidence of impressive predictive performance of random forest as claimed by the original authors. Research from [@Neunhoeffer_2018] also illustrates the importance of having access to replication code in order to measure the quality and/or claims of any research paper. 
+
+
+### GTD and Machine Learning in Previous Research
+
+Addressing the issue of rare events, researchers [@Clauset_2013] comes up with statistical modelling approach to estimate future probability of large scale terrorist attack. Using the data from GTD and RAND-MIPT database between 1968-2007, and three different models i.e power law, exponential distributions and log normal, researchers estimates likelihood of observing 9/11 sized attack between 11-35%. Using the same procedure, researchers then makes a data-driven statistical forecast of at least one similar event over the next decade.
+
+In a study to identify determinants of variation in country compliance with financial counter terrorism, researcher [@Lula_2014] used dataset on financial counter terrorism for the period 2004-2011 along with Global Terrorism Database. Researcher employs both quantitative and qualitative analysis in their approach and uses regression analysis (ordered logit model) to estimate statistical significance of independent variables on target variable i.e. compliance rates. Outcome of this study suggests that intensity and magnitude of terror threat, rate of international terror attacks, rate of suicide (terror) attacks, and military capability variable does not have statistically significant effect on country compliance with finanicial counter terrorism. Based on research findings, author suggests that many of the assumptions made in previous study in financial counter terrorism are incorrect.
+
+A research from [@Brennan_2016] uses machine learning based approach to investigate terrorist incidents by country. This study makes use of regression techniques, Hidden Markov model, online time series detection algorithms such as twitter outbreak detection algorithm and Netflix’s SURUS algorithm, as well as medical syndromic surveillance algorithms i.e EARSC based method and Farrington’s method to detect change in behaviour (in terms of terrrorist incident or fatalities). Outcome of their study suggests that time-series aberration detection methods were highly interpretable and generalizable compared to traditional methods (regression and HMM) for analysing time series data. 
+
+Researcher [@Block_2016] carried out a study to identify characteristics of terrorist events specific to aircrafts and airports and came up with situation crime prevention framework to minimize such attacks. In particular, researcher uses GTD data (2002-2014) specific to attacks involiving ariports/ aircraft that contains terrorist events related to 44 nations. In this study, Logistic Regression model is used to evaluate variables that are significantly associated with such attacks. Their research findings suggests that the likelihood of attacks against airports is mostly related to with domestic terrorists groups and, explosives and suicide attacks as a type of attack. In contrast, attacks against aircraft is more associated with international terrorists groups. 
+
+In an effort to improve accuracy of classification algorithms, researchers [@Mo_2017] uses GTD data and employs feature selection methods such as Minimal-redundancy maximal-relevancy (mRMR) and Maximal relevance (Max-Relevance). In this study, researchers uses Support Vector Machine (SVM), Naive Bayes (NB) and Logistic Regression (LR) algorithms and evaluates performance of each model through classification precision and computational time. Their research find suggests that feature selection methods improves the accuracy of of the model and comparatively, Logistic Regression model with seven optimal feature subset achieves a classification precision of 78.41%.
+
+A research from [@Ding_2017] also uses classification technique to evaluate risk of terrorist incident at global level using GTD and several other datasets. In particular, data comprising terror incidents between 1970 to 2015 was used to train and evaluate neural network (NNET), support vector machine (SVM), and random forest (RF) models. For performance evaluation, researchers used three-quarters of the randomly sampled data as training set, and the remaining as test set. Outcome of their study predicted the places where terror events might occur in 2015, with a success rate of 96.6%. 
+
+Similar research within classification context and addressing the issue of class unbalance in order to predict rare events i.e. responsible group behind terror attack, researchers [@Gundabathula_2018] employs various classification algorithms in line with sampling technique to improve the model accuracy. In particular, this study was narrowed down to terrorist incidents in India and data used from GTD was between 1970-2015. Researchers uses J48, IBK, Naive Bayes algorithms and ensemble approach using vote for classification task. Findings from their study points out importance of using sampling technique which improves the accuracy of of base models and suggests that suggests that ensemble approach improves overall accuracy of base models.
+
+
+## Literature Gap and Relevance
+
+Review of recent and relevant literature suggests that use of historical data from open source databases, and statistical modelling using time-series forecasting and classification algorithms is commonly used approach to address the research questions related to "when and where". A trend can be seen in research study with variety of new approaches such as feature selection, sampling technique, validation split etc to achieve better accuracy in classification algorithms. This is one of the most relevant aspect for this research project. 
+
+While some approach argues that prediction is contentious issue and focuses on finding causal variables while neglecting model fit, there is an upward trend in an approach that uses diverse models, and out of fold method which also allows to evaluate and compare model performance. Similarly, single model philosophy based on Occam’s Razor principle is visible in majority of research in the past however ensemble philosophy to make use of weak but diverse models to improve the overall accuracy is gaining popularity amongst research nowadays. 
+
+It is also observed that use of gradient boosting algorithms is not popular in scientific research despite the availability and practical use cases of highly efficient and open-source algorithms such as XGBoost and LightGBM which are widely used in machine learning competitions such as Kaggle. In contrast, traditional algorithms such as Random Forests, Logistic Regression, Naive Bayes, J48 etc. are often used in majority of research. 
+
+One important observation from literature review is that code sharing is quite uncommon. Out of all the reviewed articles, only few provided codes or links to code repositories such as github. Replication crisis is a major issue in scientific research. Despite availability of number of open source tools for reproducible research such as Jupyter notebook, rmarkdown or a code repositories such as github, majority of research papers lacks code sharing aspect.

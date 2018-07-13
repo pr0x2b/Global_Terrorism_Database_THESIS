@@ -1,0 +1,17 @@
+# Preliminary Content {-}
+
+## Acknowledgements {-}
+
+I want to express my deep sense of gratitude to my supervisor Prof. Dr. Markus Loecher (Berlin School of Economics & Law). Words are inadequate in offering my thanks to him for his encouragement and cooperation in carrying out this research project. His able guidance and useful suggestions helped me in completing the project work, in time. \par
+
+Finally, yet importantly, I would like to express my heartfelt thanks to my beloved mother for her blessings, my friends and relatives for their encouragement and wishes for the successful completion of this research project. \pagebreak
+
+## Declaration {-}
+
+I, Pranav Pandya hereby formally declare that the work presented herein is genuine work done originally by me and has not been published or submitted elsewhere for the requirement of any degree programme or for any purpose. I am aware that the use of quotations, or of close paraphrasing, from books, magazines, newspapers, the internet or other sources, which are not marked as such, will be considered as an attempt at deception, and that the thesis will be graded as a fail. I confirm that any literature, data, or works done by others and cited within this report has been given due acknowledgement and listed in the reference section. \pagebreak
+
+## Dedication {-}
+
+You can have a dedication here if you wish. 
+
+`r if(!knitr:::is_latex_output()) '## Abstract {-}'`

@@ -1,0 +1,288 @@
+# Pattern Discovery {#pattern-discovery}
+
+This part of analysis is based on unsupervised machine learning algorithm and makes use of association rules to discover patterns in terrorist incidents from Islamic State, Taliban and Boko Haram group that were identified in top 5 most active and violent groups.  
+
+Mining of association rules is widely used method in retail and ecommerce environment and commonly known as Market Basket Analysis using Apriori algorithm. The theory behind this approach is that if a customer buys a certain group of products then they are more or less likely to buy another group of products [@Karthiyayini_2016]. 
+
+* **Pseudocode of the Apriori algorithm:**
+
+$$
+\begin{aligned}
+& \mathrm{Apriori}(T,\epsilon)\\
+&\qquad L_1 \gets \{ \mathrm{large~1-item sets} \} \\
+&\qquad k \gets 2\\
+&\qquad \mathrm{\textbf{while}}~ L_{k-1} \neq \ \emptyset \\
+&\qquad \qquad C_k \gets \{ a \cup \{b\} \mid a \in L_{k-1} \land b \not \in a \} - \{ c \mid \{ s \mid s \subseteq c \land |s| = k-1 \} \nsubseteq L_{k-1} \}\\
+&\qquad \qquad \mathrm{\textbf{for}~transactions}~t \in T\\
+&\qquad \qquad\qquad D_t \gets \{ c \mid c \in C_k \land c \subseteq t \} \\
+&\qquad \qquad\qquad \mathrm{\textbf{for}~candidates}~c \in D_t\\
+&\qquad \qquad\qquad\qquad \mathit{count}[c] \gets \mathit{count}[c]+1\\
+&\qquad \qquad L_k \gets \{ c \mid c \in C_k \land ~ \mathit{count}[c] \geq \epsilon \}\\
+&\qquad \qquad k \gets k+1\\
+&\qquad \mathrm{\textbf{return}}~\bigcup_k L_k
+\end{aligned}
+$$
+
+As the goal of this algorithm is to determine set of frequent items among the candidates, this methodology can also be applied to discover patterns within terrorism context. The idea is to understand attack habits from terrorist groups by finding association and correlation between different attacks that were carried out in the past. It’s important to note that output from this algorithm is a list of association rules (frequent patterns) and provides descriptive analysis only. The real value of such unsupervised learning is in the insights we can take away from algorithm’s finding. 
+
+## Data preparation
+
+For this analysis, I have chosen specific variables that are not highly correlated with chosen groups i.e. target type, weapon type, attack type, suicide attack and number of fatalities while excluding the observations where value is "Unknown". 
+
+```{r }
+tmp <- dfh %>%
+  select(group_name, target_type, weapon_type, attack_type, suicide_attack, nkill) %>%
+  filter(target_type != "Unknown" & weapon_type != "Unknown" & attack_type != "Unknown") %>%
+  mutate(nkill = if_else(nkill == 0, "0",
+                 if_else(nkill >= 1 & nkill <= 5, "1 to 5",
+                 if_else(nkill > 5 & nkill <= 10, "6 to 10",
+                 if_else(nkill > 10 & nkill <= 50, "11 to 50",  "more than 50")))))
+
+#shorten lengthy names for visualization purpose
+tmp$weapon_type[tmp$weapon_type == "Explosives/Bombs/Dynamite"] <- "Explosives"
+tmp$attack_type[tmp$attack_type == "Facility/Infrastructure Attack"] <- "Facility/Infra."
+tmp$target_type[tmp$target_type == "Private Citizens & Property"] <- "Civilians"
+tmp$target_type[tmp$target_type == "Terrorists/Non-State Militia"] <- "Non-State Militia"
+tmp$target_type[tmp$target_type == "Religious Figures/Institutions"] <- "Religious Figures"
+
+#convert everything to factor
+tmp[] <- lapply(tmp, factor)
+str(tmp)
+```
+
+Next, let’s run the analysis by extracting data for chosen group. 
+
+## Islamic State (ISIL)
+
+**Model Parameters**
+
+```{r }
+# set cut-off (threshold) values for model
+params <- list(support = 0.001, confidence = 0.5, minlen = 2)
+group_ISIL <- list(rhs='group_name=ISIL', default="lhs")
+```
+
+### Explaination of key terms
+
+The Apriori algorithm has three main measures namely Support, Confidence and Lift. These three measure are used to decide the relative strength of the rules. lhs refers to frequent pattern that is observed and rhs refers to the group selected (in this case ISIL).
+
+**Support** indicates how interesting a pattern is. In the algorithm, I have set the threshold to 0.001 which means a pattern must have appeared atleast 0.001 * nrow(tmp) = 18 times. 
+
+**Confidence** value i.e 0.5 (set as threshold in model params) means that in order to be included in the results, the rule has to be correct at least 50 percent of the time. This is particularly helpful to eliminate the most unreliable rules. 
+
+**Lift** indicates probability (support) of the itemset (pattern) over the product of the probabilities of all items in the itemset [@Hahsler_2018]. 
+
+In general, high confidence and good lift are the standard measures to evaluate importance of a particular rule/ association however not all the rules are useful. This rules normally falls into three categories i.e. actionable, trivial(useless) and inexplicable [@Klimberg_2017]. Example of useless rule can be an association that is obvious and thus not worth mentioning. 
+
+### Apriori model summary
+
+```{r }
+# run model with parameters as defined above
+rules <- apriori(data = tmp, parameter= params, appearance = group_ISIL)
+rules <- rules[!is.redundant(rules)] # Remove redundant rules if any 
+```
+
+### Top 5 patterns (ISIL)
+
+```{r }
+# Extract top 5 patterns based on confidence
+subrules <- head(sort(rules, by="confidence"), 5)
+
+if( knitr:::is_latex_output() ) {
+  inspect(subrules, ruleSep = ":")
+} else {
+  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
+             caption = "Five Most Important Patterns (ISIL)") %>%
+         kable_styling(latex_options = "hold_position")
+}
+
+```
+
+
+```{r fig.cap="Association Rules in ISIL Group", fig.height=4, out.width = "100%"}
+if( knitr:::is_latex_output() ) {
+    plot(rules)
+} else {
+    plotly_arules(rules, jitter = 5, 
+      marker = list(opacity = .5, size = 10),
+      colors = viridis(10, end = 0.9, option = "D")) %>% 
+      layout(title = "Association Rules in ISIL Group")
+}
+
+```
+
+
+### Network graph (ISIL)
+
+```{r fig.cap="Network Graph of Discovered Patterns- ISIL Group", fig.height=7, out.width = "100%"}
+#work around for pdf and html output
+if( knitr:::is_latex_output() ) {
+  plot(rules, method="graph", verbose = FALSE, 
+       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
+} else {
+  ig_df <- get.data.frame(
+    plot(rules, method="graph", verbose = FALSE, 
+         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
+  
+  nodes = data.frame(
+    id = ig_df$vertices$name,
+    value = ig_df$vertices$support, # get the nodes by support
+    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
+    ig_df$vertices)
+  
+  visNetwork(nodes, edges = ig_df$edges) %>%
+    visEvents() %>% 
+    visNodes(size = 5, color = "#9cb7f4") %>%
+    visLegend() %>% 
+    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
+    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+    visEdges(arrows = 'from') %>%
+    visPhysics(solver = "barnesHut", maxVelocity = 35,
+              forceAtlas2Based = list(gravitationalConstant = -6000))
+}
+
+```
+
+
+## Taliban 
+
+### Apriori model summary
+```{r }
+params <- list(support = 0.001, confidence = 0.5, minlen = 2)
+group_Taliban <- list(rhs='group_name=Taliban', default="lhs")
+rules <- apriori(data = tmp, parameter= params, appearance = group_Taliban)
+rules <- rules[!is.redundant(rules)] # Remove redundant rule if any 
+```
+
+### Top 5 patterns (Taliban)
+```{r echo=FALSE}
+# Extract top 5 patterns based on confidence
+subrules <- head(sort(rules, by="confidence"), 5)
+
+if( knitr:::is_latex_output() ) {
+  inspect(subrules, ruleSep = ":")
+} else {
+  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
+             caption = "Five Most Important Patterns (Taliban)") %>%
+         kable_styling(latex_options = "hold_position")
+}
+```
+
+
+```{r echo=FALSE, fig.cap="Association Rules in Taliban Group", fig.height=4, out.width="100%"}
+if( knitr:::is_latex_output() ) {
+    plot(rules)
+} else {
+    plotly_arules(rules, jitter = 5, 
+      marker = list(opacity = .5, size = 10),
+      colors = viridis(10, end = 0.9, option = "D")) %>% 
+      layout(title = "Association Rules in Taliban Group")
+}
+
+```
+
+In case of Taliban, we can see many interesting patterns with confidence above 0.5. For the visualization purpose, let’s narrow down to most interesting rules only by setting confidence threshold to 0.6.
+
+### Network graph (Taliban)
+
+```{r echo=FALSE, fig.cap="Network Graph of Discovered Patterns- Taliban Group", fig.height=7, out.width="100%"}
+rules <- rules[quality(rules)$confidence > 0.6]
+
+#work around for pdf and html output
+if( knitr:::is_latex_output() ) {
+  plot(rules, method="graph", verbose = FALSE,
+       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
+} else {
+  ig_df <- get.data.frame(
+    plot(rules, method="graph", verbose = FALSE, cex = 0.9,
+         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
+  
+  nodes = data.frame(
+    id = ig_df$vertices$name,
+    value = ig_df$vertices$support, # get the nodes by support
+    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
+    ig_df$vertices)
+  
+  visNetwork(nodes, edges = ig_df$edges) %>%
+    visEvents() %>% 
+    visNodes(size = 5, color = "#9cb7f4") %>%
+    visLegend() %>% 
+    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
+    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+    visEdges(arrows = 'from') %>%
+    visPhysics(solver = "barnesHut", maxVelocity = 35,
+              forceAtlas2Based = list(gravitationalConstant = -6000))
+}
+
+```
+
+
+## Boko Haram 
+
+### Apriori model summary
+```{r }
+params <- list(support = 0.001, confidence = 0.5, minlen = 2)
+group_Boko_Haram <- list(rhs='group_name=Boko Haram', default="lhs")
+rules <- apriori(data = tmp, parameter= params, appearance = group_Boko_Haram)
+rules <- rules[!is.redundant(rules)] # Remove redundant rule if any 
+```
+
+### Top 5 patterns (Boko Haram)
+```{r echo=FALSE}
+# Extract top 5 patterns based on confidence
+subrules <- head(sort(rules, by="confidence"), 5)
+
+if( knitr:::is_latex_output() ) {
+  inspect(subrules, ruleSep = ":")
+} else {
+  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
+             caption = "Five Most Important Patterns (Boko Haram)") %>%
+         kable_styling(latex_options = "hold_position")
+}
+```
+
+
+```{r echo=FALSE, fig.cap="Association Rules in Boko Haram Group", fig.height=4, out.width="100%"}
+if( knitr:::is_latex_output() ) {
+    plot(rules)
+} else {
+    plotly_arules(rules, jitter = 5, 
+      marker = list(opacity = .5, size = 10),
+      colors = viridis(10, end = 0.9, option = "D")) %>% 
+      layout(title = "Association Rules in Boko Haram Group")
+}
+
+```
+
+ 
+
+### Network graph (Boko Haram)
+
+```{r echo=FALSE, fig.cap="Network Graph of Discovered Patterns- Boko Haram Group", fig.height=7, out.width= "100%"}
+#work around for pdf and html output
+if( knitr:::is_latex_output() ) {
+  plot(rules, method="graph", verbose = FALSE,
+       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
+} else {
+  ig_df <- get.data.frame(
+    plot(rules, method="graph", verbose = FALSE,
+         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
+  
+  nodes = data.frame(
+    id = ig_df$vertices$name,
+    value = ig_df$vertices$support, # get the nodes by support
+    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
+    ig_df$vertices)
+  
+  visNetwork(nodes, edges = ig_df$edges) %>%
+    visEvents() %>% 
+    visNodes(size = 5, color = "#9cb7f4") %>%
+    visLegend() %>% 
+    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
+    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+    visEdges(arrows = 'from') %>%
+    visPhysics(solver = "barnesHut", maxVelocity = 35,
+              forceAtlas2Based = list(gravitationalConstant = -6000))
+}
+
+```

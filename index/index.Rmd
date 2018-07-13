@@ -1,0 +1,176 @@
+---
+author: 'Pranav Pandya'
+immatriculation: 'Immatriculation Number: 552590'
+date: 'July 2018'
+institution: 'Berlin School of Economics and Law'
+division: 'Business & Economics'
+advisor: 'Prof. Dr. Markus Loecher'
+altadvisor: 'Prof. Dr. Markus Schaal'
+department: 'Business Intelligence & Process Management'
+degree: 'Master of Science (M.Sc.)'
+title: 'Chasing The Trajectory of Terrorism: A Machine Learning Based Approach to Achieve Open Source Intelligence'
+knit: "bookdown::render_book"
+site: bookdown::bookdown_site
+output: 
+ # thesisdown::thesis_pdf: default
+ thesisdown::thesis_gitbook: default
+#  thesisdown::thesis_word: default
+#  thesisdown::thesis_epub: default
+
+abstract: |
+
+ This research project uses historical data of terrorist attacks that took place around the world between 1970 to 2016 from open-source [Global Terrorism Database (GTD)](https://www.start.umd.edu/gtd/about/) and aims to make sense of observed patterns by translating it into actionable intelligence. The research is split into three distinct categories in order to evaluate cases of over 170,000 terrorist attacks. The first part is exploratory data analysis which is intended to examine patterns in terrorist attacks from various perspectives and with statistical analysis. Based on the analysis and findings from first exploratory data anaylysis, the next parts in this research makes use of machine learning algorithms to derive actionable insights. An observation from previous research in this field suggests that forecasting methods and classification models were mostly applied on the world level and on yearly data however little/no research is available to forecast future attacks or fatalities based on seasonal patterns (i.e. monthly and quarterly) and on country level. \par
+
+ As an extension to existing research, this research makes use of time series forecasting models to predict the future attacks and fatalities on micro level by establishing methodology to prepare and evaluate seasonal components from data. Similarly in the classification modelling part, previous research lacks use of algorithms that are recently developed and that (practically) out performs traditional algorithms such as random forest, native gbm or xgboost. In the third part of this research, cutting edge gradient boosting algorithm i.e. lightgbm is used to predict the class probability of an attack. In simple words, the classification model is trained on historical data, evaluated on validation data and then used to predict class probability on test data. The important insights from this part is to find causal variables for a particular attack for chosen target variable such as whether or not an attack will be a suicide attack, extended attack, successful attack, part multiple attacks or classifying political-economical-social-religious goal behind the attack. Apart from causal variables, this reasearch also makes use of explainer objects from the model to justify reason behind each prediction/decision from the trained algorithm. In line with this scientific research, a shiny app is developed to make this reproducible research interactive and handy. This app is in fact the vital part of this reasearch and is intended to provide interactive platform for all three parts of this reasearch project (i.e. exploratory data analysis, time-series forecasting and classification models) to target audience such as individual researchers, counter terrorism agencies and government authorities. 
+
+acknowledgements: |
+
+  I want to express my deep sense of gratitude to my supervisor Prof. Dr. Markus Loecher (Berlin School of Economics & Law). Words are inadequate in offering my thanks to him for his encouragement and cooperation in carrying out this research project. His able guidance and useful suggestions helped me in completing the project work, in time. \par  \par
+
+  Finally, yet importantly, I would like to express my heartfelt thanks to my beloved mother for her blessings, encouragement and wishes for the successful completion of this research project.
+
+
+declaration: |
+
+  I, Pranav Pandya hereby formally declare that the work presented herein is genuine work done originally by me and has not been published or submitted elsewhere for the requirement of any degree programme or for any purpose. I am aware that the use of quotations, or of close paraphrasing, from books, magazines, newspapers, the internet or other sources, which are not marked as such, will be considered as an attempt at deception, and that the thesis will be graded as a fail. \par 
+
+  I confirm that any literature, data, or works done by others and cited within this report has been given due acknowledgement and listed in the reference section. 
+
+  \hfill\break
+  \hfill\break
+  \hfill\break
+  \hfill\break
+  \rule{0.3\textwidth}{0.4pt}
+  \hfill\break\begin{flushleft}
+  Pranav Pandya\\
+  Berlin, July 2018\end{flushleft}
+
+dedication: |
+
+  I dedicate this thesis to two people who means a lot to me. First and foremost, to my mother Anjana P. Pandya who has been constant source of inspiration for me. I am thankful to you for your constant support and blessings which helps me achieve set goals of my life. 
+
+  Secondly, my maternal grandfather late Shri Upendrabhai M. Joshi who always believed in my ability. You made a garden of heart and planted all the good things which gave my life a start. You encouraged me to dream by fostering and nurturing the seeds of self-esteem. You taught me the difference between right and wrong and made pathway which will last a lifetime long. You have gone away forever from this world but your memories are and will always be in my heart. 
+
+
+# preface: |
+#   This is an example of a thesis setup to use the reed thesis document class
+#   (for LaTeX) and the R bookdown package, in general.
+
+bibliography: bib/thesis.bib
+# Download your specific bibliography database file and refer to it in the line above.
+csl: csl/apa.csl
+# Download your specific csl file and refer to it in the line above.
+lot: true
+lof: true
+space_between_paragraphs: true
+always_allow_html: yes
+
+# Delete the # at the beginning of the previous line if you'd like
+# to have a blank new line between each paragraph
+#header-includes:
+#- \usepackage{tikz}
+---
+
+
+
+```{r include_packages, include = FALSE}
+# This chunk ensures that the thesisdown package is
+# installed and loaded. This thesisdown package includes
+# the template files for the thesis.
+if(!require(devtools))
+  install.packages("devtools", repos = "http://cran.rstudio.com")
+if(!require(thesisdown))
+  devtools::install_github("ismayc/thesisdown")
+library(thesisdown)
+
+#load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr, pryr, tictoc, kableExtra, R.utils, 
+               DescTools, GGally, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
+               viridis, viridisLite, RColorBrewer, ggfortify, plotly, highcharter, treemap, d3heatmap, 
+               arules, arulesViz, visNetwork, igraph,
+               TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
+               countrycode, WDI, purrr, igraph, visNetwork, randomcoloR, treemapify,
+               shiny, ggmap, maptools, maps, eply, 
+               # shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, 
+               parallel, caret, pROC, lightgbm,
+               bookdown, servr, ggthemes, tidyverse)
+
+options(warn = -1, digits = 4, scipen = 999)
+set.seed(84)
+
+# load clean and prepared data (GTD)
+setwd("C:/Users/Pranav_Pandya/Desktop/Thesis/gtd_eda/index")
+
+# load clean data (GTD)
+df <- readRDS("data/gtd_clean_v2.rds")
+
+theme_set(theme_fivethirtyeight(base_size = 12))
+```
+
+<!-- You'll need to include the order that you'd like Rmd files to appear in the _bookdown.yml file for
+PDF files and also delete the # before rmd_files: there.  You'll want to not include 00(two-hyphens)prelim.Rmd
+and 00-abstract.Rmd since they are handled in the YAML above differently for the PDF version.
+-->
+
+
+# Introduction {.unnumbered}
+
+Today, we live in the world where terrorism is becoming a primary concern because of the growing number of terrorist incidents involving civilian fatalities and infrastructure damages. The ideology and intentions behind such attacks is indeed a matter of worry. Living under the constant threat of terrorist attacks in any place is no better than living in jungle and worrying about which animal will attack you and when. An increase in number of radicalized attacks around the world is a clear indication that terrorism transitioning to from a place to an idea however existence of specific terror group and their attack characteristics over the period of time can be vital to fight terrorism and to engage peace keeping missions effectively. Having said that number terrorist incidents are growing these days, availability of open-source data containing information of such incidents, recent developments in machine learning algorithms and technical infrastructure to handle large amount of data open ups variety of ways to turn information into actionable intelligence. 
+
+## Definition of Terrorism {.unnumbered}
+
+Terrorism in broader sense includes state sponsored and non-state sponsored terrorist activities. Scope of this research is limited to **non-state sponsored** terrorist activities only. Non-state actors in simple words mean entities that are not affiliated, directed or funded by the government and that exercise significant economic, political or social power and influence at a national and international level upto certain extent [@NIC_2007]. An example of non-state actors can be NGOs, religious organizations, multi national companies, armed groups or even a online (Internet) community. ISIL is the prime example of non-state actor which falls under armed groups segment. 
+
+> Global Terrorism Database [@NationalConsortiumfortheStudyofTerrorismandResponsestoTerrorismSTART_2016] defines terrorist attack as a threatened or actual use of illegal force and violence by a non-state actor to attain a political, economic, religious or social goal through fear, coercion or intimidation. 
+
+This implies that three of the following attributes are always present in each events of our chosen dataset:
+
+* The incident must be intentional – the result of a conscious calculation on the part of a perpetrator.
+* The incident must entail some level of violence or immediate threat of violence including property violence, as well as violence against people.
+* The perpetrators of the incidents must be sub-national actors. 
+
+## Problem Statement {.unnumbered}
+
+Nowadays, data is considered as the most valuable resource and machine learning makes it possible to interpret complex data however most use cases are seen in business context such as music recommendation, predicting customer churn or finding probability of having cancer. With recent development in machine learning algorithms and access to open source data and software, there are plenty of opportunities to correctly understand historical terrorist attacks and prevent the future conflicts. In the last decade, terrorist attacks have been incresed significantly as shown in the plot below: 
+
+
+```{r echo=FALSE, fig.cap="Terrorist attacks around the world between 1970-2016", fig.height=3, out.width = "100%"}
+
+tmp <- df %>% group_by(year) %>% summarize(attack_count = n())
+img <- png::readPNG("figure/terrorism_logo1.png") 
+rast <- grid::rasterGrob(img, interpolate = T)
+
+ggplot(tmp, aes(x=year, y=attack_count)) + 
+  expand_limits(y = c(1, 18000)) +
+  annotation_custom(rast, ymin = 5000, ymax = 15000, xmin = 2007) +
+  geom_line(size=1.2, color="red") + 
+  ggtitle("Terrorist attacks around the world between 1970-2016") + 
+  scale_x_continuous(breaks= seq(1970, 2016, 5)) +
+  theme(axis.title = element_text(size=12), plot.title = element_text(size=12)) 
+
+```
+
+After September 2001 attacks, USA and other powerful nations have carried out major operations to neutralize the power and spread of known and most violent terrorist groups within targetted region such as in Afghanistan, Iraq and most recently in Syria. It’s also worth mentioning that United Nations already have ongoing peacekeeping missions in conflicted regions around the world for a long time. However number of terror attacks continues to rise and in fact, it is almost on peak in the last 5 years. This leads to a question why terrorism is becoming unstoppable despite the continued efforts. I argue that the cause of problem is group’s ideology and political motivations itself. Understanding and interpreting the attack characteristics of relevant groups in line with their motivations to do so can reflect bigger picture. An extensive research by [@Heger_2010] supports this argument and suggests that a group’s political intentions are revealed when we examine who or what it chooses to attack.
+
+
+## Research Design and Data {.unnumbered}
+
+This research employs quantitative research methodology and focuses on reporoducibility. A shiny app is developed in line with the analysis to allow target audience to have free choice of sampling from population (data). Scope of work for this research limited to non-state actors only.  In the initial part, research focuses on impact analysis on global level to identify vulnerable regions and corresponding patterns in type of attack, type of weapon and type of target over the period of time. Within this exploratory data analysis part, we also determine and examine characteristics of top ten most active and deadliest groups. The major part of this research is based on machine learning algorithms; specifically time-series forecasting models and classification algorithms in order to achieve actionable intelligence toward counter terrorism support as primary objective of this research.
+
+> According to [@Samuel_1959], A well-known researcher in the field of artificial intelligence who coined the term "machine learning", defines machine learning as a “field of study that gives computers the ability to learn without being explicitly programmed”. It is subset of artificial intelligence which enables computers to learn from experience in order to create inference over a possible outcome used later to take a decision. 
+
+Second part of this research begins with time-series analysis where objective is to determine future number of attacks and number of fatalities by seasonality i.e. months and quarters for chosen country/ countries. At first we examine seasonal patterns and perform correlation analysis. In the next part, we use different forecasting models and evaluate their performance on out of fold set i.e. validation data with various metrics. Within the context of time-series analysis, we generate forecasts for future periods for each model and then use ensemble method to make final predictions. Third part of this research makes use of gardient boosting algorithm lightgbm (which is recently developed by Microsoft and open-source) for classification task. The underlying idea is to predict class probability for chosen response variable. For example, what is the possibility of attack being a suicide attack, whether or not an attack will last longer than 24 hours or finding possibility of attack being part of multiple attacks. For each response variable, we find the most important features from our trained model. In the last part, we make use of explainer object to validate trustworthiness of our model. This is particularly helpful in understanding reasons behind predictions. 
+
+**Data**
+
+This research project uses historical data of terrorist attacks that took place around the world between 1970 to 2016 from open-source [Global Terrorism Database (GTD)](https://www.start.umd.edu/gtd/about/) as a primary source of data. It is currently the most comprehensive unclassified database on terrorist events in the world and contains information on over 170,000 terrorist attacks. It contains information on the date and location of the incident, the weapons used and nature of the target, the number of casualties and the group or individual responsible if identifiable. Total number of variables are more than 120 in this data. One of the main reason for choosing this database is because 4,000,000 news articles and 25,000 news sources were reviewed to prepare this data from 1998 to 2016 alone [@NationalConsortiumfortheStudyofTerrorismandResponsestoTerrorismSTART_2016].
+
+Main data is further enriched with country and year wise socio-economical conditions, arms import/export details and migration details from World Bank Open Data to get multi-dimensional view for some specific analysis. This additional data falls under the category of early warning indicators (short term and long term) and potentially linked to the likelyhood of vilonet conflicts as suggested by the researcher [@Walton_2011] and [@StockholmInternationalPeaceResearchInstitute_2017].
+
+An important aspect of this research is use of open-source data and open-source software i.e R. The reason why media-based data source is chosen as primary source of data and is because journalists are usually the first to report and document such incidents and in this regard, first hand information plays significant role in quantitative analysis. Since the source of data is from publically available sources, the term "intelligence" refers to open-source intelligence (OSINT) category.
+
+
+## Policy and Practice Implications {.unnumbered}
+
+This research project is aimed to provide data-driven counter terrorism support and contributes positively to the counter terrorism policy. Outcome of used machined learning algorithms can serve as an early warning system to address the rare events related to armed conflict, civil war and other political violence around the world from non-state actors. Research findings and insights will serve as an actionable intelligence and it will help policy makers or authorities to take necessary steps in time to prevent such situations. Alongwith time-series forecasting, the key take away from this research is significance of causal variables depending on group's motivation/ intentions behind attacks. 
