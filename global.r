@@ -101,12 +101,6 @@ df_class <- df %>%
          nkill, nwound, arms_export, arms_import, population, gdp_per_capita,
          refugee_asylum, refugee_origin, net_migration, n_peace_keepers, conflict_index) %>%
   replace_na(list(nkill = 0, nwound = 0)) %>%
-  group_by(group_name, region, year, month) %>% 
-  filter(if_else(part_of_multiple_attacks == 1, 
-                 nkill == max(nkill) & nwound == max(nwound), 
-                 nkill == nkill & nwound == nwound)) %>%
-  ungroup() %>%
-  distinct() %>%
   mutate(suicide_attack = if_else(suicide_attack == 1, "Yes", "No"),
          attack_success = if_else(attack_success == 1, "Yes", "No"),
          extended = if_else(extended == 1, "Yes", "No"),

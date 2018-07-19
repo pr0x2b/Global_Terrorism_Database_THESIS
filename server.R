@@ -2157,7 +2157,7 @@ shinyServer(function(input, output, session) {
    output$vbox_spw <- renderValueBox({
     req(input$lgb_filter_country, input$lgb_target_var)
     data <- df_class %>% filter(country %in% input$lgb_filter_country)
-    data <- data[, colnames(data) == input$lgb_target_var]
+    data <- as.data.frame(data[, colnames(data) == input$lgb_target_var])
     spw <- as.data.frame(table(data[,1])) 
     spw <- round(spw$Freq[1]/spw$Freq[2], 1)
     valueBox(spw, "scale_pos_weight", icon = icon("plus"), color = 'orange') 
@@ -2214,8 +2214,8 @@ shinyServer(function(input, output, session) {
       # Step 1: log transformation
       #-------------------------------------------------------------
       data <- data %>%  
-        mutate(nkill = log1p(nkill), 
-               nwound= log1p(nwound),
+        mutate(nkill = log1p(nkill + 0.01), 
+               nwound= log1p(nwound + 0.01),
                arms_export = log1p(arms_export + 0.01),
                arms_import = log1p(arms_import + 0.01),
                population = log1p(population + 0.01))
@@ -2267,13 +2267,13 @@ shinyServer(function(input, output, session) {
       # Step 5: Create train, test and validation split
       #--------------------------------------------------------------
 
-      train <- data %>% filter(year <= 2014)
-      valid <- data %>% filter(year == 2015)
+      train <- data %>% filter(year <= 2015)
+      # valid <- data %>% filter(year == 2015)
       test  <- data %>% filter(year == 2016) 
      
       data <- list(dfall = data,
                    training_data = train, 
-                   validation_data = valid,
+                   # validation_data = valid,
                    test_data  = test,
                    raw_test_data = raw_test_data)
 
@@ -2299,11 +2299,11 @@ shinyServer(function(input, output, session) {
 
     })
 
-   output$vbox_valid <- renderValueBox({
-    data <- data_lgb_model()$validation_data
-    valueBox(unique(data$year), "Validation data", icon = icon("database"), color = 'olive') 
+   # output$vbox_valid <- renderValueBox({
+   #  data <- data_lgb_model()$validation_data
+   #  valueBox(unique(data$year), "Validation data", icon = icon("database"), color = 'olive') 
 
-    })  
+   #  })  
 
    output$vbox_test <- renderValueBox({
     data <- data_lgb_model()$test_data
@@ -2322,9 +2322,9 @@ shinyServer(function(input, output, session) {
     str(data_lgb_model()$training_data)
     })
 
-   output$lgb_split_str_valid <- renderPrint({ 
-    str(data_lgb_model()$validation_data)
-    })
+   # output$lgb_split_str_valid <- renderPrint({ 
+   #  str(data_lgb_model()$validation_data)
+   #  })
 
    output$lgb_split_str_test <- renderPrint({ 
     str(data_lgb_model()$test_data)
@@ -2397,10 +2397,8 @@ shinyServer(function(input, output, session) {
 
       dfall <- data_lgb_model()$dfall
       train <- data_lgb_model()$training_data
-      valid <- data_lgb_model()$validation_data
+      # valid <- data_lgb_model()$validation_data
       test  <- data_lgb_model()$test_data
-
-      dtest <- as.matrix(test[, colnames(test) != input$lgb_target_var])
       
       # define all categorical features
       all_cat_vars <- df %>% select(year, month, day, conflict_index, region, country, provstate, city, 
@@ -2414,12 +2412,12 @@ shinyServer(function(input, output, session) {
       categorical_features <- categorical_features[!categorical_features %in% input$lgb_target_var]
 
       train_label <- train[, input$lgb_target_var]
-      valid_label <- valid[, input$lgb_target_var]
+      test_label  <- test[, input$lgb_target_var]
 
       dtrain = lgb.Dataset(data = as.matrix(train[, colnames(train) != input$lgb_target_var]), 
                            label = train_label, categorical_feature = categorical_features)
-      dvalid = lgb.Dataset(data = as.matrix(valid[, colnames(valid) != input$lgb_target_var]), 
-                           label = valid_label, categorical_feature = categorical_features)
+      dtest  = lgb.Dataset(data = as.matrix(test[, colnames(test) != input$lgb_target_var]), 
+                           label = test_label, categorical_feature = categorical_features)
 
       params <- list(objective = "binary", 
                     metric = "auc", 
@@ -2441,7 +2439,7 @@ shinyServer(function(input, output, session) {
       model <- try(
                 lgb.train(params, 
                   dtrain, 
-                  valids = list(validation = dvalid), 
+                  valids = list(validation = dtest), 
                   nrounds = input$lgb_nrounds, 
                   early_stopping_rounds = input$lgb_early_stopping_rounds,
                   eval_freq = input$lgb_eval_freq)
@@ -2454,7 +2452,9 @@ shinyServer(function(input, output, session) {
       cat("--------------------------------------", "\n", "\n")
 
       # get predictions on validation data (for model interpretation)
-      test_preds <- predict(model, data = dtest, n = model$best_iter)
+      test_preds <- predict(model, 
+                            data = as.matrix(test[, colnames(test) != input$lgb_target_var]), 
+                            n = model$best_iter)
 
       # get feature importance
       fi <- lgb.importance(model, percentage = TRUE)
@@ -2469,7 +2469,7 @@ shinyServer(function(input, output, session) {
                    test = test,
                    dtest = dtest,
                    dtrain = dtrain,
-                   dvalid = dvalid,
+                   # dvalid = dvalid,
                    test_preds = test_preds,
                    fi = fi)
 
@@ -2616,7 +2616,8 @@ shinyServer(function(input, output, session) {
     output$plot_lgb_explainer <- renderHighchart({
 
       #extract interpretation for 1st observation in validation data
-      test_matrix <- model_data()$dtest
+      test <- model_data()$test
+      test_matrix <- as.matrix(test[, colnames(test) != input$lgb_target_var])
       model <- model_data()$model
       tree_interpretation <- lgb.interprete(model, data = test_matrix, idxset = test_pred_index())
       

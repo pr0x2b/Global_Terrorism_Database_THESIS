@@ -25,14 +25,14 @@ sidebar <- dashboardSidebar(
         # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
       menuItem("Master Thesis", tabName = "master_thesis", icon = icon("home")),
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
-      menuItem("Part 1: Impact Analysis", icon = icon("globe"),tabName = "part_1",
+      menuItem("Impact Analysis", icon = icon("globe"),tabName = "part_1",
         menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
         menuSubItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps")),
-      menuItem("Part 2: Active Groups", tabName = "eda_p2", icon = icon("users")),
-      menuItem("Part 3: Statistical Analysis", tabName = "gui", icon = icon("bar-chart-o")),
-      menuItem("Part 4: Time-series Analysis", tabName = "ts_analysis_01_season", icon = icon("calendar")),
-      menuItem("Part 5: classification", tabName = "classification", icon = icon("gears")),
-      menuItem("Part 6: Insights", tabName = "predictions", icon = icon("globe")),
+      menuItem("Top 10 Active Groups", tabName = "eda_p2", icon = icon("users")),
+      menuItem("Statistical Analysis", tabName = "gui", icon = icon("bar-chart-o")),
+      menuItem("Time-series Forecasting", tabName = "ts_analysis_01_season", icon = icon("calendar")),
+      menuItem("Classification", tabName = "classification", icon = icon("gears")),
+      # menuItem("Part 6: Insights", tabName = "predictions", icon = icon("globe")),
       br(), br(), br(), 
       menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
       # h5("Pranav Pandya", style="text-align:center;"),
@@ -96,11 +96,10 @@ body <- dashboardBody(
                   style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE,
                   tags$ul(
                     tags$li("Part 1: Global impact analysis"), 
-                    tags$li("Part 2: Determining most active groups"), 
+                    tags$li("Part 2: Characteristics of most active groups"), 
                     tags$li("Part 3: Statistical analysis"), 
-                    tags$li("Part 4: Algorithmic decision support"), 
-                    tags$li("Part 5: Interpretations/ Insights")), 
-                  p("Note: Algorithmic decision support will include various binary and multiclass classification models.")),
+                    tags$li("Part 4: Time-series forecasting"), 
+                    tags$li("Part 5: Binary classification"))),
 
                 box(
                   style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE, collapsible = FALSE, collapsed = FALSE,
@@ -768,12 +767,10 @@ body <- dashboardBody(
                               tags$ul(
                                 tags$li("create time based split"),
                                 tags$li("train model on training data"),
-                                tags$li("evaluate model performance on validation data"),
-                                tags$li("predict on test data")), br(),
+                                tags$li("evaluate model performance on test data")), br(),
                               h4("Split strategy:"), 
                               tags$ul(
-                                tags$li("training data: upto year 2014 only"),
-                                tags$li("validation data: year 2015"),
+                                tags$li("training data: upto year 2015 only"),
                                 tags$li("test data: year 2016"))
                               )
                             )
@@ -783,11 +780,9 @@ body <- dashboardBody(
                           fluidRow(
                             box(width = 12, status = "warning",
                               title = "Time based split for modelling", 
-                              withSpinner(valueBoxOutput("vbox_train", width = 6)), 
-                              tags$head(tags$style(HTML("#vbox_valid .fa { font-size: 55px; }"))),
-                              withSpinner(valueBoxOutput("vbox_valid", width = 3)), 
+                              withSpinner(valueBoxOutput("vbox_train", width = 8)),  
                               tags$head(tags$style(HTML("#vbox_test .fa { font-size: 55px; }"))),
-                              withSpinner(valueBoxOutput("vbox_test", width = 3))
+                              withSpinner(valueBoxOutput("vbox_test", width = 4))
                             )),
                           h4("Glimpse of prepared data"), 
                           tabsetPanel(type = "tabs", id = "lgb_split_str",
@@ -800,11 +795,6 @@ body <- dashboardBody(
                                 fluidRow(
                                   column(width = 12,
                                     withSpinner(verbatimTextOutput("lgb_split_str_train"))
-                                  ))),
-                              tabPanel("Validation data", 
-                                fluidRow(
-                                  column(width = 12,
-                                    withSpinner(verbatimTextOutput("lgb_split_str_valid"))
                                   ))),
                               tabPanel("Test data", 
                                 fluidRow(
