@@ -1,0 +1,218 @@
+`r if(knitr:::is_latex_output()) '\\appendix'`
+
+`r if(!knitr:::is_latex_output()) '# (APPENDIX) Appendix {-}'` 
+
+<!--
+If you feel it necessary to include an appendix, it goes here.
+-->
+
+
+# Appendix I
+
+## Initial data preparation script
+
+```{r eval=FALSE, echo=TRUE}
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(knitr, pryr, openxlsx, tidyverse, data.table, DT, DescTools, RCurl, countrycode)
+options(warn = -1, digits = 4, scipen = 999)
+#---------------------------------------
+#External data (country geocodes)
+#---------------------------------------
+geocodes <- fread("https://github.com/oughton/geocode/raw/master/example/result.csv") %>%
+  select(country = V1, country_latitude = V2, country_longitude = V3) %>%
+  mutate(ISO = countrycode(country, 'country.name', 'iso3c')) %>%
+  filter(!is.na(ISO)) %>%
+  select(ISO, country_latitude, country_longitude)
+
+saveRDS(geocodes, "country_geocodes.rds")  
+country_geocodes <- readRDS("country_geocodes.rds")
+
+#---------------------------------------
+#data preparation (GTD)
+#---------------------------------------
+tmp <- read.xlsx("data/data_preparation/globalterrorismdb_0617dist.xlsx", 
+                 sheet = 1, colNames = TRUE) %>% 
+  select(eventid, 
+         year = iyear, 
+         month = imonth, 
+         day = iday, 
+         country = country_txt, 
+         region = region_txt, 
+         provstate, 
+         city, 
+         latitude, # 2.7% NAs will be replaced with country level geocodes
+         longitude,
+         attack_type = attacktype1_txt, 
+         weapon_type = weaptype1_txt, 
+         target_type = targtype1_txt, 
+         target_nalty= natlty1_txt, 
+         group_name  = gname, 
+         nkill,   # 5% NAs
+         nwound,  # 9% NAs
+         extended, 
+         crit1_pol_eco_rel_soc = crit1, 
+         crit2_publicize = crit2, 
+         crit3_os_intl_hmn_law = crit3, 
+         part_of_multiple_attacks = multiple, 
+         attack_success = success, 
+         suicide_attack = suicide, 
+         individual_attack = individual,
+         intl_logistical_attack = INT_LOG, 
+         intl_ideological_attack = INT_IDEO 
+         ) %>%
+  replace_na(list(provstate = "unknown",       # replace nas with unknown
+                  city =  "unknown",
+                  target_nalty = "unknown")) %>%
+  mutate(ISO = countrycode(country, 'country.name', 'iso3c'), # standardize country name codes
+         month = if_else(month == 0, 1, month), # replace unknown month to 1 in 20 occurences 
+         day = if_else(day == 0, 1, day),       # replace unknown day to 1 in 891 occurences
+         date = paste(year, month, day, sep="-"),
+         date = as.Date(date, format = "%Y-%m-%d"),
+         weapon_type = if_else(
+           weapon_type == "Vehicle (not to include vehicle-borne
+                           explosives, i.e., car or truck bombs)", 
+                          "Vehicle", weapon_type)) %>% # shorten lengthy name
+  left_join(country_geocodes) %>% 
+  mutate(latitude = ifelse(is.na(latitude), country_latitude, 
+                           latitude), # replace missing lat lons with country lat lons
+         longitude = ifelse(is.na(longitude), country_longitude, longitude)) %>%
+  select(-c(country_latitude, country_longitude)) %>%
+  # replace missing lat lons in remaining (~14) disputed/dissolved countries 
+  # with country level lat long from prev obs
+  mutate(latitude = if_else(is.na(latitude) & country == 
+                              "People's Republic of the Congo", -0.2, latitude),
+         longitude = if_else(is.na(longitude) & country == 
+                               "People's Republic of the Congo", 15.8, longitude),
+         latitude = if_else(is.na(latitude) & country == 
+                              "Democratic Republic of the Congo", -4.0, latitude),
+         longitude = if_else(is.na(longitude) & country == 
+                               "Democratic Republic of the Congo", 21.7, longitude),
+         latitude = if_else(is.na(latitude) & country == "North Yemen", 15.5, latitude),
+         longitude = if_else(is.na(longitude) & country == "North Yemen", 48.5, longitude),
+         latitude = if_else(is.na(latitude) & country == "South Yemen", 12.8, latitude),
+         longitude = if_else(is.na(longitude) & country == "South Yemen", 45.0, longitude),
+         latitude = if_else(is.na(latitude) & country == "Western Sahara", 27.4, latitude),
+         longitude = if_else(is.na(longitude) & country == "Western Sahara", -9.0, longitude),
+         latitude = if_else(is.na(latitude) & country == "Guadeloupe", 16.2, latitude),
+         longitude = if_else(is.na(longitude) & country == "Guadeloupe", -61.5, longitude),
+         latitude = if_else(is.na(latitude) & country == "New Caledonia", -20.9, latitude),
+         longitude = if_else(is.na(longitude) & country == "New Caledonia", 165.6, longitude),
+         latitude = if_else(is.na(latitude) & country == "Martinique", 14.6, latitude),
+         longitude = if_else(is.na(longitude) & country == "Martinique", -61.0, longitude),
+         latitude = if_else(is.na(latitude) & country == "Zaire", -2.5, latitude),
+         longitude = if_else(is.na(longitude) & country == "Zaire", 28.8, longitude),
+         latitude = if_else(is.na(latitude) & country == "Kosovo", 43.1, latitude),
+         longitude = if_else(is.na(longitude) & country == "Kosovo", 20.7, longitude),
+         latitude = if_else(is.na(latitude) & country == "Czechoslovakia", 50.6, latitude),
+         longitude = if_else(is.na(longitude) & country == "Czechoslovakia", 14.0, longitude),
+         latitude = if_else(is.na(latitude) & country == "Yugoslavia", 42.5, latitude),
+         longitude = if_else(is.na(longitude) & country == "Yugoslavia", 20.5, longitude)
+         )
+
+#--------------------------------------------------------------
+#External data (World Devlopment Indicatorsvfrom worldbank api)
+#--------------------------------------------------------------
+WDIsearch('conflict') # enter search text and extract code
+
+ind = c("arms_export" = "MS.MIL.XPRT.KD",       # Arms exports (SIPRI trend indicator values)
+        "arms_import" = "MS.MIL.MPRT.KD",       # Arms imports (SIPRI trend indicator values)
+        "population" = "SP.POP.TOTL",           # Population, total
+        "gdp_per_capita" = "NY.GDP.PCAP.KD",    # GDP per capita (constant 2010 US$)
+        "refugee_origin" = "SM.POP.REFG.OR",    # Refugee population by country of origin
+        "refugee_asylum" = "SM.POP.REFG",       # Refugee population by country of asylum
+        "net_migration" = "SM.POP.NETM",        # Net migration
+        "n_peace_keepers" = "VC.PKP.TOTL.UN",   # Presence of peace keepers 
+        "conflict_index" = "IC.PI.CIR")         # conflict index (0-10)
+
+countries_vec <- as.vector(unique(df$ISO)) # countries in gtd dataset
+
+wdi_data <- WDI(indicator = ind, start = 1970, end = 2016, extra = TRUE) %>%
+  select(year, ISO = iso3c, arms_export, arms_import, population, gdp_per_capita, 
+         refugee_origin, refugee_asylum, net_migration, n_peace_keepers, conflict_index) %>% 
+  drop_na(ISO) %>%
+  filter(ISO %in% countries_vec) %>%
+  # replacing NAs for visualization and modelling purpose
+  replace_na(list(arms_export = 0, 
+                  arms_import = 0, 
+                  population = -1, 
+                  gdp_per_capita = 0, 
+                  refugee_origin = 0, 
+                  refugee_asylum = 0, 
+                  net_migration = 0, 
+                  n_peace_keepers = 0, 
+                  conflict_index = -1)) 
+
+
+df <- df %>% left_join(wdi_data)
+saveRDS(df, "gtd_clean_v2.rds")
+
+# move all data to: gtd_eda/index/data  path for shiny and thesis writing
+# "df" is the main file used throughout this research
+
+#---------------------------------------
+# iso3c file for worldmap
+#---------------------------------------
+countries <- df %>% group_by(country) %>% summarise(total = round(n())) 
+countries$iso3 <- countrycode(countries$country, 
+                              origin = "country.name", destination = "iso3c")
+saveRDS(countries, "countries.rds")
+
+```
+
+## List of variables and short description
+
+```{r echo=FALSE}
+tmp <- as.data.frame(names(df))
+tmp$description <- c("a 12-digit Event ID", 
+           "year in which the incident occurred", 
+           "month", "day", "country", "world region", 
+           "an administrative division or unit of a country", 
+           "city", "latitude", "longitude",  
+           "method of attack (reflects the broad class of tactics used)", 
+           "type of weapon used in the incident", 
+           "type of target/victim", 
+           "nationality of the target that was attacked", 
+           "name of the group that carried out the attack", 
+           "number of total confirmed fatalities for the incident", 
+           "number of confirmed non-fatal injuries", 
+           "whether or not an incident extended more than 24 hours", 
+           "political, economic, religious, or social goal", 
+           "intention to coerce, or publicize to larger audience", 
+           "action from the incident is outside intl humanitarian law", 
+           "whether an incident being part of multiple attacks", 
+           "suicide attack",
+           "whether an incident was successful", 
+           "whether an attack carried out by unaffiliated Individual(s)",  
+           "cross border incident", 
+           "attack on target of a different nationality", 
+           "ISO code for country", 
+           "Approx. date of incident", 
+           "Arms exports (SIPRI trend indicator values)", 
+           "Arms imports (SIPRI trend indicator values)", 
+           "Population, total", 
+           "GDP per capita (constant 2010 US$)", 
+           "Refugee population by country or territory of origin", 
+           "Refugee population by country or territory of asylum", 
+           "Net migration", 
+           "Presence of peace keepers", 
+           "Extent of conflict of interest regulation index (0-10)")
+names(tmp) <- c("Name of the Variable", "description")
+knitr::kable(tmp, caption = "Short description of important variables", booktabs = TRUE) %>%
+  kable_styling(latex_options = "HOLD_position", font_size = 12, full_width = F, position = "left")
+
+```
+
+# Appendix II
+
+This appendix includes all of the R chunks of code that were hidden throughout the document (using the `include = FALSE` chunk tag) to help with readibility and/or setup.
+
+**In the main Rmd file**
+
+```{r ref.label='include_packages', results='hide', echo = TRUE}
+```
+
+**In Chapter \@ref(ref-labels):**
+
+```{r ref.label='include_packages_2', results='hide', echo = TRUE}
+```

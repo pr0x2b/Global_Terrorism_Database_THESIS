@@ -1,371 +1,77 @@
-# Impact Analysis {#impact-analysis}
+# Literature Review {#literature-review}
 
-This part of the research uses descriptive statistics to explore and understand terrorist events from various perspectives. This is essential to examine characteristics of attacks and responsible groups over the period of time. Findings and insights from this analysis is eventually helpful to select appropriate data for the statistical modelling part. 
+I use structured approach to narrow down recent and relevant literature. In this chapter, we take a glimpse of prior research in this field and review the relevant literature in line with factors identified in [Essentials of Counterterrorism] chapter. In the last part, we examine literature gap and relevance with our research topic. 
 
-## Data Preparation
+## Overview of prior research
 
-The primary data file `globalterrorismdb_0617dist.xlsx` used in this research contains over 170,000 terrorist attacks between 1970-2016 (excluding the year 1993). This file can be downloaded by filling up a form on START Consortium’s website ^[Accessing GTD data: https://www.start.umd.edu/gtd/contact/]. This file contains total of 135 variables categorized by incident ID and date, incident information, attack information, weapon information, target/victim information, perpetrator information, casualties and consequences, and additional information. Out of 135 variables, I have selected total of 38 variables from each categories that are relevant to research objective. During data cleaning process, I have made following changes (corrective steps) to original data to make it ready for analysis:
+Scientific research in the field of terrorism is heavily impacted by research continuance issue. According to [@Gordon_2007], there is indeed a growing amount of literature in terrorism field but majority of contributors are one-timers who visit and study this field, contribute few articles, and then move to another field. Researcher [@Schuurman_2018] points out another aspect and suggests that terrorism research has been criticized for a long time for being unable to overcome methodological issues such as high dependency on secondary sources, corresponding literature review methods and relatively insufficient statistical analyses. This argument is further supported number of prominent researchers in this field. Compared to other similar fields such as criminology, terrorism research suffers a lot due to complications in data availability, reliability and corresponding analysis to make the research useful to policy makers [@Brennan_2016].
 
-* renaming of some variables (such as `gname` to `group_name`, `INT_LOG` to `intl_logistical_attack`) to keep the analysis and codes interpretable to wider audience. 
-* replacing 2.7% NAs in latitude and longitude with country level or closest matching geocodes. Note that most NAs refers to either disputed territories such as Kosovo or countries that no longer exists such as Czechoslovakia.
-* 5% NAs in `nkill` (number of people killed) and 9% NAs in `nwound` (number of people wounded) variable replaced with 0. GTD reference manual suggests that "Where there is evidence of fatalities, but a figure is not reported or it is too vague to be of use, this field remains blank."
-* NAs in regional variables i.e `city` and `provstate` replaced with "unknown"
+### Harsh realities
 
- GTD data is further enriched with country and year wise indicators from World Bank Open Data to get multi-dimensional view and for modelling part. This data is also open-source and can be accessed through R library `WDI` ^[Searching and extracting data from the World Bank’s World Development Indicators. : https://cran.r-project.org/web/packages/WDI/WDI.pdf]. Following is the illustration of code used to query WDI api and to merge it with primary data. 
+One of the harsh realities in terrorism research is that the use of statistical analysis is fairly uncommon. In late 80s, [@Jongman_1988] in his book "*Political Terrorism: A New Guide To Actors, Authors, Concepts, Data Bases, Theories, And Literature*" identified serious concerns in terrorism research related to methodologies used by the researcher to prepare data and corresponding level of analysis. [@Silke_2001] reviewed the articles in terrorism research between 1995 and 2000 and suggests that key issues raised by [@Jongman_1988] remains unchanged in that period as well. Their research findings indicate that only 3% of research papers involved the use of inferential analysis in the major terrorism journals. Similar research was carried out by [@Lum_2006] on quality of research articles in terrorism research and their finding suggests that, much has been written on terrorism between 1971 to 2003 and around 14,006 articles were published however the research that can help/support counter terrorism strategy was extremely low. This study also suggests that only 3% of the articles were based on some form of empirical analysis, 1% of articles were identified as case studies and rest of the articles (96%) were just thought pieces. 
 
-```{r eval=FALSE, include=TRUE}
-# install WDI package in R and query the api with keyword
-WDIsearch('conflict')
+Very recently, researcher [@Schuurman_2018] also conducted an extensive research to review all the articles (3442) published from 2007 to 2016 in nine academic journals on terrorism and provides an insight on whether or not the trend (as mentioned) in terrorism research continues. Their research outcome suggests upward trend in on the use of statistical analysis however major proportion is related to descriptive analysis only. They selected 2552 articles for analysis and their findings suggest that:
 
-# create an index of selected variables based on search result
-ind = c("arms_export" = "MS.MIL.XPRT.KD", 
-        "arms_import" = "MS.MIL.MPRT.KD",
-        "population" = "SP.POP.TOTL",
-        "gdp_per_capita" = "NY.GDP.PCAP.KD",
-        "refugee_origin" = "SM.POP.REFG.OR", 
-        "refugee_asylum" = "SM.POP.REFG", 
-        "net_migration" = "SM.POP.NETM",
-        "n_peace_keepers" = "VC.PKP.TOTL.UN",
-        "conflict_index" = "IC.PI.CIR")
+* only **1.3%** articles made use of inferential statistics
+* 5.8% articles used mix of descriptive and inferential statistics
+* 14.7% articles used descriptive statistics and 
+* 78.1% articles did not use any kind of statistical analysis 
 
-countries_vec <- as.vector(unique(df$ISO)) # countries in gtd dataset
-
-#Extract selected data by specifying start and end year
-wdi_data <- WDI(indicator = ind, 
-				start = 1970, 
-				end = 2016, 
-				extra = TRUE) %>%
-  select(year, ISO = iso3c, arms_export, arms_import, population, 
-  		 gdp_per_capita, refugee_origin, refugee_asylum, net_migration, 
-  		 n_peace_keepers, conflict_index) %>% 
-  drop_na(ISO) %>%
-  filter(ISO %in% countries_vec) %>%
-  replace_na(list(arms_export = 0, arms_import = 0, population = -1, 
-  				  gdp_per_capita = 0, refugee_origin = 0, 
-  				  refugee_asylum = 0, net_migration = 0, 
-  				  n_peace_keepers = 0, conflict_index = -1)) 
-
-# merge it with gtd data (by ISO code and year)
-# (Not to run, already merged in data preparation step)
-# df <- df %>% left_join(wdi_data)
-
+```{r stats1, echo=FALSE, fig.height=3, out.width="100%", fig.cap= "Use of statistics in terrorism research between 2007 to 2016"}
+include_graphics(path = "figure/research_stats.jpg")
 ```
-Note that above mentioned external data is merged by country and year only, and missing values are replaced as shown in the code. Below are the variables (with short description where necessary) from clean and prepared dataset and that are used in data analysis part. 
+[@Schuurman_2018]
 
-```{r echo=FALSE}
-tmp <- as.data.frame(names(df))
-tmp$description <- c("a 12-digit Event ID", 
-					 "year in which the incident occurred", 
-					 "month", "day", "country", "world region", 
-					 "an administrative division or unit of a country", 
-					 "city", "latitude", "longitude",  
-					 "method of attack (reflects the broad class of tactics used)", 
-					 "type of weapon used in the incident", 
-					 "type of target/victim", 
-					 "nationality of the target that was attacked", 
-					 "name of the group that carried out the attack", 
-					 "number of total confirmed fatalities for the incident", 
-					 "number of confirmed non-fatal injuries", 
-					 "whether or not an incident extended more than 24 hours", 
-					 "political, economic, religious, or social goal", 
-					 "intention to coerce, or publicize to larger audience", 
-					 "action from the incident is outside intl humanitarian law", 
-					 "whether an incident being part of multiple attacks", 
-					 "suicide attack",
-					 "whether an incident was successful", 
-					 "whether an attack carried out by unaffiliated Individual(s)",  
-					 "cross border incident", 
-					 "attack on target of a different nationality", 
-					 "ISO code for country", 
-					 "Approx. date of incident", 
-					 "Arms exports (SIPRI trend indicator values)", 
-					 "Arms imports (SIPRI trend indicator values)", 
-					 "Population, total", 
-					 "GDP per capita (constant 2010 US$)", 
-					 "Refugee population by country or territory of origin", 
-					 "Refugee population by country or territory of asylum", 
-					 "Net migration", 
-					 "Presence of peace keepers", 
-					 "Extent of conflict of interest regulation index (0-10)")
-names(tmp) <- c("Name of the Variable", "description")
-knitr::kable(tmp, caption = "Short description of important variables",
-		     booktabs = TRUE) %>%
-  kable_styling(font_size = 12, full_width = F, position = "left")
+### Review of relevant literature
 
-```
+In this section, we take a look at previous research that is intended toward counterterrorism support while making sure that the chosen research article/ literature contains at least some form of statistical modelling. 
 
-Detailed information and explaination about each variable can be found GTD codebook. 
+Simple linear regression was one of the approaches for prediction models in early days but soon it was realized that such models are weak in capturing complex interactions. Emergence of machine learning algorithms and advancement in deep learning made it possible to develop fairly complex models however country-level analysis with resolution at year level contributes majority of research work in conflict prediction [@Cederman_2017]. 
+
+[@Beck_2000] carried out a research to stress the important of the causes of conflict. Researchers claim that empirical findings in the literature of global conflict are often unsatisfying, and accurate forecasts are unrealistic despite availability immense data collections, notable journals and complex analyses. Their approach uses a version of neural network model and argues that their forecasts are significantly better than previous effort. 
+
+In a study to investigate the factors that explain when terrorist groups are most or least likely to target civilians, researcher [@Heger_2010] examines why terrorist groups need community support and introduces new data on terrorist groups. The research then uses logit analysis to test the relationship between independent variables and civilian attacks between 1960-2000. 
+
+In a unique and interesting approach, a researcher from ETH Zürich [@Chadefaux_2014] examines a comprehensive dataset of historical newspaper articles and introduces weekly risk index. This new variable is then applied to a dataset of all wars reported since 1990. Outcome of this study suggests that the number of conflict-related news items increases dramatically prior to the onset of conflict. Researcher claims that the onset of a war data within the next few months could be predicted with up to 85% confidence using only information available at the time. Another researcher [@Cederman_2017] supports the hypothesis and suggests that news reports are capable to capture political tension at a much higher temporal resolution and so that such variables have much stronger predictive power on war onset compared to traditional structural variables.
+
+One of the notable (and publicly known) researches in terrorism predicted the military coup in Thailand 1 month before its actual occurrence on 7 May 2014. In a report commissioned by the CIA-funded Political Instability Task Force, researchers [@WardLab_2014] forecasted irregular regime changes for coups, successful protest campaigns and armed rebellions, for 168 countries around the world for the 6-month period from April to September 2014. Researchers claim that Thailand was number 4 on their forecast list. They used an ensemble model that combines seven different split-population duration models. 
+
+Researchers [@Fujita_2016] use high temporal resolution data across multiple cities in Syria and time-series forecasting method to predict future event of deaths in Syrian armed conflict. Their approach uses day level data of death tolls from Violations Documentation Centre (VDC) in Syria. Using Auto-regression (AR) and Vector Auto-regression (VAR) models, their study identifies strong positive auto-correlations in Syrian cities and non-trivial cross-correlations across some of them. Researchers suggests that strong positive auto-correlations possibly reflects a sequence of attacks within short periods triggered by a single attack, as well as significant cross-correlation in some of the Syrian cities implies that deaths in one city were accompanied by deaths at another city. 
+
+Within a pattern recognition context, researchers [@Klausen_2016] from MIT Sloan developed a behavioural model to predict which Twitter users are likely belonged to the Islamic state group. Using data of approximately 5,000 Twitter users who were linked with Islamic state group members, they created dataset of 1.3 million users by associating friends and followers of target users. At the same time, they monitored Twitter over few months to identify which profiles are getting suspended. Researchers claim that they were able to train a machine learning model that matched suspended accounts with the specifics of the profile and creating a framework to identify likely members of ISIL.
+
+A similar research from [@Ceron_2018] examines over 25 million tweets in Arabic language when Islamic State was at its peak strength (between Jan 2014 to Jan 2015) and was expanding regions under its control. Researchers assessed the share of support from online Arab community toward ISIS and investigated time time-granularity of tweets while linking the tweet opinions with daily events and geo location of tweets. Outcome of their research finds relationship between foreign fighters joining ISIS and online opinions across the regions.
+
+One of the researches evaluates the targeting patterns and preferences of 480 terrorist groups that were operational between 1980 and 2011 in order to find the impact of longetivity of terrorist groups based on their lethality. Based on group-specific case studies on the Afghan and Pakistani Taliban and Harmony Database from Combat Terrorism Centre, researcher [@Nawaz_2017] uses Bivariate Probit Model to assess endogenous relationship and finds significant correlationship between negative group reputation and group mortality. Researcher also uses Cox Proportional Hazard Model to estimate longetivity of group. 
+
+[@Colaresi_2017] carried out a research to identify and avoid the problem of overfitting sample data. Researchers used the models of civil war onset data and came up with tool (R package: ModelCriticism) to illustrate how machine learning based research design can improve out of fold forecasting performance. Their study recommends making use of validation split along with train and test split to benefit from iterative model criticism. 
+
+Researchers [@Muchlinski_2016] use The Civil War Data (1945-2000) and compared the performance of Random Forests model with three different versions of logistic regression. Outcome of their study suggests that random forest model provides significantly more accurate predictions on the occurrences of rare events in out of sample data compared to logistic regression models on chosen dataset. However in an experimental research to reproduce this claims, [@Neunhoeffer_2018] ran re-analysis and finds problematic usage of cross-validation strategy. They contest the claim and suggest that there is no evidence of significant predictive performance of random forest as claimed by the original authors. 
 
 
-## Global Overview
+### GTD and machine learning in previous research
 
-A quick look at region level number attacks suggests that situation is becoming worst in Middle East & North Africa followed by South Asia, Sub-suharan Africa and Southeast Asia where exponential growth in number of attacks can be observed specifically from years 2010 to 2016.
+Addressing the issue of rare events, researchers [@Clauset_2013] came up with statistical modelling approach to estimate future probability of large scale terrorist attack. Using the data from GTD and RAND-MIPT database between 1968-2007, and three different models i.e. power law, exponential distributions and log normal, researchers estimates likelihood of observing 9/11 sized attack between 11-35%. Using the same procedure, researchers then makes a data-driven statistical forecast of at least one similar event over the next decade.
 
-```{r echo=FALSE, fig.cap="Attack Frequency by Year and Region", fig.height=5, out.width = "100%"}
-tmp <- df %>% group_by(region, year) %>% summarize(attack_count = n())
+In a study to identify determinants of variation in country compliance with financial counter terrorism, researcher [@Lula_2014] uses dataset on financial counter terrorism for the period 2004-2011 along with Global Terrorism Database. Researcher employs both quantitative and qualitative analysis in their approach and uses regression analysis (ordered logit model) to estimate statistical significance of independent variables on target variable i.e. compliance rates. Outcome of this study suggests that intensity and magnitude of terror threat, rate of international terror attacks, rate of suicide (terror) attacks, and military capability variable does not have statistically significant effect on country compliance with financial counter terrorism. Based on research findings, author suggests that many of the assumptions made in previous study in financial counter terrorism are incorrect.
 
-ggplot(tmp, aes(x=year, y=attack_count, color = region)) + 
-  geom_line(size = 1) + 
-  facet_wrap( ~ region, ncol=3, scales = "free_y") + 
-  ggtitle("Attack Frequency by Year and Region") + 
-  scale_x_continuous(breaks= seq(1970, 2016, 15)) +
-  theme(legend.position="none", plot.title = element_text(size=14),
-  		strip.text.x = element_text(size = 8, face = "bold", colour = "steelblue4"))
+A research from [@Brennan_2016] uses machine learning based approach to investigate terrorist incidents by country. This study makes use of regression techniques, Hidden Markov model, twitter outbreak detection algorithm, SURUS algorithm, as well as medical syndromic surveillance algorithms i.e EARSC based method and Farrington’s method to detect change in behaviour (in terms of terrorist incident or fatalities). Outcome of their study suggests that time-series aberration detection methods were highly interpretable and generalizable compared to traditional methods (regression and HMM) for analysing time series data. 
 
-```
+Researcher [@Block_2016] carried out a study to identify characteristics of terrorist events specific to aircrafts and airports and came up with situation crime prevention framework to minimize such attacks. In particular, researcher uses GTD data (2002-2014) specific to attacks involving airports/ aircraft that contains terrorist events related to 44 nations. In this study, Logistic Regression model is used to evaluate variables that are significantly associated with such attacks. Their research findings suggest that the likelihood of attacks against airports is mostly related to with domestic terrorists groups and, explosives and suicide attacks as a type of attack. In contrast, attacks against aircraft are more associated with international terrorists groups. 
 
-An interesting observation is in Eastern Europe region where sudden increase in number of attacks can be observed during 2014-2015 and then sudden decrease in 2016. Within the most impacted regions, nearly similar trend of gradual increase in number of attacks after 2010 and peak during 2014-2015 is visible. It’s worth mentioning that in June 2014, Islamic State announced establishment of "Caliphate" while declaring Abu Bakr al-Baghdadi as "leader of Muslims everywhere" and urging other groups to pledge allegiance [@AlJazeera_2014]. Islamic State was at its peak strength during Jan 2014 to Jan 2015 [@Ceron_2018].
+In an effort to improve accuracy of classification algorithms, researchers [@Mo_2017] uses GTD data and employs feature selection methods such as Minimal-redundancy maximal-relevancy (mRMR) and Maximal relevance (Max-Relevance). In this study, researchers use Support Vector Machine, Naive Bayes and Logistic Regression algorithms and evaluate performance of each model through classification precision and computational time. Their research find suggests that feature selection methods improves the accuracy of the model and comparatively, Logistic Regression model with seven optimal feature subset achieves a classification precision of 78.41%.
 
-To understand the attack characteristics, let’s take a look at Frequency of attack type and type of weapon used by terrorist groups. 
+A research from [@Ding_2017] also uses classification technique to evaluate risk of terrorist incident at global level using GTD and several other datasets. In particular, data comprising terror incidents between 1970 to 2015 was used to train and evaluate neural network (NNET), support vector machine (SVM), and random forest (RF) models. For performance evaluation, researchers used three-quarters of the randomly sampled data as training set, and the remaining as test set. Outcome of their study predicted the places where terror events might occur in 2015, with a success rate of 96.6%. 
 
-```{r echo=FALSE, fig.cap="Trend in type of attack in all incidents globally", fig.height=3, out.width = "100%"}
-tmp <- df %>% group_by(attack_type, year) %>% summarise(total_attacks = n()) 
+In a similar research within classification context and addressing the issue of class unbalance in order to predict rare events i.e. responsible group behind terror attack, researchers [@Gundabathula_2018] employ various classification algorithms in line with sampling technique to improve the model accuracy. In particular, this study was narrowed down to terrorist incidents in India and data used from GTD was between 1970-2015. Researchers used J48, IBK, Naive Bayes algorithms and ensemble approach for classification task. Finding from their study indicates the importance of using sampling technique which improves the accuracy of base models and suggests that ensemble approach improves overall accuracy of base models.
 
-# work around get pdf and html output
-if( knitr:::is_latex_output() ) {
-    include_graphics(path = "figure/heatmap_attack.png")
-} else {
-    tmp %>%
-	    plot_ly(x=tmp$year, y=tmp$attack_type, z = tmp$total_attacks, 
-	    		type = "heatmap", colors = viridis::plasma(100),
-	            hoverinfo = 'text',text = ~paste("Year: ", year,
-	                                             "<br>Attack type: ", attack_type,
-	                                             "<br>Total attacks : ", total_attacks)) %>%
-	      layout(title = "By Attack Type",
-	             xaxis = list(autorange = "reversed"), 
-	             yaxis = list(autorange = "reversed"), 
-	             paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
-}
-```
 
-The heat signatures indicates Bombing/Explosive as one of the frequently used techniques by terrorist groups. Although the pattern in this tactic is visiable throughout all the year, while rising during late 80s and early 90s however it has now increased to nearly 7 times since 2006. Similar pattern (with lower magnitude) can be observed in Armed Assault followed by Hostage Taking and Assassination technique. 
+## Literature gap and relevance
 
-```{r echo=FALSE, fig.cap="Trend in type of weapon used in all incidents globally", fig.height=3, out.width = "100%"}
-tmp <- df %>% group_by(weapon_type, year) %>% summarise(total_attacks = n())
-if( knitr:::is_latex_output() ) {
-    include_graphics(path = "figure/heatmap_weapon.png")
-} else {
-    tmp %>%
-	  plot_ly(x=tmp$year, y=tmp$weapon_type, z = tmp$total_attacks, 
-	  		  type = "heatmap", colors = viridis::plasma(100),
-	          hoverinfo = 'text',text = ~paste("Year: ", year,
-	                                           "<br>Weapon type: ", weapon_type,
-	                                           "<br>Total attacks : ", total_attacks)) %>%
-	    layout(title = "By Weapon Type", 
-	           xaxis = list(autorange = "reversed"),
-	           yaxis = list(autorange = "reversed"), 
-	           paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
-}
+Review of recent and relevant literature suggests that use of historical data from open source databases, and statistical modelling using time-series forecasting algorithms is commonly used approach to address the research questions related to "when and where". A trend can be seen in research study with variety of new approaches such as feature selection, sampling technique, validation split etc to achieve better accuracy in classification algorithms. This is one of the most relevant aspects for this research project. 
 
-```
+While some approach argues that prediction is contentious issue and focuses on finding causal variables while neglecting model fit, there is an upward trend in an approach that uses diverse models, and out of fold method which also allows evaluating and comparing model performance. Similarly, single model philosophy based on Occam’s razor principle is visible in some of the research however ensemble philosophy to make use of weak but diverse models to improve the overall accuracy is gaining popularity amongst research nowadays. 
 
-Upon examining the trends in type of weapon used in all terrorist incidents gloablly as shown in the figure 2.3, it is visible that use of Explosives/Bomb/Dynamites and Firearms is extremely high since 2011 and compared to other weapon types. Use of vehicles as weapon type was relatively low until 2013 however it was on peak in 2015 with total 34 number number of attacks. 
+It is also observed that use of gradient boosting machines is not popular in scientific research despite the availability and practical use cases of highly efficient and open-source algorithms such as XGBoost and LightGBM which are widely used in machine learning competitions such as Kaggle. In contrast, traditional algorithms such as Random Forest, Logistic Regression, Naive Bayes, J48 etc. are often used in majority of research. 
 
-Observing trends in target type over the period of time is also a useful way to understand characteristics and ideology amongst terrorist incidents. As shown in the plot below, the heat signature indicates the top five most most frequently attacked target types as Private Citzens & Property followed by Military, Police, Government and Business. 
-
-```{r echo=FALSE, fig.cap="Trend in intended targets in all incidents globally", fig.height=5, out.width = "100%"}
-tmp <- df %>% group_by(target_type, year) %>% summarise(total_attacks = n()) 
-if( knitr:::is_latex_output() ) {
-    include_graphics(path = "figure/heatmap_target.png")
-} else {
-    tmp %>%
-	  plot_ly(x=tmp$year, y=tmp$target_type, z = tmp$total_attacks, 
-	  		  type = "heatmap", colors = viridis::plasma(100),
-	          hoverinfo = 'text',text = ~paste("Year: ", year,
-	                                           "<br>Target type: ", target_type,
-	                                           "<br>Total attacks : ", total_attacks)) %>%
-	    layout(title = "By Target Type", 
-	           xaxis = list(autorange = "reversed"),
-	           yaxis = list(autorange = "reversed"), 
-	           paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
-}
-```
-According to GTD codebook, Private Citzens & Property category includes attack on individuals, public in general or attacks in highly populated areas such as markets, commercial streets, busy intersections and pedestrian malls. In a study to investigate when terrorist groups are most or least likely to attack civilians, researcher [@Heger_2010] find a relationship with group’s political motivation and suggests that terror groups pursuing a nationalist agenda are more likely to attack civilians. A relatively lower magnitude trend but with gradual increase in recent years is also visible on Religious Figures/Institution and Terrorist/ Non-state Militia category. The inclusion criteria for Terrorist/ Non-state Militia category refers to terrorists or members of terrorist groups (that are identified in GTD) and broadly defined as informants for terrorist groups excluding former or surrendered terrorists. 
-
-## The Top 10 Most Active and Violent Groups
-
-Findings from exploratory data analysis at region level indicates that number of attacks have increased significantly from year 2010 and nearly at the same pace in Middle East & North Africa, South Asia, Sub-suharan Africa and Southeast Asia region. Trends in attack type, weapon type and target type over the same period of time (from 2010) suggests that bombings and explosions as a choice of attack type is growing exponentially while use of explosives & firearms and attacks on civilians is at alarming high level. 
-
-This part of the research identifies and examines the top ten most violent and active terrorist groups based on number of fatalities and number of people injured. GTD codebook suggests that when an attack is a part of multiple attacks, sources sometimes provide a cumulative fatality total for all of the incidents rather than fatality figures for each incident. 
-
-In order to determine top ten most active and violent groups based on fatalities and injured while preserving statistical accuracy, first I filter the dataset for the events that took place from 2010 onwards and remove the incidents where group name is not known. The new variable `impact` is sum of fatalities and number of people injured. Wherever an attack is observed as a part of multiple attacks, and reported figures are different, I use the figure which is maximum amongst all the reported figures while ensuring that reported incidents are distinct and grouped by month, year, region and name of the group as shown in the code below: 
-
-```{r fig.cap="Top 10 Most Active and Violent Groups", fig.height=4, out.width = "100%"}
-by_groups <- df %>% 
-  filter(group_name != "Unknown" & year >= 2010) %>% 
-  replace_na(list(nkill = 0, nwound = 0)) %>% 
-  select(group_name, region, year, month, nkill, nwound, 
-  		 part_of_multiple_attacks) %>% 
-  group_by(group_name, region, year, month) %>% 
-  filter(if_else(part_of_multiple_attacks == 1, 
-                 nkill == max(nkill) & nwound == max(nwound), 
-                 nkill == nkill & nwound == nwound)) %>%
-  distinct(group_name, region, year, month, nkill, nwound, 
-  		   part_of_multiple_attacks) %>%
-  mutate(impact = nkill + nwound) %>%
-  group_by(group_name) %>%
-  summarise(total = sum(impact)) %>% 
-  arrange(desc(total)) %>% 
-  head(10)
-
-# create a vector of top 10 groups for later analysis
-top10_groups <- as.vector(by_groups$group_name)
-
-ggplot(by_groups, aes(x= reorder(group_name, -total), y= total)) + 
-  geom_bar(stat = "identity", fill = "tomato3") +
-  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
-  ggtitle("Top 10 Most Active and Violent Groups") + 
-  xlab("Name of the group") + 
-  ylab("Total fatalities + injured") +
-  theme(axis.title = element_text(size=9), 
-  		axis.text = element_text(size = 8),
-        plot.title = element_text(size=12), legend.position = "none")  
-
-```
-Based on cummulative number of fatalities and injured people, we can see that ISIL and Taliban, followed by Boko Haram are the most violent groups that are currently active. To better understand their activity over the period of time, we take a look at attack frequency. 
-
-```{r echo=FALSE, fig.cap="Attack Frequency from Top 10 Groups", fig.height=3, out.width = "100%"}
-
-tmp <- df %>% filter(group_name %in% top10_groups) %>% 
-	group_by(group_name, year) %>% summarise(total_attacks = n())
-
-if( knitr:::is_latex_output() ) {
-    include_graphics(path = "figure/heatmap_attack_t10.png")
-} else {
-    tmp %>%
-      plot_ly(x=tmp$year, y=tmp$group_name, z = tmp$total_attacks, 
-      		  type = "heatmap", colors = viridis::plasma(100),
-              hoverinfo = 'text',
-              text = ~paste("Year: ", year,"<br>Group: ", group_name,
-              				"<br>Total attacks : ", total_attacks)) %>%
-        layout(title = "By Top 10 Terror Groups", 
-               xaxis = list(autorange = "reversed"),
-               yaxis = list(autorange = "reversed"), 
-               paper_bgcolor= "#0f1011", plot_bgcolor = "#0f1011")
-}
-
-```
-
-It’s interesting to see that majority of this most violent terrorist groups (6 out of 10) were formed after 2006 only. Particularly, number of attacks from ISIL can be seen increasing rapidly within shortest period of time (4 years) and a gradual increase in attacks from Taliban (reaching peak at 1249 in year 2015). Attack characteristics for all 10 groups (cummulative) indicates Military as the most frequent target (27.5%) followed by civilians (27.3%). Similarly, Bombing/Explosions and Armed assault as a most frequent attack tactics accounts for 70.4% of all the attacks as shown in the plots below.  
-
-```{r echo= FALSE, fig.cap="Characteristics of top 10 groups", fig.height=3, out.width = "100%"}
-
-group_attack_type <- df %>%  
-	filter(group_name %in% top10_groups) %>% 
-	group_by(attack_type) %>% 
-	summarize(count = n()) %>% arrange(desc(count)) %>% head(10) 
-
-group_target_type <- df %>%  
-	filter(group_name %in% top10_groups) %>% 
-	group_by(target_type) %>% 
-	summarize(count = n()) %>% arrange(desc(count)) %>% head(10)
-
-if( knitr:::is_latex_output() ) {
-    include_graphics(path = "figure/heatmap_pie.png")
-} else {
-	highchart(height = 300) %>% 
-	  hc_title(text = "Characteristics by Attack and Target Types") %>%
-	  hc_subtitle(text = "By Top 10 Most Active and Violent Groups") %>%
-	  hc_add_theme(hc_theme_538()) %>%
-	  hc_add_series_labels_values(group_attack_type$attack_type, group_attack_type$count, 
-	                              colors = substr(heat.colors(9), 0 , 7),
-	                              type = "pie", innerSize= '40%', size= "30%", showInLegend=F,
-	                              colorByPoint = TRUE, center = c('25%', '45%'), size = 100, 
-	                              dataLabels = list(align = "left", enabled = TRUE,
-	                                                style = list(fontSize = "10px"))) %>%
-	  hc_add_series_labels_values(group_target_type$target_type, group_target_type$count, 
-	                              colors = substr(heat.colors(10), 0 , 7),
-	                              type = "pie", innerSize= '40%', size= "30%", showInLegend=F,
-	                              colorByPoint = TRUE, center = c('77%', '49%'), size = 100, 
-	                              dataLabels = list(align = "right", enabled = TRUE,
-	                                                style = list(fontSize = "10px"))) 
-}
-
-```
-
-To summarize, we identified the top 10 most lethal groups that are active between 2010 to 2016 and examined their characteristics behind attacks. We looked at the trend in type of attack and corresponding number of attacks over the period of time, which upto certain extent, indicates easy access to firearms and explosive devices either through illegal arms trade or through undisclosed support from powerful nation/s. We also examined pattern in target type in which, 46.7% attacks accounts for Military and Police category and 27.3% attack counts toward civilians. 
-
-## The Major and Minor Epicenters
-
-The term "Epicenter" used here refers to the location that is impacted by terrorist incidents from top 10 groups as defined. To examing the geographical spread and intensity of incidents from top 10 terroist groups at country level, I use cummulative sum of number of people killed and number of people wounded as measurement. Below is the code used to prepare the data for this analysis. 
-
-```{r }
-tmp <- df %>% 
-  filter(group_name %in% top10_groups) %>%
-  replace_na(list(nkill = 0, nwound = 0)) %>% 
-  group_by(group_name, region, year, month) %>% 
-  filter(if_else(part_of_multiple_attacks == 1, 
-                 nkill == max(nkill) & nwound == max(nwound), 
-                 nkill == nkill & nwound == nwound)) %>%
-  ungroup() %>%
-  distinct(group_name, region, country, year, month, nkill,
-  		   nwound, part_of_multiple_attacks) %>%
-  group_by(country, region) %>%
-  summarise(attack_count = n(), nkill_plus_nwound = sum(nkill + nwound))
-
-```
-
-```{r }
-tbl <- tmp %>% filter(region %in% c("North America", "Eastern Europe"))
-knitr::kable(tbl, booktabs = TRUE,
-		caption = "Terrorism Epicenters in North America and Eastern Europe") %>%
-		kable_styling(latex_options = "hold_position")
-
-```
- As shown in table 2.2, North America and Eastern Europe region seems to have concentration on mainly one country across whole region (except Russia with comparatively minor impact). Next, we take a look at remaining regions.
-
-```{r fig.cap="The Major and Minor Epicenters of Terrorism", fig.height=7, out.width = "100%"}
-tmp <- tmp %>% filter(!region %in% c("North America", "Eastern Europe")) 
-tmp %>%
-  ggplot(aes(area = attack_count, fill = nkill_plus_nwound, label = country)) +
-    geom_treemap() +
-    geom_treemap_text(fontface = "italic", colour = "white", 
-    				  place = "centre", grow = TRUE) +
-    labs(title = "The Major and Minor Epicenters of Terrorism",
-         subtitle = "Based on Top 10 Most Active and Violent Groups") +
-    scale_fill_viridis(discrete = FALSE, begin = 0.1, end = 0.8) +
-    facet_wrap( ~ region, ncol = 2) +
-    guides(fill = guide_colorbar(barwidth = 12))+
-    theme(plot.title = element_text(size=12))
-  
-```
-
-While Afghanistan facing the largest impact from terrorist incidents in terms of fatalities and number of people injured followed by Iraq, it is also observed that spread across multiple countries in most regions. In Sub-Suharan Africa, the major epicenters of violent terrorist incidents can be seen mostly in Somalia and Nigeria. Although number of fatalities and injured is relatively less in Central Asia and Southeast Asia however major Epicenters can be identified as Philippines, Turkmenistan and Georgia. 
-
-In case Western Europe, it is surprising to see Germany and France as major epicenters and relatively high number of minor epicenters. Although number of fatalities and injured is relatively low but spread across many countries implies greater threat. 
-
-To better understand exactly where this incidents belongs to, let us narrow down the analysis to city level for each groups. 
-
-```{r fig.cap="Terrorist Group and Impacted Cities", fig.height=6, out.width = "100%"}
-tmp <- df %>% 
-  filter(group_name %in% top10_groups) %>%
-  replace_na(list(nkill = 0, nwound = 0)) %>% 
-  group_by(group_name, region, year, month) %>% 
-  filter(if_else(part_of_multiple_attacks == 1, 
-                 nkill == max(nkill) & nwound == max(nwound), 
-                 nkill == nkill & nwound == nwound)) %>%
-  ungroup() %>%
-  distinct(group_name, region, country, city, year, month, 
-           nkill, nwound, part_of_multiple_attacks) %>%
-  group_by(city, group_name) %>% 
-  summarise(attack_count = n(), 
-  			nkill_plus_nwound = sum(nkill + nwound)) %>%
-  filter(nkill_plus_nwound >= 100 & city != "Unknown")
-
-tmp %>%
-  ggplot(aes(area = attack_count, 
-  			 fill = nkill_plus_nwound, 
-  			 label = city)) +
-    geom_treemap() +
-    geom_treemap_text(fontface = "italic", colour = "white", 
-    				  place = "centre", grow = TRUE) +
-    labs(title = "Most Frequently Attacked Cities per Group", 
-         subtitle = "Based on Top 10 Most Active and Violent Groups") +
-    scale_fill_viridis(discrete = FALSE, begin = 0.1, end = 0.8) +
-    facet_wrap( ~ group_name, ncol = 3) +
-    guides(fill = guide_colorbar(barwidth = 12)) +
-    theme(plot.title = element_text(size=12), 
-          strip.text = element_text(size = 8, face = "bold"))
-
-```
-
+One important observation from literature review is that code sharing is quite uncommon. Replication crisis is a major issue in scientific research. Despite availability of number of open source tools for reproducible research such as Jupyter notebook, rmarkdown or code repositories such as github, majority of research papers lacks code sharing aspect.

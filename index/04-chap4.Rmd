@@ -1,288 +1,170 @@
-# Pattern Discovery {#pattern-discovery}
+# Statistical Hypothesis Testing {#hypothesis-testing}
 
-This part of analysis is based on unsupervised machine learning algorithm and makes use of association rules to discover patterns in terrorist incidents from Islamic State, Taliban and Boko Haram group that were identified in top 5 most active and violent groups.  
-
-Mining of association rules is widely used method in retail and ecommerce environment and commonly known as Market Basket Analysis using Apriori algorithm. The theory behind this approach is that if a customer buys a certain group of products then they are more or less likely to buy another group of products [@Karthiyayini_2016]. 
-
-* **Pseudocode of the Apriori algorithm:**
-
-$$
-\begin{aligned}
-& \mathrm{Apriori}(T,\epsilon)\\
-&\qquad L_1 \gets \{ \mathrm{large~1-item sets} \} \\
-&\qquad k \gets 2\\
-&\qquad \mathrm{\textbf{while}}~ L_{k-1} \neq \ \emptyset \\
-&\qquad \qquad C_k \gets \{ a \cup \{b\} \mid a \in L_{k-1} \land b \not \in a \} - \{ c \mid \{ s \mid s \subseteq c \land |s| = k-1 \} \nsubseteq L_{k-1} \}\\
-&\qquad \qquad \mathrm{\textbf{for}~transactions}~t \in T\\
-&\qquad \qquad\qquad D_t \gets \{ c \mid c \in C_k \land c \subseteq t \} \\
-&\qquad \qquad\qquad \mathrm{\textbf{for}~candidates}~c \in D_t\\
-&\qquad \qquad\qquad\qquad \mathit{count}[c] \gets \mathit{count}[c]+1\\
-&\qquad \qquad L_k \gets \{ c \mid c \in C_k \land ~ \mathit{count}[c] \geq \epsilon \}\\
-&\qquad \qquad k \gets k+1\\
-&\qquad \mathrm{\textbf{return}}~\bigcup_k L_k
-\end{aligned}
-$$
-
-As the goal of this algorithm is to determine set of frequent items among the candidates, this methodology can also be applied to discover patterns within terrorism context. The idea is to understand attack habits from terrorist groups by finding association and correlation between different attacks that were carried out in the past. It’s important to note that output from this algorithm is a list of association rules (frequent patterns) and provides descriptive analysis only. The real value of such unsupervised learning is in the insights we can take away from algorithm’s finding. 
+In this chapter, first we examine the strength of relationship between two numerical variables using pearson correlation coefficient. This way, we can get an idea about which variables have strong/weak and positive/negative correlation with each other. In the second part, we perform hypothesis test between each of top ten groups and number of fatalities to see which groups represents similarity and differences. We use the data related to top ten most active and violent groups only.
 
 ## Data preparation
 
-For this analysis, I have chosen specific variables that are not highly correlated with chosen groups i.e. target type, weapon type, attack type, suicide attack and number of fatalities while excluding the observations where value is "Unknown". 
-
 ```{r }
+dfh <- df %>%	
+  filter(group_name %in% top10_groups) %>% 	# filter data by top 10 groups
+  replace_na(list(nkill = 0, nwound = 0)) 	# replace NAs
+
+# Shorten lengthy group names
+dfh$group_name[dfh$group_name == "Kurdistan Workers' Party (PKK)"] <- "PKK"
+dfh$group_name[dfh$group_name == "Al-Qaida in the Arabian Peninsula (AQAP)"] <- "AQAP"
+dfh$group_name[dfh$group_name == "Houthi extremists (Ansar Allah)"] <- "Houthi_Extrm"
+dfh$group_name[dfh$group_name == "Tehrik-i-Taliban Pakistan (TTP)"] <- "TTP"
+dfh$group_name[dfh$group_name == "Al-Nusrah Front"] <- "Al-Nusrah"
+dfh$group_name[dfh$group_name == "Islamic State of Iraq and the Levant (ISIL)"] <-"ISIL"
+dfh$group_name[dfh$group_name == "Donetsk People's Republic"] <- "Donetsk_PR" 
+```
+
+## Correlation test
+
+We use pairwise complete observations method to compute correlation coefficients for each pair of numerical variables. 
+
+```{r fig.cap="Correlation web plot", fig.height=6, out.width= "100%"}
+#Extract numeric variables
 tmp <- dfh %>%
-  select(group_name, target_type, weapon_type, attack_type, suicide_attack, nkill) %>%
-  filter(target_type != "Unknown" & weapon_type != "Unknown" & attack_type != "Unknown") %>%
-  mutate(nkill = if_else(nkill == 0, "0",
-                 if_else(nkill >= 1 & nkill <= 5, "1 to 5",
-                 if_else(nkill > 5 & nkill <= 10, "6 to 10",
-                 if_else(nkill > 10 & nkill <= 50, "11 to 50",  "more than 50")))))
+  select(intl_ideological_attack, intl_logistical_attack, 
+         part_of_multiple_attacks, n_peace_keepers, net_migration, 
+         refugee_asylum, refugee_origin, gdp_per_capita, arms_import, 
+         arms_export, conflict_index, population, extended, 
+         nwound, nkill, suicide_attack, attack_success) 
 
-#shorten lengthy names for visualization purpose
-tmp$weapon_type[tmp$weapon_type == "Explosives/Bombs/Dynamite"] <- "Explosives"
-tmp$attack_type[tmp$attack_type == "Facility/Infrastructure Attack"] <- "Facility/Infra."
-tmp$target_type[tmp$target_type == "Private Citizens & Property"] <- "Civilians"
-tmp$target_type[tmp$target_type == "Terrorists/Non-State Militia"] <- "Non-State Militia"
-tmp$target_type[tmp$target_type == "Religious Figures/Institutions"] <- "Religious Figures"
+# get the correlation matrix
+m <- cor(tmp, use="pairwise.complete.obs")
 
-#convert everything to factor
-tmp[] <- lapply(tmp, factor)
-str(tmp)
+# Get rid of all non significant correlations
+ctest <- PairApply(tmp, symmetric=TRUE,
+                   function(x, y) cor.test(x, y)$p.value)
+m[ctest > 0.05] <- NA 	# Replace p value > 0.05 with NAs
+
+PlotWeb(m, lwd = abs(m[lower.tri(m)] * 10), 
+        cex.lab = 0.85, pt.bg = "#f2f2f2",
+        args.legend = list(x = "bottomright", cex = 0.75, bty = "0", 
+                           title = "Correlation"),
+        main="Correlation Web Plot")
 ```
 
-Next, let’s run the analysis by extracting data for chosen group. 
+In the plot above, line width between the nodes is used in proportion to the correlation of two variables. To focus only on significant correlations, I have replaced observations with p-value more than 0.05 with NA. Legend on the bottom right represents correlation coefficient by line width and color depending on positive or negative linear relationship. The variables on the left hand side of the plot are extracted from World Bank data (development indicators) and variables on the right hand side are from GTD. 
 
-## Islamic State (ISIL)
+Specifically, we are more interested in relationship to the variables on the right hand side which will be used in time-series forecasting and classification modelling as target variable. For example, number of people wounded (nwound) variable has positive linear relationship with suicide attack. The conflict index variable shows strong positive relationship with international ideological attacks and minor positive relationship with part of multiple attacks. Overall, we can see that majority of numerical variables shows relationship with each other.  
 
-**Model Parameters**
+
+## Hypothesis test: fatalities vs groups
+
+The objective behind this hypothesis test is to determine whether or not means of the top 10 groups with respect to average fatalities are same. If at least one sample mean is different to others then we determine which pair of groups are different. 
+
+$$
+\large
+\begin{aligned}
+{H_0 : } & \text{ The means of the different groups are the same} \\
+      &{(ISIL)} = {(Taliban)} = {(AQAP)} = {(PKK)} = \\
+      &{(Al-Shabaab)} = {(TTP)} = {(Boko Haram)} =  \\
+      &{(Al-Nusrah)} = {(Donetsk_PR)} = {(Houthi_Extrm)} \\ \\
+H_a: & \text{ At least one sample mean is not equal to the others} 
+\end{aligned}
+$$
+
+
+First, we use box plot to examine distribution by quartiles for each groups. 
+
+```{r echo= FALSE, fig.cap="Boxplot: group vs fatalities", fig.height=4, out.width = "100%"}
+ggplot(dfh, aes(group_name, nkill, fill = group_name)) + 
+   geom_boxplot(outlier.stroke = 0.1) + 
+   geom_jitter(alpha = 0.03, aes(color = group_name)) +    
+   theme_minimal() + coord_flip() + scale_y_log10() +
+   ggtitle("Boxplot of groups vs fatalities") + 
+   xlab("Name of the group") + ylab("Total fatalities (log10)") +
+   theme(plot.title = element_text(size=12), legend.position = "none") 
+```
+
+In statistical terms, we have some extreme outliers i.e. nkill ~ 1500 in ISIL group so X axis is log transformed for visualization purpose. 
+
+### ANOVA test
+
+The ANOVA model computes the residual variance and the variance between sample means in order to calculate the F-statistic. This is the first step to determine whether or not means are different in pair of groups.
+
+$$
+\large
+\begin{aligned}
+F-statistic = & (S^2_{between}\ / S^2_{within})
+\end{aligned}
+$$
 
 ```{r }
-# set cut-off (threshold) values for model
-params <- list(support = 0.001, confidence = 0.5, minlen = 2)
-group_ISIL <- list(rhs='group_name=ISIL', default="lhs")
+# Compute the analysis of variance (ANOVA)
+r.aov <- aov(nkill ~ group_name , data = dfh)
+# display result
+summary(r.aov)
 ```
 
-### Explaination of key terms
+Model summary provides us F value and Pr(>F) corresponding to the p-value of the test. As we can see that p-value is < 0.05, which means there are significant differences between the groups. In other words, we reject the null hypothesis. From this test, we identified that some of the group means are different. The next step is to identify which pair of groups are different. 
 
-The Apriori algorithm has three main measures namely Support, Confidence and Lift. These three measure are used to decide the relative strength of the rules. lhs refers to frequent pattern that is observed and rhs refers to the group selected (in this case ISIL).
+### PostHoc test
 
-**Support** indicates how interesting a pattern is. In the algorithm, I have set the threshold to 0.001 which means a pattern must have appeared atleast 0.001 * nrow(tmp) = 18 times. 
-
-**Confidence** value i.e 0.5 (set as threshold in model params) means that in order to be included in the results, the rule has to be correct at least 50 percent of the time. This is particularly helpful to eliminate the most unreliable rules. 
-
-**Lift** indicates probability (support) of the itemset (pattern) over the product of the probabilities of all items in the itemset [@Hahsler_2018]. 
-
-In general, high confidence and good lift are the standard measures to evaluate importance of a particular rule/ association however not all the rules are useful. This rules normally falls into three categories i.e. actionable, trivial(useless) and inexplicable [@Klimberg_2017]. Example of useless rule can be an association that is obvious and thus not worth mentioning. 
-
-### Apriori model summary
+PostHoc test is useful to determine where the differences occurred between groups. For this test, we use several different methods for the comparison purpose. This methods can be classified as either conservative or liberal approach. Conservative methods are considered to be robust against committing Type I error as they use more stringent criterion for statistical significance. First we compare results from The Fisher LSD (Least Significant Different), Scheffe and Dunn’s (Bonferroni) test. 
 
 ```{r }
-# run model with parameters as defined above
-rules <- apriori(data = tmp, parameter= params, appearance = group_ISIL)
-rules <- rules[!is.redundant(rules)] # Remove redundant rules if any 
+# compare p-values for 3 methods
+posthoc1 <- as.data.frame(cbind(
+  lsd= PostHocTest(
+    r.aov, method="lsd")$group_name[,"pval"],  # The Fisher LSD
+  scheffe= PostHocTest(
+    r.aov, method="scheffe")$group_name[,"pval"], # Scheffe
+  bonf=PostHocTest(
+    r.aov, method="bonf")$group_name[,"pval"])) # Bonferroni
+
+posthoc1 <- rownames_to_column(posthoc1, var = "Pair of groups") %>% 
+  arrange(desc(scheffe)) 
 ```
 
-### Top 5 patterns (ISIL)
-
-```{r }
-# Extract top 5 patterns based on confidence
-subrules <- head(sort(rules, by="confidence"), 5)
-
-if( knitr:::is_latex_output() ) {
-  inspect(subrules, ruleSep = ":")
-} else {
-  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
-             caption = "Five Most Important Patterns (ISIL)") %>%
-         kable_styling(latex_options = "hold_position")
-}
-
-```
-
-
-```{r fig.cap="Association Rules in ISIL Group", fig.height=4, out.width = "100%"}
-if( knitr:::is_latex_output() ) {
-    plot(rules)
-} else {
-    plotly_arules(rules, jitter = 5, 
-      marker = list(opacity = .5, size = 10),
-      colors = viridis(10, end = 0.9, option = "D")) %>% 
-      layout(title = "Association Rules in ISIL Group")
-}
-
-```
-
-
-### Network graph (ISIL)
-
-```{r fig.cap="Network Graph of Discovered Patterns- ISIL Group", fig.height=7, out.width = "100%"}
-#work around for pdf and html output
-if( knitr:::is_latex_output() ) {
-  plot(rules, method="graph", verbose = FALSE, 
-       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
-} else {
-  ig_df <- get.data.frame(
-    plot(rules, method="graph", verbose = FALSE, 
-         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
-  
-  nodes = data.frame(
-    id = ig_df$vertices$name,
-    value = ig_df$vertices$support, # get the nodes by support
-    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
-    ig_df$vertices)
-  
-  visNetwork(nodes, edges = ig_df$edges) %>%
-    visEvents() %>% 
-    visNodes(size = 5, color = "#9cb7f4") %>%
-    visLegend() %>% 
-    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-    visEdges(arrows = 'from') %>%
-    visPhysics(solver = "barnesHut", maxVelocity = 35,
-              forceAtlas2Based = list(gravitationalConstant = -6000))
-}
-
-```
-
-
-## Taliban 
-
-### Apriori model summary
-```{r }
-params <- list(support = 0.001, confidence = 0.5, minlen = 2)
-group_Taliban <- list(rhs='group_name=Taliban', default="lhs")
-rules <- apriori(data = tmp, parameter= params, appearance = group_Taliban)
-rules <- rules[!is.redundant(rules)] # Remove redundant rule if any 
-```
-
-### Top 5 patterns (Taliban)
 ```{r echo=FALSE}
-# Extract top 5 patterns based on confidence
-subrules <- head(sort(rules, by="confidence"), 5)
-
 if( knitr:::is_latex_output() ) {
-  inspect(subrules, ruleSep = ":")
+  knitr::kable(posthoc1, caption = "Posthoc test (lsd, scheffe, bonf)", 
+           row.names = FALSE, booktabs = T) %>%
+  kable_styling(font_size = 11, full_width = F, latex_options = "HOLD_position")
 } else {
-  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
-             caption = "Five Most Important Patterns (Taliban)") %>%
-         kable_styling(latex_options = "hold_position")
+  # split lengthy table into two tables
+  tbl1 <- head(posthoc1, 23) 
+  tbl2 <- tail(posthoc1, 22)
+  knitr::kable(list(tbl1, tbl2), caption = "Posthoc test (lsd, scheffe, bonf)", 
+           row.names = FALSE, booktabs = T) %>%
+         kable_styling(font_size = 11, full_width = F)
 }
 ```
 
 
-```{r echo=FALSE, fig.cap="Association Rules in Taliban Group", fig.height=4, out.width="100%"}
-if( knitr:::is_latex_output() ) {
-    plot(rules)
-} else {
-    plotly_arules(rules, jitter = 5, 
-      marker = list(opacity = .5, size = 10),
-      colors = viridis(10, end = 0.9, option = "D")) %>% 
-      layout(title = "Association Rules in Taliban Group")
-}
+The Fisher LSD (Least Significant Different) test is the most liberal in all the PostHoc tests whereas the Scheffe test is the most conservative and protects against Type I error. On the other hand, Dunn’s (Bonferroni) test is extremely conservative [@AndriSignorelletmult.al._2018]. Out of all the possible combination of pairs (45), 16 pair of groups indicates p adj value > 0.9 based on Scheffe test. In statistical terms, it means 16 pairs of groups as shown in the table above have non-significantly different means in number of fatalities.
 
-```
+Next, we use Tukey HSD (Honestly Significant Difference) method which is the most common and preferred method. 
 
-In case of Taliban, we can see many interesting patterns with confidence above 0.5. For the visualization purpose, let’s narrow down to most interesting rules only by setting confidence threshold to 0.6.
-
-### Network graph (Taliban)
-
-```{r echo=FALSE, fig.cap="Network Graph of Discovered Patterns- Taliban Group", fig.height=7, out.width="100%"}
-rules <- rules[quality(rules)$confidence > 0.6]
-
-#work around for pdf and html output
-if( knitr:::is_latex_output() ) {
-  plot(rules, method="graph", verbose = FALSE,
-       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
-} else {
-  ig_df <- get.data.frame(
-    plot(rules, method="graph", verbose = FALSE, cex = 0.9,
-         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
-  
-  nodes = data.frame(
-    id = ig_df$vertices$name,
-    value = ig_df$vertices$support, # get the nodes by support
-    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
-    ig_df$vertices)
-  
-  visNetwork(nodes, edges = ig_df$edges) %>%
-    visEvents() %>% 
-    visNodes(size = 5, color = "#9cb7f4") %>%
-    visLegend() %>% 
-    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-    visEdges(arrows = 'from') %>%
-    visPhysics(solver = "barnesHut", maxVelocity = 35,
-              forceAtlas2Based = list(gravitationalConstant = -6000))
-}
-
-```
-
-
-## Boko Haram 
-
-### Apriori model summary
 ```{r }
-params <- list(support = 0.001, confidence = 0.5, minlen = 2)
-group_Boko_Haram <- list(rhs='group_name=Boko Haram', default="lhs")
-rules <- apriori(data = tmp, parameter= params, appearance = group_Boko_Haram)
-rules <- rules[!is.redundant(rules)] # Remove redundant rule if any 
+#extract only p-values by setting conf.level to NA
+hsd <- PostHocTest(r.aov, method = "hsd", conf.level=NA)
+# convert to data frame and round off to 4 digits
+hsd <- as.data.frame(do.call(rbind, hsd)) %>% round(4)
 ```
 
-### Top 5 patterns (Boko Haram)
 ```{r echo=FALSE}
-# Extract top 5 patterns based on confidence
-subrules <- head(sort(rules, by="confidence"), 5)
-
 if( knitr:::is_latex_output() ) {
-  inspect(subrules, ruleSep = ":")
+  knitr::kable(hsd, booktabs = T, "latex",
+       caption = "PostHoc test with Tukey HSD for pair of groups") %>%
+       kable_styling(font_size = 7,  latex_options = "HOLD_position")
 } else {
-  knitr::kable(x = inspect(subrules, ruleSep = ">"), booktabs = TRUE,
-             caption = "Five Most Important Patterns (Boko Haram)") %>%
-         kable_styling(latex_options = "hold_position")
+  knitr::kable(hsd, booktabs = T,
+     caption = "PostHoc test with Tukey HSD for pair of groups") %>%
+     kable_styling(font_size = 10) %>%
+     column_spec(1, background = "#e1e5f2")
 }
+# free up memory
+rm(hsd, posthoc1, r.aov, m, ctest, tmp, tmp1)
 ```
 
+### Interpretation
 
-```{r echo=FALSE, fig.cap="Association Rules in Boko Haram Group", fig.height=4, out.width="100%"}
-if( knitr:::is_latex_output() ) {
-    plot(rules)
-} else {
-    plotly_arules(rules, jitter = 5, 
-      marker = list(opacity = .5, size = 10),
-      colors = viridis(10, end = 0.9, option = "D")) %>% 
-      layout(title = "Association Rules in Boko Haram Group")
-}
+The pairs of groups with adj p-value near or equals to 1 represents non-significantly different means in number of fatalities such as Boko Haram - Al-Nusrah, Al-Qaida in Arabian Peninsula (AQAP)- Al-Shabaab, Houthi Extremist- PKK, Taliban- Tehrik-i-Taliban etc. 
 
-```
+Similarly, pair of groups with adjusted p-value near zero indicates significant different means in number of fatalities such as pairs of ISIL with all the remaining groups, Taliban - Al-Nusrah, PKK - Boko Haram, Donetsk_PR - Al-Nusrah etc. 
 
- 
-
-### Network graph (Boko Haram)
-
-```{r echo=FALSE, fig.cap="Network Graph of Discovered Patterns- Boko Haram Group", fig.height=7, out.width= "100%"}
-#work around for pdf and html output
-if( knitr:::is_latex_output() ) {
-  plot(rules, method="graph", verbose = FALSE,
-       control=list(nodeCol="orange", edgeCol="#9cb7f4"))
-} else {
-  ig_df <- get.data.frame(
-    plot(rules, method="graph", verbose = FALSE,
-         control=list(nodeCol="orange", edgeCol="#9cb7f4")), what = "both")
-  
-  nodes = data.frame(
-    id = ig_df$vertices$name,
-    value = ig_df$vertices$support, # get the nodes by support
-    title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
-    ig_df$vertices)
-  
-  visNetwork(nodes, edges = ig_df$edges) %>%
-    visEvents() %>% 
-    visNodes(size = 5, color = "#9cb7f4") %>%
-    visLegend() %>% 
-    visEdges(smooth = TRUE, color = "#ffd596" ) %>%
-    visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
-    visEdges(arrows = 'from') %>%
-    visPhysics(solver = "barnesHut", maxVelocity = 35,
-              forceAtlas2Based = list(gravitationalConstant = -6000))
-}
-
-```

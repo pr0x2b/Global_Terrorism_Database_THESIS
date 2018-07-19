@@ -6,9 +6,10 @@ rmd_files: ["index.Rmd",
             "03-chap3.Rmd",  
             "04-chap4.Rmd",
             "05-chap5.Rmd",  
-            "06-chap6.Rmd",
-            "07-conclusion.Rmd", 
-            "08-appendix.Rmd", 
+            "06-chap6.Rmd", 
+            "07-chap7.Rmd",
+            "08-conclusion.Rmd", 
+            "09-appendix.Rmd", 
             "99-references.Rmd"]
 download: [["thesis.pdf", "PDF"], ["thesis.epub", "EPUB"], ["thesis.docx", "Word"]]
 delete_merged_file: true

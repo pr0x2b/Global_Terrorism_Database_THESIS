@@ -3,7 +3,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(knitr, pryr, openxlsx, tidyverse, data.table, DT, DescTools, RCurl, countrycode)
 options(warn = -1, digits = 4, scipen = 999)
 
-setwd("C:/Users/Pranav_Pandya/Desktop/Thesis/gtd_eda/data_preparation")
+setwd("C:/Users/Pranav_Pandya/Desktop/Thesis/gtd_eda/index/data/data_preparation")
 
 #---------------------------------------
 #External data (country geocodes)
@@ -19,7 +19,8 @@ country_geocodes <- readRDS("country_geocodes.rds")
 
 
 #data preparation (GTD)
-tmp <- read.xlsx("data/data_preparation/globalterrorismdb_0617dist.xlsx", sheet = 1, colNames = TRUE) %>% 
+tmp <- read.xlsx("data/data_preparation/globalterrorismdb_0617dist.xlsx", 
+                 sheet = 1, colNames = TRUE) %>% 
   select(eventid, 
          year = iyear, 
          month = imonth, 
@@ -45,8 +46,8 @@ tmp <- read.xlsx("data/data_preparation/globalterrorismdb_0617dist.xlsx", sheet 
          attack_success = success, 
          suicide_attack = suicide, 
          individual_attack = individual,
-         intl_logistical_attack = INT_LOG, # whether a perpetrator group crossed a border to carry out an attack
-         intl_ideological_attack = INT_IDEO # whether a perpetrator group attacked a target of a different nationality
+         intl_logistical_attack = INT_LOG, 
+         intl_ideological_attack = INT_IDEO 
          ) %>%
   replace_na(list(provstate = "unknown",       # replace nas with unknown
                   city =  "unknown",
@@ -56,9 +57,12 @@ tmp <- read.xlsx("data/data_preparation/globalterrorismdb_0617dist.xlsx", sheet 
          day = if_else(day == 0, 1, day),       # replace day to 1 in 891 occurences where month is unknown
          date = paste(year, month, day, sep="-"),
          date = as.Date(date, format = "%Y-%m-%d"),
-         weapon_type = if_else(weapon_type == "Vehicle (not to include vehicle-borne explosives, i.e., car or truck bombs)", "Vehicle", weapon_type)) %>%
+         weapon_type = if_else(
+           weapon_type == "Vehicle (not to include vehicle-borne explosives, i.e., car or truck bombs)", 
+                          "Vehicle", weapon_type)) %>%
   left_join(country_geocodes) %>% 
-  mutate(latitude = ifelse(is.na(latitude),country_latitude, latitude), # replace missing lat lons with country lat lons
+  mutate(latitude = ifelse(is.na(latitude), country_latitude, 
+                           latitude), # replace missing lat lons with country lat lons
          longitude = ifelse(is.na(longitude), country_longitude, longitude)) %>%
   select(-c(country_latitude, country_longitude)) %>%
   # replace missing lat lons in remaining (~14) disputed/dissolved countries with country level lat long from prev obs
