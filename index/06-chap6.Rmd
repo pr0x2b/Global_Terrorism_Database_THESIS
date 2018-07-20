@@ -1,6 +1,6 @@
 # Time-series Forecasting {#time-series}
 
-Time-series forecasting is a supervised machine learning approach that uses historical data to predict future occurences. This is particularly helpful in terrorism context for long term strategic planning. For this analysis, the forecasting goal and corresponding data is chosen as below: 
+Time-series forecasting is a supervised machine learning approach that uses historical data to predict future occurrences. This is particularly helpful in terrorism context for long term strategic planning. For this analysis, the forecasting goal and corresponding data is chosen as below: 
 
 ```{r echo=FALSE}
 text_tbl <- data.frame(
@@ -12,7 +12,7 @@ text_tbl <- data.frame(
 if( knitr:::is_latex_output() ) {
   knitr::kable(text_tbl, caption = "Scope of Analaysis", booktabs = TRUE) %>%
     kable_styling(full_width = F, font_size = 12, 
-                  latex_options = "hold_position")
+                  latex_options = "HOLD_position")
 } else {
   knitr::kable(text_tbl, caption = "Scope of Analaysis") %>%
     kable_styling(full_width = F, font_size = 13) %>%
@@ -20,13 +20,13 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-For each analysis, first we select the appropriate data, examine seasonal components and then split the data in training and test set to evaluate performance of Auto Arima, Neural Network, TBATS and ETS models with seven different metrics. To examine whether an ensemble predictions can imporve the overall accuracy, we take the average of all the predictions and compute Theil’s U statistic. In the last part of the analysis, we use all the data points (train + test) to make forecast for chosen future period. 
+For each analysis, first we select the appropriate data, examine seasonal components and then split the data in training and test set to evaluate performance of Auto Arima, Neural Network, TBATS and ETS models with seven different metrics. To examine whether an ensemble predictions can improve the overall accuracy, we take the average of all the predictions and compute Theil’s U statistic. In the last part of the analysis, we use all the data points (train + test) to make forecast for chosen future period. 
 
 ## Afghanistan (Predict future attacks)
 
 ### Data preparation
 
-Based on exploratory data analysis, it is observed that the number attacks with visible pattern began from year 2000 so the data is selected between year 2000 to 2016. To get the time-series frequency by months for all the years, I add missing months and assign zero as shown in the code below: 
+Based on exploratory data analysis, it is observed that the number attacks with visible pattern began from year 2000 so the data is selected between year 2000 to 2016. To get the time-series frequency by months for all the years, I have added missing months and assigned zero as shown in the code below: 
 
 ```{r}
 dft <- df %>%
@@ -36,7 +36,8 @@ dft <- df %>%
   ungroup() %>%
   group_by(year) %>%
   # Add missing months and assign 0 where no occurences
-  tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(total_count = 0)) %>%
+  tidyr::complete(month = full_seq(seq(1:12), 1L), 
+                  fill = list(total_count = 0)) %>%
   ungroup()
 
 dft <- dft %>%
@@ -48,48 +49,55 @@ dft <- dft %>%
 dft <- ts(dft[, 2], start = Year(min(dft$month_year)), 
           frequency = 12) # 1=annual, 4=quartly, 12=monthly
 dft <- na.kalman(dft)
-
 ```
 
 ### Seasonality analysis
 
-```{r fig.cap= "Attack Frequency by Year- Afghanistan" ,fig.height=3, out.width= "100%"}
+First we take a look at time plot to get an idea about how number of attacks have changed over the period of time. In the plot below, observations (number of attacks) are plotted against the time of observation. 
+
+```{r echo= FALSE, fig.cap= "Attack Frequency by Year- Afghanistan" ,fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_line_plot.png")
 } else {
   ts_plot(dft, line.mode = "line", Xtitle = "Year", Ytitle = "Attack Counts", 
-        title = "Attack Frequency (Afghanistan)", color = "red")
+    title = "Attack Frequency (Afghanistan)", color = "red")
 }
 ```
 
-```{r fig.cap= "Seasonal Pattern Within Year- Afghanistan", fig.height=4, out.width= "100%"}
+The seasonal plot is similar to time plot above with seasonality component (i.e. months) in which the number of attacks were observed.
+
+```{r echo= FALSE, fig.cap= "Seasonal Pattern Within Year- Afghanistan", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_seasonal.png")
 } else {
-  ts_seasonal(dft, type = "cycle", Ygrid = T, Xgrid = T, 
-            title = "Seasonality Plot (Afghanistan)") 
+  ts_seasonal(dft, type = "cycle", Ygrid = T, Xgrid = T,
+    title = "Seasonality plot (Afghanistan)") 
 }
 ```
 From the seasonal patterns within year as shown in the plot above, we can see that year 2015 (followed by 2012) was the deadliest year in terms of number of terror attacks. In both years, spike is visible in May month. 
 
-```{r fig.cap= "Seasonal Pattern (boxplot)- Afghanistan", fig.height=4, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Seasonal Pattern (boxplot)- Afghanistan", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_box.png")
 } else {
-  ts_seasonal(dft, type = "box", Ygrid = T, Xgrid = T, 
-              title = "Seasonality Plot (Afghanistan)") 
+  ts_seasonal(dft, type = "box", Ygrid = T, Xgrid = T, title = "Seasonality plot (Afghanistan)") 
 }
 ```
-From the boxplot, we can confirm that the May month contributes the most in terms of terrorist incidents throughout all the years (2000-2016) in Afghanistan. It’s also worth mentioning that the Ramadan (holy month in Islamic calender) usually starts in May and ends in June every year. From the boxplot above, we see the upward trend in number of attacks starting from February and reaching peak in Ramadan months.  
 
-```{r fig.cap= "Time-series Decomposition- Afghanistan", fig.height=4, out.width= "100%"}
+From the boxplot, we can confirm that the May month contributes the most in terms of terrorist incidents throughout all the years (2000-2016) in Afghanistan. It’s also worth mentioning that the Ramadan (holy month in Islamic calender) usually starts in May and ends in June every year. We can see the upward trend in number of attacks starting from February and reaching peak in Ramadan months.
+
+```{r echo= FALSE, fig.cap= "Time-series Decomposition- Afghanistan", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_decompose.png")
 } else {
   ts_decompose(dft, type = "both") 
 }
 ```
-Decomposition by additive and multiplicative time-series is helpful to understand anomalies in data. Based on observed patterns, this decomposition comprises three components: a seasonal component, a trend-cycle component (containing both trend and cycle), and a remainder component (containing anything else in the time series) [@Hyndman_2018]. 
+Decomposition by additive and multiplicative time-series is helpful to understand anomalies in data. Based on observed patterns, this decomposition comprises three components [@Hyndman_2018]: 
+
+- a seasonal component, 
+- a trend-cycle component (containing both trend and cycle) and 
+- a remainder component (containing anything else in the time series) 
 
 In simple words, seasonal component means pattern that occur frequently within fixed period of time. Random component is also called noise/ remainder and it represents residuals of the original time-series after removing seasonal and trend component [@Anomaly.io_2015].   
 
@@ -98,19 +106,19 @@ In simple words, seasonal component means pattern that occur frequently within f
 
 There are several methods to identify correlation between series and lags such as ACF, PACF and lag plots. I use lag plots method for this analysis which allows us to quickly visualize outliers and randomness and auto-correlation.  
 
-```{r fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_lags.png")
 } else {
   ts_lags(dft, lag.max = 9) 
 }
 ```
-Although we can spot outliers in all nine lags however linear pattern is visible. To further exlain this, we can see positive linear trend (going upward from left to right) which is an indication that positive auto-correlation is present. Specifically, lags 1, 2, 3 and 9 shows strong positive auto-correlation. Presence of auto-correlation can be problematic for some models. 
+Although we can spot outliers in all nine lags however linear pattern is visible. To further explain this, we can see positive linear trend (going upward from left to right) which is an indication that positive auto-correlation is present. Specifically, lags 1, 2, 3 and 9 shows strong positive auto-correlation. Presence of auto-correlation can be problematic for some models. 
 
 
 ### Modelling
 
-In this part of the ananlysis, I split the data in training and test set in order to evaluate performance of four different models before making the actual forecasts. 
+In this part of the analysis, I split the data in training and test set in order to evaluate performance of four different models before making the actual forecasts. 
 
 #### Train-Test Split
 
@@ -127,8 +135,11 @@ test  <- data$test
 
 #### Auto Arima
 
-```{r fig.height=4, out.width="100%", fig.cap="Auto Arima: Residuals"}
+```{r}
 fit_arima <- auto.arima(train)
+```
+
+```{r echo= FALSE, fig.height=4, out.width="100%", fig.cap="Auto Arima: Residuals"}
 # plot the residuals
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_residuals.png")
@@ -139,9 +150,12 @@ if( knitr:::is_latex_output() ) {
 
 A quick look at residuals from Auto Arima suggests that the mean of residuals is very close to zero however from the histogram, we can see that residuals doesn’t follow the normal distribution. Specifically, the right tail is little too long. What this means is, forecasts from this method will probably be quite good but prediction intervals computed assuming a normal distribution may be inaccurate [@Hyndman_2018].
 
-```{r fig.height=3, out.width="100%", fig.cap="Auto Arima: Actual vs Fitted vs Forecasted"}
+```{r}
 # Accuracy check/ Forecast evaluation
 fc_arima <- forecast(fit_arima, h = horizon)
+```
+
+```{r echo= FALSE, fig.height=3, out.width="100%", fig.cap="Auto Arima: Actual vs Fitted vs Forecasted"}
 #plot actual vs fitted and forecasted
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_arima_fitted.png")
@@ -151,14 +165,16 @@ if( knitr:::is_latex_output() ) {
 }
  
 ```
-From the plot above, it is observed that Auto Arima model nearly captures fitted values based on training data but forecasted values little bit apart from actual values (test data). Next, we observe the pattern in actual vs fitted and forecasted values for remaining three models. 
+From the plot above, it is observed that Auto Arima model nearly captures fitted values based on training data but forecasted values are little bit apart from actual values (test data- year 2016). Next, we examine the pattern in actual vs fitted and forecasted values for remaining three models. 
 
 #### Neural Network
-
-```{r fig.height=3, out.width="100%", fig.cap="Neural Net: Actual vs Fitted vs Forecasted"}
+```{r}
 fit_nn <- nnetar(train, repeats = 5)
 # Accuracy check/ Forecast evaluation 
 fc_nn <- forecast(fit_nn, h = horizon)
+```
+
+```{r echo= FALSE, fig.height=3, out.width="100%", fig.cap="Neural Net: Actual vs Fitted vs Forecasted"}
 #plot actual vs fitted and forecasted
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_nn_fitted.png")
@@ -169,11 +185,13 @@ if( knitr:::is_latex_output() ) {
 ```
 
 #### TBATS  
-
-```{r fig.height=3, out.width="100%", fig.cap="TBATS: Actual vs Fitted vs Forecasted"}
+```{r}
 fit_tbats <- tbats(train)
 # Accuracy check/ Forecast evaluation 
 fc_tbats <- forecast(fit_tbats, h = horizon)
+```
+
+```{r echo=FALSE, fig.height=3, out.width="100%", fig.cap="TBATS: Actual vs Fitted vs Forecasted"}
 #plot actual vs fitted and forecasted
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_tbats_fitted.png")
@@ -184,11 +202,13 @@ if( knitr:::is_latex_output() ) {
 ```
 
 #### ETS
-
-```{r fig.height=3, out.width="100%", fig.cap="ETS: Actual vs Fitted vs Forecasted"}
+```{r}
 fit_ets <- ets(train)
 # Accuracy check/ Forecast evaluation 
 fc_ets <- forecast(fit_ets, h = horizon)
+```
+
+```{r echo=FALSE, fig.height=3, out.width="100%", fig.cap="ETS: Actual vs Fitted vs Forecasted"}
 #plot actual vs fitted and forecasted
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/afg_ets_fitted.png")
@@ -210,13 +230,16 @@ metrics  <- rbind(as.data.frame(round(accuracy(fc_arima$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_nn$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_tbats$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_ets$mean, test), 3))) %>% 
-            add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
-                       .before = "ME") %>% arrange(MAPE)
+  add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
+             .before = "ME") %>% 
+  arrange(MAPE)
+```
 
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(metrics, booktabs = TRUE, 
     caption = "Performance comparison of all models (Afghanistan)") %>% 
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12)
 } else {
   knitr::kable(metrics, 
@@ -228,14 +251,11 @@ if( knitr:::is_latex_output() ) {
     column_spec(6, color = "black", background = "#c7cfe5") %>%
     row_spec(1, background = "#c7cfe5") 
 }
-
-
-
 ```
 
 Based on MAPE metrics, we can see that TBATS and ETS models achieves the higher accuracy (~ 15) and out performs Auto Arima and Neural Network models. TBATS (Exponential Smoothing State Space Model With Box-Cox Transformation) and ETS (Exponential Smoothing State Space Model) both uses exponential smoothing method. Specifically, TBATS modelling approach offers several key advantages such as handling of typical non linear features and allowing any auto-correlation in the residuals to be taken into account [@Livera_2011].
 
-In addition to MAPE metric which is chosen to identify the best model, we also look at Theil’s U statistic to estimate how good or bad the model is. In simple words, Theil’s U-statistic compares the performance of model with naïve/ random walk model(U=1). If Theil’s U statistic value equals one, it means that the model forecasting method is as good as naïve model (guessing). Value greater than one means the forecasting method is even worst than guessing. Similarly, value less than 1 indicates that forecasting method is better than naïve model and worth considering [@Oracle_]. 
+In addition to MAPE metric which is chosen to identify the best model, we also look at **Theil’s U statistic** to estimate how good or bad the model is. In simple words, Theil’s U-statistic compares the performance of model with naïve/ random walk model(U=1). If Theil’s U statistic value equals one, it means that the model forecasting method is as good as naïve model (guessing). Value greater than one means the forecasting method is even worst than guessing. Similarly, value less than 1 indicates that forecasting method is better than naïve model and worth considering [@Oracle_]. 
 
 From the comparison, we can see that all four models have Theil’s U score less than one while TBATS and ETS models having comparatively good score of 0.6 compared to Neural Network at 0.95.
 
@@ -248,12 +268,14 @@ As stated in literature review, many research focuses on single model approach o
 ensemble <- rowMeans(
   cbind(fc_arima$mean, fc_nn$mean, fc_tbats$mean, fc_ets$mean))
 # Compute Theil's U statistic (a = actual values, p= predicted values)
-TheilU(a = test, p = ensemble)
+cat(paste("Theil's U score on Ensemble: ", 
+          round(TheilU(a = test, p = ensemble),3)))
+
 ```
 
-Although TBATS model is our best single model however ensemble predictions by averaging forecasts of other weak models is even better. We can see that the ensemble approach significantly improves the overall accuracy as measured by Theil’s U score of 0.2. The most recent theoritical framework also supports the enseble approach in time-series forecasting. Researchers [@Hyndman_2018], in their book "Forecasting: Principles and Practice", suggests that using several different methods on the same time-series data and then averaging the results of forecast often guarantees better performance than any single best models. 
+Although TBATS model is our best single model however ensemble predictions by averaging forecasts of other weak models is even better. We can see that the ensemble approach significantly improves the overall accuracy as measured by Theil’s U score of 0.2. The most recent theoretical framework also supports the ensemble approach in time-series forecasting. Researchers [@Hyndman_2018], in their book "Forecasting: Principles and Practice", suggests that using several different methods on the same time-series data and then averaging the results of forecast often guarantees better performance than any single best models. 
 
-To summarize, it is possible that TBATS model may not be the best model on other data however use of enseble approach and corresponding Theil’s U score can be used in time-series forecasting to improve the accuracy and justify the reliability of final predictions. 
+To summarize, it is possible that TBATS model may not be the best model on other data however use of ensemble approach and corresponding Theil’s U score can be used in time-series forecasting to improve the accuracy and justify the reliability of final predictions. 
 
 
 ### Forecast future number of attacks
@@ -263,36 +285,37 @@ As we have evaluated performance of all four models, the next step of process is
 ```{r}
 # look ahead period 
 f_horizon <- 18
-# run model on full data i.e dft (2000-2016)
+# run model on full data
 fore_arima <- forecast(auto.arima(dft), h = f_horizon, level = c(80, 95))
-fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, level = c(80, 95), PI = TRUE)
+fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, 
+                    level = c(80, 95), PI = TRUE)
 fore_tbats <- forecast(tbats(dft), h = f_horizon, level = c(80, 95))
 fore_ets <- forecast(ets(dft), h = f_horizon, level = c(80, 95))
 ```
 
 
-```{r fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (Afghanistan)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (Afghanistan)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_arima)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (Afghanistan)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (Afghanistan)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_nn)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (Afghanistan)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (Afghanistan)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_tbats)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="ETS Forecast (Afghanistan)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="ETS Forecast (Afghanistan)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_ets)
@@ -374,7 +397,7 @@ if(!knitr:::is_latex_output() ) {
 }
 ```
 
-The forecasting results are often represented by mean value and by confidence interval of 80% and 95%. The line in orange represents the mean value of forecast and considered as final forecasting value. Next, we extract forecasts for chosen horizon and add the ensembled predictions to be used as insights as predicted future attacks in Afghanistan as shown in the code chunk below:
+The forecasting results are often represented by mean value and by confidence interval of 80% and 95%. The mean value of forecast is considered as final forecasting value. Next, we extract forecasts for chosen horizon and add the ensembled predictions to be used as insights as predicted future attacks in Afghanistan as shown in the code chunk below:
 
 ```{r}
 tbl_arima   <- timetk::tk_tbl(round(fore_arima$mean)) 
@@ -389,11 +412,13 @@ tbl <- tbl_arima %>%
 
 names(tbl) <- c("Time_period", "Arima", "NN", "TBATS", "ETS")
 tbl$Ensemble <- round(rowMeans(tbl[,2:5]))
+```
 
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(tbl, booktabs = TRUE, 
     caption = "Table of Predicted Future Attacks in Afghanistan") %>% 
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12) 
 } else {
   knitr::kable(tbl, caption = "Table of Predicted Future Attacks in Afghanistan") %>% 
@@ -403,7 +428,6 @@ if( knitr:::is_latex_output() ) {
     column_spec(1, bold = T) %>%
     column_spec(6, bold = T, color = "black", background = "#c7cfe5")   
 }
-
 ```
 
 
@@ -413,7 +437,7 @@ For this analysis, we use the exact same approach as before to estimate the numb
 
 ### Data preparation
 
-I have selected the data between 2004 to 2016 to make it appropriate for the modelling. Wherever an incident is part of multiple attacks, we have different reported figures from different sources. To overcome this issue, I group the data on specific variable and then take the maximum reported value as shown in the code chunk below:
+I have selected the data between 2004 to 2016 to make it appropriate for the modelling. Wherever an incident is part of multiple attacks, we have different reported figures from different sources. To overcome this issue, I have grouped data on specific variables and then taken the maximum reported value as shown in the code chunk below:
 
 ```{r}
 dft <- df %>%
@@ -430,7 +454,8 @@ dft <- df %>%
   ungroup() %>%
   group_by(year) %>%
   # Add missing months and assign 0 where no occurence
-  tidyr::complete(month = full_seq(seq(1:12), 1L), fill = list(total_count = 0)) %>%
+  tidyr::complete(month = full_seq(seq(1:12), 1L), 
+                  fill = list(total_count = 0)) %>%
   ungroup()
 
 dft <- dft %>%
@@ -442,23 +467,22 @@ dft <- dft %>%
 dft <- ts(dft[, 2], start = Year(min(dft$month_year)), 
           frequency = 12) # 1=annual, 4=quartly, 12=monthly
 dft <- na.kalman(dft)
-
 ```
 
 ### Seasonality analysis
 
-```{r fig.cap= "Fatalities Frequency by Year- Iraq" ,fig.height=3, out.width= "100%"}
+```{r echo=FALSE, fig.cap= "Fatalities Frequency by Year- Iraq", fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/iraq_line_plot.png")
 } else {
   ts_plot(dft, line.mode = "line", Xtitle = "Year", Ytitle = "Fatalities Counts", 
-        title = "Fatalities Frequency (Iraq)", color = "red")
+          title = "Fatalities frequency (Iraq)", color = "red")
 }
 ```
 
-An unsual spike indicating 2426 deaths in June 2014 refers to the major incidents from ISIL where 1500 were reportedely killed in a single incident followed by another single incident involving 600 deaths.
+From the time plot above, we can see an unusual spike indicating 2426 deaths in June 2014. This refers to the major incidents from ISIL where 1500 people were reportedly killed in a single incident followed by another single incident involving 600 deaths.
 
-```{r fig.cap= "Seasonality Plots - Iraq", fig.height=7, out.width= "100%"}
+```{r echo=FALSE, fig.cap= "Seasonality Plots - Iraq", fig.height=7, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/iraq_seasonal.png")
 } else {
@@ -466,11 +490,11 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-Seasonal components within year indicates high number of fatalities in July followed by April and May.
+Seasonal components within year indicates high number of fatalities in July followed by April and May. An interesting observation from the second plot above is that the variation in number fatalities by months before 2008 and after 2013 is significantly different. 
 
 ### Correlation test
 
-```{r fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
+```{r echo=FALSE, fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/iraq_lags.png")
 } else {
@@ -478,7 +502,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-In statistical terms, correlation means the extent of a linear relationship between two variables. Same way, autocorrelation means the linear relationship between lagged values of a time series as shown in the plot above for nine lags. We can spot few outliers in all nine lags as well as positive linear trend indicates the presence of auto-correlation. 
+In statistical terms, correlation means the extent of a linear relationship between two variables. Same way, auto-correlation means the linear relationship between lagged values of a time series as shown in the plot above for nine lags. We can spot few outliers in all nine lags as well as positive linear trend indicates the presence of auto-correlation. 
 
 
 ### Modelling
@@ -510,13 +534,16 @@ metrics  <- rbind(as.data.frame(round(accuracy(fc_arima$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_nn$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_tbats$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_ets$mean, test), 3))) %>% 
-            add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
-                       .before = "ME") %>% arrange(MAPE)
+  add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
+             .before = "ME") %>% 
+  arrange(MAPE)
+```
 
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(metrics, booktabs = TRUE, 
     caption = "Performance comparison of all models (Iraq)") %>% 
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12)
 } else {
   knitr::kable(metrics, 
@@ -537,8 +564,9 @@ Next we calculate Theil’s U score on ensembled predictions to see how much imp
 ### Ensemble
 
 ```{r}
-# extract predictions from all four models
-preds <- as.data.frame(cbind(fc_arima$mean, fc_nn$mean, fc_tbats$mean, fc_ets$mean))
+# extract predictions from all four models and create ensemble
+preds <- as.data.frame(
+  cbind(fc_arima$mean, fc_nn$mean, fc_tbats$mean, fc_ets$mean))
 preds$ensemble <- rowMeans(preds)
 
 # Compute Theil's U statistic (a = actual values, p= predicted values)
@@ -551,43 +579,43 @@ As expected, we can see the significant improvement in forecasting accuracy by a
 
 ### Forecast future fatalities
 
-In the validation part, data was into train and test in order to evaluate performance of different models. For the forecast, we run the models all the data points i.e. from 2000-2016.
+In the validation part, data was into train and test in order to evaluate performance of different models. For the forecast, we run the models all the data points.
 
 ```{r}
 # look ahead period 
 f_horizon <- 12
-# run model on full data i.e dft (2000-2016)
+# run model on full data
 fore_arima <- forecast(auto.arima(dft), h = f_horizon, level = c(80, 95))
-fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, level = c(80, 95), PI = TRUE)
+fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, 
+                    level = c(80, 95), PI = TRUE)
 fore_tbats <- forecast(tbats(dft), h = f_horizon, level = c(80, 95))
 fore_ets <- forecast(ets(dft, lambda = BoxCox.lambda(dft)), 
                      h = f_horizon, level = c(80, 95))
 ```
 
 
-
-```{r fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (Iraq)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (Iraq)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_arima)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (Iraq)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (Iraq)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_nn)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (Iraq)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (Iraq)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_tbats)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="ETS Forecast (Iraq)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="ETS Forecast (Iraq)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_ets)
@@ -684,11 +712,13 @@ tbl <- tbl_arima %>%
 
 names(tbl) <- c("Time_period", "Arima", "NN", "TBATS", "ETS")
 tbl$Ensemble <- round(rowMeans(tbl[,2:5]))
+```
 
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(tbl, booktabs = TRUE, 
     caption = "Table of Predicted Future Fatalities in Iraq") %>%
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12)
 } else {
   knitr::kable(tbl, 
@@ -700,13 +730,14 @@ if( knitr:::is_latex_output() ) {
     column_spec(6, bold = T, color = "black", background = "#c7cfe5")
 }
 ```
+
 We can see flat forecast in ETS and TBATS model on this data which means that the trend and seasonality is insufficient to allow the future observations to have different conditional means. In that case, both models return the last observed value. However, as we have computed the Theil’s U score for ensemble on test set which is less than 1, the ensembled forecasts as shown above can still be considered as approximate estimate better than random walk model.  
 
 
 
 ## SAHEL Region (Predict future attacks)
 
-The Sahel region in Africa stretches from east to west across African continent. At present, this region draws huge political attention due to the indications of possible geographical explansion of ISIL [@Liautaud_2018]. To estimate the future number of attacks in this region, I have selected data from year 2000 and filtered by eight countries that falls within sahel region as shown in the data preparation step. 
+The Sahel region in Africa stretches from east to west across African continent. At present, this region draws huge political attention due to the indications of possible geographical expansion of ISIL [@Liautaud_2018]. To estimate the future number of attacks in this region, I have selected data from year 2000 and filtered by eight countries that falls within sahel region as shown in the data preparation step. 
 
 ### Data preparation
 
@@ -732,23 +763,22 @@ dft <- dft %>%
 dft <- ts(dft[, 2], start = Year(min(dft$month_year)), 
           frequency = 12) # 1=annual, 4=quartly, 12=monthly
 dft <- na.kalman(dft)
-
 ```
 
 ### Seasonality analysis
 
-```{r fig.cap= "Attack Frequency by Year- SAHEL Region", fig.height=3, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Attack Frequency by Year- SAHEL Region", fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/sahel_line_plot.png")
 } else {
   ts_plot(dft, line.mode = "line", Xtitle = "Year", Ytitle = "Attack Counts", 
-        title = "Attack Frequency (SAHEL Region)", color = "red")
+          title = "Attack frequency (SAHEL region)", color = "red")
 }
 ```
 
 From the attack frequency by year, it is observed that number of attacks have increased exponentially in the last decade and reaching peak during year 2014-2015. Several researchers [@Crone_2017; @Onuoha_2018] have indicated that Boko Haram affiliated itself with Islamic State in 2015 as well as large number of small groups from entire region have also declared their affiliation with Islamic State.
 
-```{r fig.cap= "Seasonal Pattern (heatmap) - SAHEL Region", fig.height=3, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Seasonal Pattern (heatmap) - SAHEL Region", fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/sahel_heatmap.png")
 } else {
@@ -758,12 +788,12 @@ if( knitr:::is_latex_output() ) {
 
 From the heatmap above, we can see sudden increase in number of attacks from year 2012 and more than 50 attacks a month on average. Let’s have a look at seasonal components to see if there is any pattern by cycles. 
 
-```{r fig.cap= "Seasonality Pattern (boxplot) - SAHEL Region", fig.height=4, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Seasonality Pattern (boxplot) - SAHEL Region", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/sahel_boxplot.png")
 } else {
   ts_seasonal(dft, type = "box", Ygrid = T, Xgrid = T, 
-              title = "Seasonality Plot (SAHEL Region)") 
+              title = "Seasonality plot (SAHEL region)") 
 }
 ```
 
@@ -771,7 +801,7 @@ In a comparison to number of attacks in Afghanistan and number of fatalities in 
 
 ### Correlation test
 
-```{r fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
+```{r echo= FALSE, fig.cap= "Correlation Test", fig.height=5, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
   include_graphics(path = "figure/sahel_lags.png")
 } else {
@@ -779,7 +809,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-Similar to correlation tests in Iraq and Afghanistan, a positive linear trend is visible in all nine lags while lag 1 and 2 suggesting strong autocorrelation. 
+Similar to correlation tests in Iraq and Afghanistan, a positive linear trend is visible in all nine lags while lag 1 and 2 suggesting strong auto-correlation. 
 
 ### Modelling
 
@@ -799,7 +829,9 @@ fit_arima <- auto.arima(train)
 fit_nn <- nnetar(train, repeats = 5)
 fit_tbats <- tbats(train)
 fit_ets <- ets(train)
+```
 
+```{r echo=FALSE}
 #Get validation forecasts
 fc_arima <- forecast(fit_arima, h = horizon)
 fc_nn <- forecast(fit_nn, h = horizon)
@@ -810,13 +842,17 @@ metrics  <- rbind(as.data.frame(round(accuracy(fc_arima$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_nn$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_tbats$mean, test), 3)),
                   as.data.frame(round(accuracy(fc_ets$mean, test), 3))) %>% 
-            add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
-                       .before = "ME") %>% arrange(MAPE)
+  add_column(models = c("Auto Arima", "NeuralNet", "TBATS", "ETS"), 
+             .before = "ME") %>% 
+  arrange(MAPE)
+```
 
+
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(metrics, booktabs = TRUE, 
     caption = "Performance comparison of all models (SAHEL Regioin)") %>% 
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12)
 } else {
   knitr::kable(metrics, 
@@ -830,7 +866,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the model comparison based on MAPE metric, we can see that Auto Arima followed by Neural Network peforms better on this data and all four models having Theil’s U score below 1. 
+From the model comparison based on MAPE metric, we can see that Auto Arima followed by Neural Network performs better on this data and all four models having Theil’s U score below 1. 
 
 ### Ensemble
 
@@ -838,46 +874,48 @@ From the model comparison based on MAPE metric, we can see that Auto Arima follo
 # extract predictions from all four models and get average
 ensemble <- rowMeans(cbind(fc_arima$mean, fc_nn$mean, fc_tbats$mean, fc_ets$mean))
 # Compute Theil's U statistic (a = actual values, p= predicted values)
-TheilU(a = test, p = ensemble)
+cat(paste("Theil's U score on Ensemble: ", 
+          round(TheilU(a = test, p = ensemble),3)))
 ```
 
-An enseble prediction further imporves the accuracy as measured by Theil’s U score. 
+An ensemble prediction further improves the prediction accuracy as measured by Theil’s U score. 
 
 ### Forecast future attacks
 
 ```{r}
 # look ahead period 
 f_horizon <- 18
-# run model on full data i.e dft (2000-2016)
+# run model on full data
 fore_arima <- forecast(auto.arima(dft), h = f_horizon, level = c(80, 95))
-fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, level = c(80, 95), PI = TRUE)
+fore_nn <- forecast(nnetar(dft, repeats = 5), h = f_horizon, 
+                    level = c(80, 95), PI = TRUE)
 fore_tbats <- forecast(tbats(dft), h = f_horizon, level = c(80, 95))
 fore_ets <- forecast(ets(dft), h = f_horizon, level = c(80, 95))
 ```
 
 
-```{r fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (SAHEL Region)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Auto Arima Forecast (SAHEL Region)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_arima)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (SAHEL Region)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="Neural Network Forecast (SAHEL Region)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_nn)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (SAHEL Region)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="TBATS Forecast (SAHEL Region)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_tbats)
 }
 ```
 
-```{r fig.height= 4, out.width="100%", fig.cap="ETS Forecast (SAHEL Region)"}
+```{r echo= FALSE, fig.height= 4, out.width="100%", fig.cap="ETS Forecast (SAHEL Region)"}
 # combine plots for latex output
 if( knitr:::is_latex_output() ) {
   plot(fore_ets)
@@ -922,7 +960,6 @@ if(!knitr:::is_latex_output() ) {
 ```
 
 
-
 ```{r echo= FALSE, fig.height= 3, out.width="100%", fig.cap="TBATS Forecast (SAHEL Region)"}
 # get individual plots (interactive) for html output
 if(!knitr:::is_latex_output() ) {
@@ -959,7 +996,7 @@ if(!knitr:::is_latex_output() ) {
 }
 ```
 
-From the plots above, we can see that Auto Arima, Neural Network and TBATS model are able to capture observed trend whereas ETS model fails and generates flat predictions. However, enseble approach will compensate the loss from any weak models as computed before. 
+From the plots above, we can see that Auto Arima, Neural Network and TBATS model are able to capture observed trend whereas ETS model fails and generates flat predictions. However, ensemble approach will compensate the loss from any weak models as computed before. 
 
 ```{r}
 tbl_arima   <- timetk::tk_tbl(round(fore_arima$mean)) 
@@ -974,11 +1011,13 @@ tbl <- tbl_arima %>%
 
 names(tbl) <- c("Time_period", "Arima", "NN", "TBATS", "ETS")
 tbl$Ensemble <- round(rowMeans(tbl[,2:5]))
+```
 
+```{r echo=FALSE}
 if( knitr:::is_latex_output() ) {
   knitr::kable(tbl, booktabs = TRUE, 
     caption = "Table of Predicted Future Attacks in SAHEL Region") %>% 
-    kable_styling(full_width = F, latex_options = "hold_position", 
+    kable_styling(full_width = F, latex_options = "HOLD_position", 
                   font_size = 12)
 } else {
   knitr::kable(tbl, 
@@ -991,4 +1030,13 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
+\par
+
+**Summary**
+
+To summarize this chapter, we analysed the seasonality components within time-series at monthly frequency for Afghanistan, Iraq and SAHEL region. We found an upward trend in number of attacks starting from February to May month (Ramadan month in Islamic calendar) in Afghanistan throughout all the years. Similarly in Iraq we found higher fatalities during July month followed by April and May month. Whereas in SAHEL region, this pattern is completely opposite. 
+
+From the time-series forecasting models, we estimated the future number of attacks and fatalities using four different models at monthly frequency. We also illustrated the importance of using ensemble method and evaluated predicted vs actual values using Theil’s U statistic which indicates significant improvement in forecasting accuracy than best single model. Comparing same models on different time-series data indicates that the best single model in one time-series data may not be the best single model in another time-series data. 
+
+Apart from prediction at monthly frequency, and forecasting number of attacks and fatalities, scope of this analysis can be further extended predict number of injuries, quarterly frequency and for any country using the shiny app which is also an integral part of this research. 
 

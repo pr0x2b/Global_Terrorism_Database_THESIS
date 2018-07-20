@@ -1,6 +1,11 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Predicting Class Probabilities {#classification}
 
-In our dataset, we have several categorical variables such as suicide attack, attack success, extended attack, part of multiple attacks etc with qualitative value ie. Yes/ No (1 or 0). In previous chapter, we have predicted number of attacks and fatalities for Afghanistan, Iraq and SAHEL region. In this chapter, we choose data from all the countries that are impacted by top 10 most active and violents groups and make use of cutting edge LightGBM algorithm to predict the category of target variable which will be helpful to identify and understand the causal variables behind such attacks. This is supervised machine learning approach, which means our dataset has labelled observations and the objective is to find a function that can be used to assign a class to unseen observations. 
+In our dataset, we have several categorical variables such as suicide attack, attack success, extended attack, part of multiple attacks etc with qualitative value i.e. Yes/ No (1 or 0). In previous chapter, we have predicted number of attacks and fatalities for Afghanistan, Iraq and SAHEL region. In this chapter, we choose data from all the countries that are impacted by top 10 most active and violent groups and make use of cutting edge LightGBM algorithm to predict the category of target variable which will be helpful to identify and understand the causal variables behind such attacks. This is supervised machine learning approach, which means our dataset has labelled observations and the objective is to find a function that can be used to assign a class to unseen observations. 
 
 
 ## Evolution of Gradient Boosting Machines
@@ -11,7 +16,7 @@ To further explain this, finding optimal splits during the learning process is t
 
 ### LightGBM
 
-LightGBM is a fairly recent implementation of parallel GBDT process which uses histogram-based approach and offers significant improvement in training time and memory usage. The winning solutions from recent machine learning challenges on Kaggle and benchmarking of various GBM from the researcher [@Pafka_2018] indicates that LightGBM outperforms XGBoost and other traditional algorithms in terms of accuracy as well. LightGBM was developed by Microsoft researchers in October 2016 and it is an open-source library available in R and Python both. 
+LightGBM is a fairly recent implementation of parallel GBDT process which uses histogram-based approach and offers significant improvement in training time and memory usage. The winning solutions from recent machine learning challenges on Kaggle and bench-marking of various GBM from the researcher [@Pafka_2018] indicates that LightGBM outperforms XGBoost and other traditional algorithms in terms of accuracy as well. LightGBM was developed by Microsoft researchers in October 2016 and it is an open-source library available in R and Python both. 
 
 ### The mechanism behind improvised accuracy
 
@@ -28,7 +33,7 @@ include_graphics(path = "figure/leafwise.png")
 ```
 (image source ^[https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst#references])
 
-Researcher [@Shi_2007] further explains the phenomena behind tree growth in best-first and depth-first approach and suggests that most decision tree learners expland nodes in depth-first order whereas best-first tree learners expand the best node whose split achieves maximum reduction of impurity among all the nodes available for splitting. Although the resulting tree will be same as depth-wise tree, the difference is in the order in which it grown. 
+Researcher [@Shi_2007] further explains the phenomena behind tree growth in best-first and depth-first approach and suggests that most decision tree learners expand nodes in depth-first order whereas best-first tree learners expand the best node whose split achieves maximum reduction of impurity among all the nodes available for splitting. Although the resulting tree will be same as depth-wise tree, the difference is in the order in which it grown. 
 
 One of the key advantage of using LightGBM algorithm is that it offers good accuracy with label encoded categorical features instead of one hot encoded features. This eventually leads to faster training time. According to LightGBM documentation [@MicrosoftCorporation_2018], tree built on one-hot encoded features tends to be unbalanced and needs higher depth in order to achieve good accuracy in case of categorical features with high-cardinality. LightGBM implements Exclusive Feature Bundling (EFB) technique, which is based on research by [@D.Fisher_1958] to find the optimal split over categories and often performs better than one-hot encoding.
 
@@ -36,7 +41,7 @@ One disadvantage of leaf-wise approach is that it may cause over fitting when da
 
 ## Data preparation
 
-To understand the characteristics of top 10 most active and violent terrorist groups, we filter the data and include all the countries that are impacted these groups as shown in the code chunk below:
+To understand the characteristics of top 10 most active and violent terrorist groups, we filter the data and include all the countries that are impacted by this groups as shown in the code chunk below:
 
 ```{r lgb_data_pre }
 df_class <- df %>% 
@@ -57,7 +62,18 @@ df_class <- df %>%
 
 ## Overview of target variable
 
-For this analysis, I have selected `suicide_attack` as a target variable. According to GTD codebook, this variable is coded “Yes” in those cases where there is evidence that the perpetrator did not intend to escape from the attack alive. From the plot and frequency table below, we can see that 11.3% incidents were observed as suicide attacks out of total 21,780 observations. 
+For this analysis, I have selected `suicide_attack` as a target variable. According to GTD codebook, this variable is coded “Yes” in those cases where there is evidence that the perpetrator did not intend to escape from the attack alive. 
+
+```{r echo=FALSE}
+tmp <- as.factor(ifelse(df_class$suicide_attack == 1, "Yes", "No"))
+knitr::kable(Freq(tmp), 
+             booktabs = TRUE, 
+             caption = "Frequency table: suicide attack variable") %>% 
+    kable_styling(full_width = F, font_size = 13,
+                  latex_options = "HOLD_position")
+```
+
+From the frequency table and plot, we can see that 11.3% incidents were observed as suicide attacks out of total 21,780 observations. Our objective is to train the classifier on training data (upto 2015) and correctly classify the instances of "Yes" in suicide attack variable in test data (year 2016). 
 
 ```{r echo= FALSE, fig.height=4, fig.width=4, fig.cap="Overview of target variable: Suicide Attack"}
 tmp <- df_class %>% 
@@ -73,16 +89,15 @@ ggplot(tmp, aes(x=suicide_attack,
   theme(axis.title = element_text(size=12), plot.title = element_text(size=12)) 
 ```
 
-```{r echo=FALSE}
-tmp <- as.factor(ifelse(df_class$suicide_attack == 1, "Yes", "No"))
-knitr::kable(Freq(tmp), 
-             booktabs = TRUE, 
-             caption = "Frequency table for suicide attack variable")
-```
+### Dealing with class imbalance
+
+As we can see that the target variable has severe class imbalance where positive cases present in only 11.3% observations. For the classification modelling, class imbalance is a major issue and there are several techniques to deal with it such as down sampling, up sampling, SMOTE (Synthetic Minority Over-sampling Technique). 
+
+We use `scale_pos_weight` argument in model building process which controls the weights of the positive obeservations. According to LightGBM documentation [@MicrosoftCorporation_2018], default value for `scale_pos_weight` is 1.0 and it represents weight of positive class in binary classification task. We calculate this value as number of negative samples / number of positive samples.  
 
 ## Feature engineering
 
-Feature engineering is a process of creating representations of data that increase the effectiveness of a model [@Johnson_2018]. This is one of the most important aspect in machine learning that requires careful transformations and widening the feature space in order to imporve the performance of model. During data cleaning process, we have already taken care of missing values and NAs. With regard to LightGBM model, the primary requirement is to have all the variables in numeric. As discussed earlier, LightGBM offers good accuracy with label encoded categorical features compared to one-hot encoding method used in most algorithms. In this regard, we label encode all the categorical variables and specify them as a vector in model parameters. We also have numeric variables with extreme values such as arms_import, arms_export, nkill, nwound etc. For the modeling purpose, we use log transformation for such features. Last but not the least, we add frequency count features to widen the feature space. Frequency count features is known technique in machine learning competitions to improve the accuracy of the model. An example of feature with frequency is: number of attacks by group, year and region. Use of frequency count features adds more context to data and will be helpful to improve the performance of model. 
+Feature engineering is a process of creating representations of data that increase the effectiveness of a model [@Johnson_2018]. This is one of the most important aspect in machine learning that requires careful transformations and widening the feature space in order to improve the performance of model. During data cleaning process, we have already taken care of missing values and NAs. With regard to LightGBM model, the primary requirement is to have all the variables in numeric. As discussed earlier, LightGBM offers good accuracy with label encoded categorical features compared to one-hot encoding method used in most algorithms. In this regard, we label encode all the categorical variables and specify them as a vector in model parameters. We also have numeric variables with extreme values such as arms_import, arms_export, nkill, nwound etc. For the modeling purpose, we use log transformation for such features. Last but not the least, we add frequency count features to widen the feature space. Frequency count features is known technique in machine learning competitions to improve the accuracy of the model. An example of feature with frequency is: number of attacks by group, year and region. Use of frequency count features adds more context to data and will be helpful to improve the performance of model. 
 
 
 ```{r}
@@ -124,6 +139,9 @@ for (f in features) {
   }
 }
 
+#--------------------------------------------------------------
+# Step 4: Covert all the variable to numeric
+#--------------------------------------------------------------
 data[] <- lapply(data, as.numeric)
 ```
 
@@ -131,12 +149,14 @@ At this point, all of our variables are numeric and there are no missing values 
 
 ## Validation strategy
 
-In general, cross-validation is the widely used approach to estimate peformance of the model. In this appoach, training data is split into equal sized (k) folds. The model is then trained on k-1 folds and performance is measured on remaining fold [@Johnson_2018]. However this approach is not suitable for our data. To further explain this, the observations in our dataset are time based so training the model on recent years (for example 2000- 2010) and evaluating the performance on previous years (for example 1980- 1990) would not be meaningful. To overcome this issue, we use time-based split to evaluate performance of our model. In other words, we use the observations in year 2016 as test set and remaining observations as our training set. 
+In general, cross-validation is the widely used approach to estimate performance of the model. In this approach, training data is split into equal sized (k) folds. The model is then trained on k-1 folds and performance is measured on remaining fold [@Johnson_2018]. However this approach is not suitable for our data. To further explain this, the observations in our dataset are time based so training the model on recent years (for example 2000- 2010) and evaluating the performance on previous years (for example 1980- 1990) would not be meaningful. To overcome this issue, we use time-based split to evaluate performance of our model. In other words, we use the observations in year 2016 as test set and remaining observations as our training set. 
 
 This way we can be ensured that the model we have trained is capable of classifying target variable in current context. Following is the code used to implement validation strategy:
 
 ```{r}
+#--------------------------------------
 # validation split
+#--------------------------------------
 train <- data %>% filter(year <= 2015)
 test  <- data %>% filter(year == 2016)
 ```
@@ -144,7 +164,9 @@ test  <- data %>% filter(year == 2016)
 The next stage of process is to convert our data into lgb.Dataset format. During this process, we create a vector containing names of all our categorical variables and specify it while constructing lgb.Dataset as shown in the code below:
 
 ```{r}
+#--------------------------------------
 # define all categorical features
+#--------------------------------------
 cat_vars <- df %>% 
   select(year, month, day, region, country, 
          provstate, city, attack_type, target_type, weapon_type, 
@@ -155,7 +177,9 @@ cat_vars <- df %>%
          conflict_index) %>% 
   names()
 
-# construct lgb.Dataset and specify target variable and categorical features
+#----------------------------------------------------------------------------
+# construct lgb.Dataset, and specify target variable and categorical features
+#----------------------------------------------------------------------------
 dtrain = lgb.Dataset(
   data = as.matrix(train[, colnames(train) != "suicide_attack"]), 
   label = train$suicide_attack, 
@@ -174,13 +198,15 @@ Notice that we have assigned labels separately to training and test data. To sum
 
 ## Hyperparameter optimization
 
-Hyperparameter tuning is a process of finding optimal value for the chosen model parameter. According to [@Johnson_2018], parameter tuning is an important aspect in modelling because they control the model complexity. And so that, it also affect any variance-base trade-off that can be made. There are several approaches for hyperparameter tuning such as Bayesian optimization, grid-search and randomized search. For this analysis, we used random grid-search approach for hyperparameter optimazation. In simple words, Randomized grid-search means we concentrate on the hyperparameter space that looks promising. This judgement often comes with prior experience of working with similar data. Several researchers [@Bergstra_2011; @Bergstra_2012] have also supported the randomized grid-search approach and have claimed that random search is much more efficient than any other approaches for optimizing the parameters.
+Hyperparameter tuning is a process of finding optimal value for the chosen model parameter. According to [@Johnson_2018], parameter tuning is an important aspect in modelling because they control the model complexity. And so that, it also affect any variance-base trade-off that can be made. There are several approaches for hyperparameter tuning such as Bayesian optimization, grid-search and randomized search. For this analysis, we used random grid-search approach for hyperparameter optimization. In simple words, Randomized grid-search means we concentrate on the hyperparameter space that looks promising. This judgement often comes with prior experience of working with similar data. Several researchers [@Bergstra_2011; @Bergstra_2012] have also supported the randomized grid-search approach and have claimed that random search is much more efficient than any other approaches for optimizing the parameters.
 
-For this analysis, we choose number of leaves, max depth, bagging franction, feature fraction and scale positive weight which are most important parameters to control the complexity of the model. As shown in the code chunk below, first we define a grid by specifying parameter and iterate over number of models in grids to find the optimal parameter values.
+For this analysis, we choose number of leaves, max depth, bagging fraction, feature fraction and scale positive weight which are most important parameters to control the complexity of the model. As shown in the code chunk below, first we define a grid by specifying parameter and iterate over number of models in grids to find the optimal parameter values.
 
 ```{r}
 set.seed(84)
-# define chosen space in hyperparameter space
+#--------------------------------------
+# define grid in hyperparameter space
+#--------------------------------------
 grid <- expand.grid(
   num_leaves        = c(5,7,9),
   max_depth         = c(4,6),
@@ -189,10 +215,12 @@ grid <- expand.grid(
   scale_pos_weight  = c(4,7) 
 )
 
+#--------------------------------------
+# Iterate model over set grid
+#--------------------------------------
 model <- list()
 perf <- numeric(nrow(grid))
 
-tic("Total time for random grid search: ")
 for (i in 1:nrow(grid)) {
   # cat("Model ***", i , "*** of ", nrow(grid), "\n")
   model[[i]] <- lgb.train(
@@ -214,19 +242,23 @@ for (i in 1:nrow(grid)) {
   perf[i] <- max(unlist(model[[i]]$record_evals[["validation"]][["auc"]][["eval"]]))
   invisible(gc()) # free up memory after each model run
 }
-toc()
 
 ```
 
 ```{r}
+#--------------------------------------
 #Extract results
+#--------------------------------------
 cat("Model ", which.max(perf), " is with max AUC: ", max(perf), sep = "","\n")
 best_params = grid[which.max(perf), ]
+```
 
+```{r echo=FALSE}
 knitr::kable(best_params, booktabs = TRUE,
              caption = "Hyperparameter tuning result") %>%
-		kable_styling(latex_options = "hold_position", font_size = 12, full_width = F)
+		kable_styling(latex_options = "HOLD_position", font_size = 12, full_width = F)
 ```
+
 
 From the hyperparameter tuning, we have extracted the optimized values based on AUC. Next, we use this parameters to in model building process. 
 
@@ -240,9 +272,9 @@ params <- list(objective = "binary",
                max_depth = best_params$max_depth,
                bagging_fraction = best_params$bagging_fraction,
                feature_fraction = best_params$feature_fraction,
+               scale_pos_weight= best_params$scale_pos_weight,
                bagging_freq = 1,
-               learning_rate = 0.01, 
-               scale_pos_weight= best_params$scale_pos_weight)
+               learning_rate = 0.01)
 
 model <- lgb.train(params, 
                    dtrain, 
@@ -256,7 +288,7 @@ model <- lgb.train(params,
 
 ### Model evaluation
 
-In order to evaluate the performance of our model on test data, we have use AUC metric which is commonly used in binary classification problem. From the trained model, we extract AUC score on test data from the best iteration with the code as shown below:
+In order to evaluate the performance of our model on test data, we have used AUC metric which is commonly used in binary classification problem. From the trained model, we extract AUC score on test data from the best iteration with the code as shown below:
 
 ```{r}
 cat("Validation AUC @ best iter: ", 
@@ -270,28 +302,30 @@ To deal with overfitting, we have specified early stopping criteria which stops 
 A confusion matrix is an another way to evaluate performance of binary classification model. 
 ```{r}
 # get predictions on validation data
-test_preds = predict(
-  model, 
-  data = as.matrix(test[, colnames(test) != "suicide_attack"]), 
-  n = model$best_iter)
+test_matrix <- as.matrix(test[, colnames(test) != "suicide_attack"])
+test_preds = predict(model, data = test_matrix, n = model$best_iter)
 
-#table(test$suicide_attack)
 confusionMatrix(
   data = as.factor(ifelse(test_preds > 0.5, 1, 0)), 
-  reference = as.factor(test$suicide_attack))
+  reference = as.factor(test$suicide_attack)
+  )
 ```
 
-Accuracy of 0.92 indicates that our model is 92% accurate. Out of all the metrics, the one we are most interested in is specitivity. We want our classifier to predict the "Yes"/ "1" instances of suicide attack more compared to "No"/"0" instances. To further explain this, as shown in the contingency table, our model has correctly predicted 582 out of 673 instances of "1"/ "Yes" in suicide attacks gives accuracy of 86.5%. 
+Accuracy of 0.92 indicates that our model is 92% accurate. Out of all the metrics, the one we are most interested in is specificity. We want our classifier to predict the "Yes"/ "1" instances of suicide attack with higher accuracy. From the contingency table, we can see that our model has correctly predicted 582 out of 673 instances of "1"/ "Yes" in suicide attacks and achieves accuracy of 86.5%. 
 
 ### Feature importance
 
 ```{r}
 # get feature importance
 fi = lgb.importance(model, percentage = TRUE)
-knitr::kable(head(fi, 10), booktabs = TRUE,
-            caption = "Feature importance matrix") %>%
-		kable_styling(latex_options = "hold_position", font_size = 12, full_width = F)
 ```
+
+```{r echo=FALSE}
+knitr::kable(head(fi, 15), booktabs = TRUE,
+            caption = "Feature importance matrix (Top 15)") %>%
+		kable_styling(latex_options = "HOLD_position", font_size = 13, full_width = F)
+```
+
 
 Gain is the most important measure for predictions and represents feature contribution to the model. This is calculated by comparing contribution of each feature for each tree in the model. The Cover metric indicates number of observations related to particular feature. The Frequency measure is the percentage representing the relative number of times a particular feature occurs in the trees of the model. In simple words, it tells us how often the feature is used in the model [@Chen_2018; @Pandya_2018].
 
@@ -302,16 +336,15 @@ From the feature importance matrix, we can see that type of weapon contributes t
 To further analyse reasoning behind model's decision making process, we randomly select one observation from test data and compare it with the predicted value based on features contribution. 
 
 ```{r}
-# extract test data without transformation
-tmp_test <- df_class %>% filter(year == 2016)
+# extract raw test data
+tmp_test <- df_class %>% filter(year == 2016) 
 # Extract second observation
-knitr::kable(
-  t(tmp_test[2, ]), booktabs= TRUE,
-  caption = "Actual values in 2nd observation in test set") %>%
-		kable_styling(latex_options = "hold_position", font_size = 12, full_width = F)
+knitr::kable(t(tmp_test[2, ]), booktabs= TRUE,
+             caption = "Actual values in 2nd observation in test set") %>%
+  kable_styling(latex_options = "HOLD_position", font_size = 12, full_width = F)
 ```
 
-Next, we extract the predicted value from the model and use lgb.interprete function to compute feature contribution components of rawscore prediction. 
+Next, we extract the predicted value from the model and use lgb.interpret function to compute feature contribution components of raw score prediction. 
 
 ```{r}
 cat(paste("predicted value from model: ", test_preds[[2]]))
