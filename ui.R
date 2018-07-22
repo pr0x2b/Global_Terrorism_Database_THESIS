@@ -12,9 +12,10 @@ header <- dashboardHeader(
             tags$style(".navbar {min-height:55px !important}")),
     titleWidth = 400,
     # links to my social and professional profiles
+    tags$li(class = "dropdown", tags$a(href = "https://www.linkedin.com/in/pranav84/", target = "_blank", tags$img(height = "25px", src = "lin.png"))),
     tags$li(class = "dropdown", tags$a(href = "https://www.kaggle.com/pranav84", target = "_blank", tags$img(height = "25px", src = "kaggle.png"))),
-    tags$li(class = "dropdown", tags$a(href = "https://twitter.com/pranavpandya84", target = "_blank", tags$img(height = "25px", src = "twitter.png"))),
-    tags$li(class = "dropdown", tags$a(href = "https://www.linkedin.com/in/pranav84/", target = "_blank", tags$img(height = "25px", src = "linkedin.png")))) 
+    tags$li(class = "dropdown", tags$a(href = "https://twitter.com/pranavpandya84", target = "_blank", tags$img(height = "25px", src = "twitter.png")))
+    ) 
 
 #---------------------------------------------------------------------------------------------------------------------  
 # Dashboard sidebar
@@ -23,22 +24,22 @@ sidebar <- dashboardSidebar(
     # width = 280,
     sidebarMenu(id = "gtd_pranav",
         # tags$head(tags$script(HTML('$(document).ready(function() {$(".treeview-menu").css("display", "block");})'))),
-      menuItem("Master Thesis", tabName = "master_thesis", icon = icon("home")),
+      # menuItem("Master Thesis", tabName = "master_thesis", icon = icon("home")),
       menuItem("About GTD", tabName = "about_gtd", icon = icon("home")),
       menuItem("Impact Analysis", icon = icon("globe"),tabName = "part_1",
         menuSubItem("GUI: Geographical", icon = icon("globe"),tabName = "eda_p1_geographic"),
         menuSubItem("Global Attack Patterns", icon = icon("globe"),tabName = "eda_p1_2_heatmaps")),
       menuItem("Top 10 Active Groups", tabName = "eda_p2", icon = icon("users")),
       menuItem("Statistical Analysis", tabName = "gui", icon = icon("bar-chart-o")),
+      menuItem("Pattern Discovery", tabName = "arules", icon = icon("connectdevelop")),
       menuItem("Time-series Forecasting", tabName = "ts_analysis_01_season", icon = icon("calendar")),
-      menuItem("Classification", tabName = "classification", icon = icon("gears")),
-      # menuItem("Part 6: Insights", tabName = "predictions", icon = icon("globe")),
-      br(), br(), br(), 
-      menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user"))
+      menuItem("Binary Classification", tabName = "classification", icon = icon("gears")),
+      br(), 
+      menuItem("Author: Pranav Pandya", tabName = "author", icon = icon("user")),
       # h5("Pranav Pandya", style="text-align:center;"),
       # h5("Master BIPM 2016-18", style="text-align:center;"),
       # h5("Berlin School of Economics & Law", style="text-align:center;")
-      #img(src = "hwr.png", width = 230, style="display: block; margin-left: auto; margin-right: auto;")
+      img(src = "hwr_logo.png", width = 180, style="display: block; margin-left: auto; margin-right: auto;")
     )
 
     )
@@ -53,35 +54,14 @@ body <- dashboardBody(
   tags$style(type="text/css",
          ".shiny-output-error { visibility: hidden; }",
          ".shiny-output-error:before { visibility: hidden; }"),
-  extendShinyjs(text = "shinyjs.activateTab = function(name){
-                        setTimeout(function(){
-                        $('a[href$=' + '\"#shiny-tab-' + name + '\"' + ']').closest('li').addClass('active')
-                        }, 200);}"),
+  # extendShinyjs(text = "shinyjs.activateTab = function(name){
+  #                       setTimeout(function(){
+  #                       $('a[href$=' + '\"#shiny-tab-' + name + '\"' + ']').closest('li').addClass('active')
+  #                       }, 200);}"),
   tabItems(
     #---------------------------------------
     # Home page: Quick overview about GTD
     #---------------------------------------
-
-    tabItem(tabName = "master_thesis",
-      navbarPage("Master Thesis", id = "master_thesis", 
-        tabPanel("pdf version", 
-          fluidPage(title = "thesis_pdf", 
-            fluidRow(
-              column(width = 12,
-                uiOutput("thesis_pdf"))
-              )
-            )
-          ), 
-        tabPanel("gitbook version", 
-          fluidPage(title = "thesis_gitbook", 
-            fluidRow(
-              # column(width = 12,
-              #   uiOutput("thesis_gitbook"))
-              )
-            )
-          )
-        )
-      ),
 
     tabItem(tabName = "about_gtd",
       navbarPage("Global Terrorism Database", id = "about_gtd", 
@@ -91,68 +71,56 @@ body <- dashboardBody(
 
             fluidRow(
               column(width = 4,
-                box(
-                  h3("App summary"),
-                  style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE,
-                  tags$ul(
-                    tags$li("Part 1: Global impact analysis"), 
-                    tags$li("Part 2: Characteristics of most active groups"), 
-                    tags$li("Part 3: Statistical analysis"), 
-                    tags$li("Part 4: Time-series forecasting"), 
-                    tags$li("Part 5: Binary classification"))),
+                box(width = 12, title= "App summary", solidHeader = FALSE, style = "font-size: 110%; ", status = "primary",
+                  # h4("App summary"),
+                  #  width = 15, 
+                  p("This app is developed in line with my Master thesis-", 
+                    em('"Chasing The Trajectory of Terrorism: A Machine Learning Based 
+                                        Approach to Achieve Open Source Intelligence"'), 
+                    "and intended to further extend the scope of analysis. First three parts of this app are
+                    based on exploratory and statistical data analysis. Pattern discovery part uses Apriori algorithm to mine association rules for top ten most 
+                    active and violent groups. Time-series analysis part uses Auto Arima, Neural Network, TBATS and ETS model for forecasting and the last part 
+                    uses LightGBM algorithm for binary classificatin task. ")), 
 
-                box(
-                  style = "font-size: 110%; ", background = "blue", width = 15, solidHeader = FALSE, collapsible = FALSE, collapsed = FALSE,
-                  h3("About data source: "),
+                box(width = 12, title= "About data source:", solidHeader = FALSE, style = "font-size: 110%; ", status = "warning",
+                  p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world. 
+                    It is the most comprehensive unclassified database on terrorist events in the world."), 
                   tags$ul(
                     tags$li("Time period: 1970-2016, except 1993"), 
                     tags$li("Variables: based on location, tactics, perpetrators, targets and outcomes"), 
-                    tags$li("Sources: Unclassified media articles")), p(""), 
-                  p("The Global Terrorism Database (GTD) is an open-source database including information on over 170,000 terrorist events around the world 
-                     from 1970 through 2016. It is the most comprehensive unclassified database on terrorist events in the world."), 
-                  p("GTD is maintained by researchers at the National Consortium for the Study of Terrorism and Responses to Terrorism (START), 
-                      headquartered at the University of Maryland."), 
-                  p("Note: Some of the variable names have been renamed to keep the analysis informative for audience."))
+                    tags$li("Sources: Unclassified media articles")), p(""),
+                  p("GTD is maintained by researchers at the START Consortium headquartered at the University of Maryland.")
+                  )
                 ),
 
               column(width = 8,
                 img(src = "munich_image.jpg",height = 140, width = 950, style="display: block; margin-left: auto; margin-right: auto;"), 
                 withSpinner(highchartOutput("world_hchart",height = 520)))
-              ),
+              )
 
-            fluidRow(
-              column(width = 12,
+            # fluidRow(
+            #   column(width = 12,
                 # actionButton("info_box", " Detailed information", icon = icon("info-circle")),
                 # bsModal("modalExample", "info_box", size = "large", 
-                  box(
-                    h3("Definition of Terrorism: "),
-                    style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
-                    p("The GTD defines a terrorist attack as the threatened or actual use of illegal force and violence by a non-state actor to attain a 
-                        political, economic, religious, or social goal through fear, coercion, or intimidation."),
-                    p("In practice this means in order to consider an incident for inclusion in the GTD, all three of the following attributes must be present:"),
-                    tags$ul(
-                      tags$li("The incident must be intentional – the result of a conscious calculation on the part of a perpetrator."), p(""),
-                      tags$li("The incident must entail some level of violence or immediate threat of violence including property violence, as well as violence against people."),  p(""),
-                      tags$li("The perpetrators of the incidents must be sub-national actors. GTD does not include acts of state terrorism.")),
-                    p("Additionally, at least two of the following three criteria must be present for an incident to be included in the GTD:"),
-                    tags$ul(
-                      tags$li("Criterion 1: The act must be aimed at attaining a political, economic, religious, or 
-                           social goal. In terms of economic goals, the exclusive pursuit of profit does not satisfy this 
-                           criterion. It must involve the pursuit of more profound, systemic economic change."), p(""),
-                      tags$li("Criterion 2: There must be evidence of an intention to coerce, intimidate, or convey some other message 
-                           to a larger audience (or audiences) than the immediate victims. It is the act taken as a totality that is 
-                           considered, irrespective if every individual involved in carrying out the act was aware of this intention. 
-                           As long as any of the planners or decision-makers behind the attack intended to coerce, intimidate or publicize, 
-                           the intentionality criterion is met."),  p(""),
-                      tags$li("Criterion 3: The action must be outside the context of legitimate warfare activities. That is, the act must be 
-                             outside the parameters permitted by international humanitarian law (particularly the prohibition against deliberately 
-                             targeting civilians or non-combatants)."))
-                      ))
-                  )
+                  # box(
+                  #   h4("Definition of Terrorism: "),
+                  #   style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
+                  #   p("The GTD defines a terrorist attack as the threatened or actual use of illegal force and violence by a non-state actor to attain a 
+                  #       political, economic, religious, or social goal through fear, coercion, or intimidation.")
+                  #     ))
+                  # )
             )), # End of overview tab panel
 
+        tabPanel("Thesis", 
+          fluidPage(title = "thesis_pdf", 
+            fluidRow(
+              column(width = 12,
+                uiOutput("thesis_pdf"))
+              )
+            )
+          ),
 
-        tabPanel("Codebook/ Reference Manual", 
+        tabPanel("Codebook", 
           fluidPage(title = "GTD Reference Manual", 
             fluidRow(
               column(width = 12,
@@ -171,7 +139,7 @@ body <- dashboardBody(
     #-------------------------------------------- 
     tabItem(tabName = "eda_p1_geographic",
       fluidPage(title = "tdg_eda_p1_geographic",
-        fluidRow(h3("GUI: Exploration of Attack Characteristics"),
+        fluidRow(h3("GUI: Exploration of Attack Incidents"),
           # tags$style(HTML(".tab-panel{ background-color: black; color: white}")),
             tabBox(width = 2, 
               tabPanel("Plot configurations:",  
@@ -204,8 +172,18 @@ body <- dashboardBody(
                   # valueBoxOutput("attack_ideo_domestic", width = 2)),
               column(width = 10, 
                 withSpinner(
-                  leafletOutput("top_10_dg_leaflet", height = 750)))
-              )
+                  leafletOutput("top_10_dg_leaflet", height = 750))),
+              column(width = 10, 
+                box(
+                  h3("Note: "), style = "font-size: 109%; ", width = 16, solidHeader = TRUE,
+                  tags$ul(
+                    tags$li("Default selection of data is by countries that are impacted from top 10 most active and violent groups. 
+                            Selecting 'All' option from radio button choices will display data for all the countries."),
+                    tags$li("Data can be further filtered by checkbox options in 'Major attacks only?' field. 
+                            Selecting 'Yes' will display all the major incidents where nkill is greater than 50. 
+                            Selecting 'No' will display all the incidents where cumulative sum of nkill and nwound is greater than 0."))
+                )
+              ))
 
         )),
 
@@ -278,7 +256,7 @@ body <- dashboardBody(
                   ) 
                 ),
 
-              tabPanel("By Fatalities (killed and/or wounded)", 
+              tabPanel("By Fatalities and injuries", 
                 fluidRow(
                     sidebarPanel(width = 2,
                       h4("Plot configs"),
@@ -474,6 +452,50 @@ body <- dashboardBody(
         ) # End fluid page
     ),
 
+    #----------------------------------------
+    # Pattern Discovery (Association rules)
+    #----------------------------------------
+
+    tabItem(
+      tabName = "arules",
+      fluidPage(title = "Pattern discovery",
+        fluidRow(
+          column(width = 12,  
+            navbarPage("Pattern discovery", id = "arules_tab", 
+              tabPanel("Network graph", 
+                fluidRow(
+                  box(title = "Network graph of association rules for top 10 most active and violent groups",
+                      status = "primary", width = 12, solidHeader = TRUE, 
+                      collapsible = TRUE, 
+                    column(width = 12,
+                        fluidRow(
+                            column(width = 3, uiOutput("arules_support")),
+                            column(width = 3, uiOutput("arules_confidence")),
+                            column(width = 2, uiOutput("arules_min_length"))
+                            ),
+                        fluidRow(
+                          visNetworkOutput("igraph_arules", width = "100%", height = 1200)
+                            )
+                      )
+                    )
+                  )
+                ), 
+              tabPanel("Detailed (table + scatterplot)", 
+                fluidRow(
+                  box(title = "Discovered patterns/ rules (table)", status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, 
+                    column(width = 12,
+                          withSpinner(dataTableOutput("dt_rules"))
+                          )
+                      ),
+                  box(title = "Association rules (Scatterplot)", status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE, 
+                    column(width = 12,
+                          withSpinner(plotlyOutput("plot_rules", width = "100%", height = 350))
+                          )
+                      )
+                    )
+                  )
+                ))))),
+
 
     #-------------------------------- 
     # Part 4: time-series analysis
@@ -632,8 +654,11 @@ body <- dashboardBody(
                   tabPanel("Comparison", 
                     fluidRow(
                       box(title = "Finding best model based on evaluation metrics",status = "primary", width = 12, solidHeader = TRUE, collapsible = TRUE,
-                        column(width = 7, withSpinner(tableOutput("tbl_eval_compare")), hr(),
-                          p("Note: MAPE metric has been chosen to highlight the best model. Model with lowest MAPE score is on the top.")),
+                        column(width = 7, 
+                          withSpinner(tableOutput("tbl_eval_compare")), hr(),
+                          p("Note: MAPE metric has been chosen to highlight the best model. Model with lowest MAPE score is on the top.
+                            We then average the predictions of all four models and create an ensemble. Below is the computed Theil's U score for ensemble: "),
+                          valueBoxOutput("ensemble_score", width = 7)), 
                         column(width = 5, withSpinner(tableOutput("tbl_eval_text")))
                         ),
                     
@@ -828,7 +853,8 @@ body <- dashboardBody(
                               uiOutput("lgb_scale_pos_weight")),
                             column(width = 12, 
                               tags$head(tags$style(HTML('#btn_lgb_model{background-color:orange;}'))),
-                              actionButton(inputId = "btn_lgb_model", label = "Initialize Model", icon = icon("cogs"), width = "95%")
+                              actionButton(inputId = "btn_lgb_model", label = "Initialize Model", icon = icon("cogs"), width = "95%"), hr(),
+                            p("Important: Change the value in scale_pos_weight parameter based on class imbalance (as shown in previous tab) for improved accuracy.")
                               )
                             ),
                             box(width = 12, status = "success", title = "Machine Capacity: ", 

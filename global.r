@@ -89,6 +89,44 @@ df_leaflet <- df %>%
 
 df_leaflet_t10 <- df_leaflet %>% filter(group_name %in% top10_groups)
 
+
+#------------------------------------------------------
+# Data for Network graph (pattern discovery)
+#------------------------------------------------------
+
+dfn <- df %>% 
+  filter(group_name %in% top10_groups) %>%  # filter data by top 10 groups
+  replace_na(list(nkill = 0, nwound = 0))   # replace NAs
+
+# Shorten lengthy group names
+dfn$group_name[dfn$group_name == "Kurdistan Workers' Party (PKK)"] <- "PKK"
+dfn$group_name[dfn$group_name == "Al-Qaida in the Arabian Peninsula (AQAP)"] <- "AQAP"
+dfn$group_name[dfn$group_name == "Houthi extremists (Ansar Allah)"] <- "Houthi_Extrm"
+dfn$group_name[dfn$group_name == "Tehrik-i-Taliban Pakistan (TTP)"] <- "TTP"
+dfn$group_name[dfn$group_name == "Al-Nusrah Front"] <- "Al-Nusrah"
+dfn$group_name[dfn$group_name == "Islamic State of Iraq and the Levant (ISIL)"] <-"ISIL"
+dfn$group_name[dfn$group_name == "Donetsk People's Republic"] <- "Donetsk_PR" 
+
+dfn <- dfn %>%
+  select(group_name, target_type, weapon_type, attack_type, suicide_attack, nkill) %>%
+  filter(target_type != "Unknown" & target_type != "Other" & 
+         weapon_type != "Unknown" & attack_type != "Unknown") %>%
+  mutate(nkill = if_else(nkill == 0, "0",
+                 if_else(nkill >= 1 & nkill <= 5, "1 to 5",
+                 if_else(nkill > 5 & nkill <= 10, "6 to 10",
+                 if_else(nkill > 10 & nkill <= 50, "11 to 50",  "more than 50")))))
+
+#shorten lengthy names for visualization purpose
+dfn$weapon_type[dfn$weapon_type == "Explosives/Bombs/Dynamite"] <- "Explosives"
+dfn$attack_type[dfn$attack_type == "Facility/Infrastructure Attack"] <- "Facility/Infra."
+dfn$target_type[dfn$target_type == "Private Citizens & Property"] <- "Civilians"
+dfn$target_type[dfn$target_type == "Terrorists/Non-State Militia"] <- "Non-State Militia"
+dfn$target_type[dfn$target_type == "Religious Figures/Institutions"] <- "Religious Figures"
+
+#convert everything to factor
+dfn[] <- lapply(dfn, factor)
+
+
 #------------------------------------------------------
 # Data for Classification models with LightGBM
 #------------------------------------------------------

@@ -4,20 +4,13 @@ shinyServer(function(input, output, session) {
   options(warn = -1, digits = 5, scipen = 999)
   set.seed(84)
 
-  # Collapse sidebar by default
-  # addClass(selector = "body", class = "sidebar-collapse")
-
   output$thesis_pdf <- renderUI({
-
-    tags$iframe(style="height:650px; width:100%", src="thesis_copy.pdf")
-
+    tags$iframe(style="height:750px; width:100%", src="thesis_copy.pdf")
   })
 
-  output$thesis_gitbook <- renderUI({
-
-    bookdown::render_book("index.Rmd")  
-
-  })
+  # output$thesis_gitbook <- renderUI({
+    # includeHTML("index.html") 
+  # })
 
   #-------------------------------------
   # globe chart (About page) 
@@ -92,7 +85,7 @@ shinyServer(function(input, output, session) {
       # to quanify actual nkills
       data <- leaflet_plot_data() %>% 
           replace_na(list(nkill = 0, nwound = 0)) %>% 
-          filter(nkill > 50) %>%
+          filter(nkill > 50) %>% # plot major attacks where fatalities are > 50
           select(group_name, region, year, month, nkill, part_of_multiple_attacks, longitude, latitude, intl_logistical_attack, intl_ideological_attack,
                  date, country, city, nwound, attack_type, target_type, weapon_type, extended, attack_success, suicide_attack, part_of_multiple_attacks) %>% 
           group_by(group_name, region, year, month) %>% 
@@ -186,33 +179,6 @@ shinyServer(function(input, output, session) {
         })
 
 
-  # Dynamically update pickerInput value
-  # observeEvent(input$leaflet_region, {
-  #   data <- leaflet_plot_data()
-  #   updatePickerInput(session = session, inputId = "leaflet_region", choices = unique(data$region))
-  # }, ignoreInit = TRUE)
-
-  # observeEvent(input$leaflet_group, {
-  #   region <- input$leaflet_region
-  #   data <- leaflet_plot_data()
-  #   updatePickerInput(session = session, inputId = "leaflet_group", choices = unique(data$group_name), selected = unique(data$group_name))
-  # })
-
-  # observeEvent(input$leaflet_attack, {
-  #   data <- leaflet_plot_data()
-  #   updatePickerInput(session = session, inputId = "leaflet_attack", choices = unique(data$attack_type))
-  # }, ignoreInit = TRUE)
-
-  # observeEvent(input$leaflet_target, {
-  #   data <- leaflet_plot_data()
-  #   updatePickerInput(session = session, inputId = "leaflet_target", choices = unique(data$target_type))
-  # }, ignoreInit = TRUE)
-
-  # observeEvent(input$leaflet_weapon, {
-  #   data <- leaflet_plot_data()
-  #   updatePickerInput(session = session, inputId = "leaflet_weapon", choices = unique(data$weapon_type))
-  # }, ignoreInit = TRUE)
-
   #-------------------------------------
   # EDA p2 (Leaflet plot output)
   #-------------------------------------
@@ -244,8 +210,10 @@ shinyServer(function(input, output, session) {
 
         if(input$radioBtn_major_attacks == "No") {
 
+          data <- data %>% filter(nkill + nwound > 0) # Plot attack locations involving at least one fatality or injury
+
           leaf_plot %>%
-            addCircles(data = data, lat= ~latitude, lng = ~longitude, 
+            addMarkers(data = data, lat= ~latitude, lng = ~longitude, clusterOptions = markerClusterOptions(),
                   popup=paste(
                     "<strong>Date: </strong>", data$date,
                     "<br><strong>Group: </strong>", data$group_name,
@@ -259,12 +227,13 @@ shinyServer(function(input, output, session) {
                     "<br><strong>Target type: </strong>", data$target_type,
                     "<br><strong>Attack > 24 hours?: </strong>", data$extended,
                     "<br><strong>Suicide attack?: </strong>", data$suicide_attack,
-                    "<br><strong>Part of multiple attacks?: </strong>", data$part_of_multiple_attacks),
-                  weight = 1, 
-                  radius = ~(nkill + 1), 
-                  color= ifelse(data$nkill == 0, "#8bd354", "#8B1A1A"),
-                  stroke = FALSE, 
-                  fillOpacity = 0.7)
+                    "<br><strong>Part of multiple attacks?: </strong>", data$part_of_multiple_attacks)
+                  # weight = 1, 
+                  # radius = ~(nkill + 1), 
+                  # color= ifelse(data$nkill == 0, "#8bd354", "#8B1A1A"),
+                  # stroke = FALSE, 
+                  # fillOpacity = 0.7
+                  )
 
         } else {
 
@@ -275,7 +244,7 @@ shinyServer(function(input, output, session) {
                             label = ifelse(data$nkill < 100, "50-100 people killed", 
                                     ifelse(data$nkill >= 100 & data$nkill < 300, "100-300 people killed", 
                                     ifelse(data$nkill >= 300 & data$nkill < 500, "300-500 people killed", 
-                                    ifelse(data$nkill >= 500 & data$nkill < 1000, "500-1000 people killed", "Major attack: > 1000 people killed")))),
+                                    ifelse(data$nkill >= 500 & data$nkill < 1000, "500-1000 people killed", "> 1000 people killed")))),
                             popup=paste( 
                               "<br><strong>Date: </strong>", data$date,
                               "<br><strong>Group: </strong>", data$group_name,
@@ -307,33 +276,6 @@ shinyServer(function(input, output, session) {
                               ))
             
         }
-
-
-    # addMarkers(data = data, lat= ~latitude, lng = ~longitude, 
-    #             popup=paste(
-    #               "<strong>Date: </strong>", data$date,
-    #               "<br><strong>Group: </strong>", data$group_name,
-    #               "<br><strong>Region : </strong>", data$region,
-    #               "<br><strong>Country : </strong>", data$country,
-    #               "<br><strong>City : </strong>", data$city,
-    #               "<br><strong>Number of people killed : </strong>", data$nkill,
-    #               "<br><strong>Number of people wounded : </strong>", data$nwound,
-    #               "<br><strong>Attack type: </strong>", data$attack_type,
-    #               "<br><strong>Weapon type: </strong>", data$weapon_type,
-    #               "<br><strong>Target type: </strong>", data$target_type,
-    #               "<br><strong>Attack > 24 hours?: </strong>", data$extended,
-    #               "<br><strong>Suicide attack?: </strong>", data$suicide_attack,
-    #               "<br><strong>Part of multiple attacks?: </strong>", data$part_of_multiple_attacks),
-    #             clusterOptions = markerClusterOptions()) 
-
-
-
-    # addEasyButton(easyButton(
-    #     icon="fa-globe", title="Zoom to Level 2",
-    #     onClick=JS("function(btn, map){ map.setZoom(2); }"))) %>%
-    #   addEasyButton(easyButton(
-    #     icon="fa-crosshairs", title="My location",
-    #     onClick=JS("function(btn, map){ map.locate({setView: true}); }")))
   
     
   })
@@ -1188,13 +1130,98 @@ shinyServer(function(input, output, session) {
 
 
     #------------------------------------------------
+    #Network graph (Apriori)
+    #------------------------------------------------
+
+    output$arules_support <- renderUI({ 
+      sliderInput("arules_support", label = "Support", min = 0.001, max = 0.005, value = 0.001, step = 0.001)
+    })
+
+    output$arules_confidence <- renderUI({ 
+      sliderInput("arules_confidence", label = "Confidence", min = 0.1, max = 0.9, value = 0.5, step = 0.1)
+      })
+
+    output$arules_min_length <- renderUI({ 
+      sliderInput("arules_min_length", label = "Minimum length", min = 1, max = 5, value = 2, step = 1)
+      })
+
+    selected_support <- reactive({as.numeric(input$arules_support)})
+    selected_conf    <- reactive({as.numeric(input$arules_confidence)})
+    selected_minlen  <- reactive({as.integer(input$arules_min_length)})
+
+    graph_data <- reactive({
+
+      group  <- list(rhs= paste0("group_name=", sort(unique(dfn$group_name))), default="lhs")
+  
+      # apriori model
+      #detach('package:shinyjs')
+      rules <- apriori(data = dfn, 
+                       parameter= list(support = selected_support(), 
+                                       confidence = selected_conf(), 
+                                       minlen = selected_minlen()), 
+                       appearance = group)
+
+      rules <- rules[!is.redundant(rules)] # Remove redundant rules if any 
+
+      })
+
+
+    output$igraph_arules <- renderVisNetwork({
+
+      rules <- graph_data()
+
+      # Extract graph
+      ig_df <- get.data.frame(
+                        plot(rules, 
+                             method="graph", 
+                             verbose = FALSE, 
+                             control=list(nodeCol="orange", edgeCol="#9cb7f4")), 
+                        what = "both")
+
+      nodes = data.frame(
+                id = ig_df$vertices$name,
+                value = ig_df$vertices$support, # get the nodes by support
+                title = ifelse(ig_df$vertices$label == "", ig_df$vertices$name, ig_df$vertices$label),
+                ig_df$vertices)
+    
+      visNetwork(nodes, edges = ig_df$edges) %>%
+        visEvents() %>% 
+        visNodes(size = 5, color = "#9cb7f4") %>%
+        visLegend() %>% 
+        visEdges(smooth = TRUE, color = "#ffd596" ) %>%
+        visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) %>%
+        visEdges(arrows = 'from') %>%
+        visPhysics(solver = "barnesHut", maxVelocity = 35,
+                  forceAtlas2Based = list(gravitationalConstant = -6000)) %>%
+        visInteraction(hover = TRUE)
+
+
+    })
+
+    output$dt_rules <- DT::renderDataTable({
+
+      rules <- graph_data() 
+      rules <- sort(rules, by="confidence")
+
+      inspectDT(rules)
+    })
+
+    output$plot_rules <- renderPlotly({
+      rules <- graph_data()
+      plotly_arules(rules, jitter = 5, marker = list(opacity = .5, size = 10), 
+                    colors = viridis(10, end = 0.8, option = "D")) %>% 
+        layout(title = "Association rules by support, confidence and lift")
+    })
+
+
+    #------------------------------------------------
     # Sidebar : time-series analysis
     #------------------------------------------------
     output$ts_fc_goal <- renderUI ({
           radioButtons(inputId = "ts_fc_goal", label = "Forecasting goal", 
                        choices = c("Number of attacks", 
                                    "Fatalities (nkill)", 
-                                   "Fatalities (nwound)"), 
+                                   "Injuries (nwound)"), 
                        selected = "Number of attacks", inline = FALSE)
       })
 
@@ -1366,7 +1393,7 @@ shinyServer(function(input, output, session) {
       #----------------------------------------------
       # Choice 3: Extract data for nwounds
       #----------------------------------------------
-      if(input$ts_fc_goal == "Fatalities (nwound)") {
+      if(input$ts_fc_goal == "Injuries (nwound)") {
 
         # if multiple channels report different count for same attack then select the one which is maximumn
         data <- data %>% 
@@ -1731,14 +1758,41 @@ shinyServer(function(input, output, session) {
 
     }
 
+    # Ensemble performance
+    ensemble_score_on_validation <- reactive({
+
+      fc_arima  <- ts_forecast_data()$fc_arima
+      fc_nn     <- ts_forecast_data_nn()$fc_nn
+      fc_tbats  <- ts_forecast_data()$fc_tbats
+      fc_ets    <- ts_forecast_data()$fc_ets
+      test      <- ts_forecast_data()$test
+
+      ensemble <- rowMeans(cbind(fc_arima$mean, fc_nn$mean, fc_tbats$mean, fc_ets$mean))
+
+      # Compute Theil's U statistic (a = actual values, p= predicted values)
+      result <- round(TheilU(a = test, p = ensemble),3)
+      result <- as.numeric(result)
+      })
+
+
+    output$ensemble_score <- renderValueBox({
+
+      score <- ensemble_score_on_validation()
+      valueBox(score, "Theil's U score on Ensemble", icon = icon("crosshairs"), color = 'olive')      
+
+    })
+
     output$eval_theilu <- renderHighchart({
 
       metrics <- data_model_compare()
 
       colnames(metrics)[8] <- "theils_U"
-      metrics <- metrics %>% arrange(theils_U)
+      metrics <- metrics %>% 
+        add_row(models = "Ensemble", theils_U = ensemble_score_on_validation()) %>% 
+        arrange(theils_U)
+
       highchart() %>% 
-        hc_subtitle(text = "Model evaluation by Theil's U statistic score") %>%
+        hc_subtitle(text = "Model evaluation by Theil's U score (Lower better)") %>%
         hc_xAxis(categories = metrics$models, 
                  title = list(text = "Name of the model")) %>% 
         hc_yAxis(title = list(text = "Theil's U Score"),
@@ -1751,7 +1805,12 @@ shinyServer(function(input, output, session) {
                                           from = 1, 
                                           to = JS("Infinity"), 
                                           color = "rgba(100, 0, 0, 0.1)"))) %>%
-        hc_add_series(data = metrics$theils_U, colorByPoint = TRUE, type = "column", showInLegend = F)
+        hc_add_series(data = metrics$theils_U, 
+                      colorByPoint = TRUE, 
+                      type = "column", 
+                      showInLegend = F, 
+                      dataLabels = list(enabled = TRUE)) %>%
+        hc_add_theme(hc_theme_ffx())
 
     })
 
@@ -1822,7 +1881,7 @@ shinyServer(function(input, output, session) {
                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
 
       fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
-                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
@@ -1844,7 +1903,7 @@ shinyServer(function(input, output, session) {
       tbl$forecast  <- round(tbl$forecast)
 
       cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
-                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
@@ -1872,7 +1931,7 @@ shinyServer(function(input, output, session) {
                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
 
       fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
-                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
@@ -1894,7 +1953,7 @@ shinyServer(function(input, output, session) {
       tbl$forecast  <- round(tbl$forecast)
 
       cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
-                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
@@ -1921,7 +1980,7 @@ shinyServer(function(input, output, session) {
                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
 
       fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
-                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
@@ -1943,7 +2002,7 @@ shinyServer(function(input, output, session) {
       tbl$forecast  <- round(tbl$forecast)
 
       cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
-                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
@@ -1970,7 +2029,7 @@ shinyServer(function(input, output, session) {
                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Actual number of people killed", "Actual number of people wounded"))
 
       fore_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted number of attacks", 
-                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       plot_ly() %>%
         add_lines(x = time(act_data), y = act_data,
@@ -1992,7 +2051,7 @@ shinyServer(function(input, output, session) {
       tbl$forecast  <- round(tbl$forecast)
 
       cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Forecasted attacks", 
-                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted fatalities (nwound)"))
+                      ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Forecasted fatalities (nkill)", "Forecasted injuries (nwound)"))
 
       knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
@@ -2025,7 +2084,7 @@ shinyServer(function(input, output, session) {
       tbl <- ensemble_data()
       cap_label <- ifelse(input$ts_fc_goal == "Number of attacks", "Ensembled forecast for future attacks", 
                       ifelse(input$ts_fc_goal == "Fatalities (nkill)", "Ensembled forecast for future fatalities (nkill)", 
-                             "Ensembled forecast for future fatalities (nwound)"))
+                             "Ensembled forecast for future injuries (nwound)"))
 
       knitr::kable(tbl, caption = cap_label) %>% 
         kable_styling(bootstrap_options = c("striped", "hover"), full_width = F, position = "left") %>%
@@ -2341,15 +2400,15 @@ shinyServer(function(input, output, session) {
     })
 
   output$lgb_num_leaves <- renderUI({ 
-    sliderInput("lgb_num_leaves", label = "Number of leaves", min = 1, max = 500, value = 7, step = 1)
+    sliderInput("lgb_num_leaves", label = "Number of leaves", min = 1, max = 31, value = 7, step = 1)
     })
 
   output$lgb_max_depth <- renderUI({ 
-    sliderInput("lgb_max_depth", label = "Max depth", min = -1, max = 12, value = 6, step = 1)
+    sliderInput("lgb_max_depth", label = "Max depth", min = -1, max = 12, value = 4, step = 1)
     })
 
   output$lgb_bagging_fraction <- renderUI({ 
-    sliderInput("lgb_bagging_fraction", label = "Bagging fraction", min = 0.4, max = 1, value = 0.8, step = 0.1)
+    sliderInput("lgb_bagging_fraction", label = "Bagging fraction", min = 0.4, max = 1, value = 0.7, step = 0.1)
     })
 
   output$lgb_bagging_freq <- renderUI({ 
@@ -2378,11 +2437,11 @@ shinyServer(function(input, output, session) {
     })
 
   output$lgb_early_stopping_rounds <- renderUI({ 
-    sliderInput("lgb_early_stopping_rounds", label = "Early stopping rounds", min = 10, max = 100, value = 50, step = 10)
+    sliderInput("lgb_early_stopping_rounds", label = "Early stopping rounds", min = 10, max = 100, value = 30, step = 10)
     })
 
   output$lgb_eval_freq <- renderUI({ 
-    sliderInput("lgb_eval_freq", label = "Evaluation freq", min = 1, max = 100, value = 50, step = 10)
+    sliderInput("lgb_eval_freq", label = "Evaluation freq", min = 50, max = 500, value = 100, step = 100)
     })
 
 
@@ -2455,6 +2514,15 @@ shinyServer(function(input, output, session) {
       test_preds <- predict(model, 
                             data = as.matrix(test[, colnames(test) != input$lgb_target_var]), 
                             n = model$best_iter)
+
+      # get confusion matrix to detect sensitivity and speciticity rates
+      print(
+      confusionMatrix(
+        data = as.factor(ifelse(test_preds > 0.5, 1, 0)), 
+        reference = as.factor(test_label)
+        )
+      )
+
 
       # get feature importance
       fi <- lgb.importance(model, percentage = TRUE)
