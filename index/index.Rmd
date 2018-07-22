@@ -13,8 +13,8 @@ knit: "bookdown::render_book"
 site: bookdown::bookdown_site
 #cover-image: "figure/thesis_header.png"
 output: 
- thesisdown::thesis_pdf: default
- # thesisdown::thesis_gitbook: default
+ # thesisdown::thesis_pdf: default
+ thesisdown::thesis_gitbook: default
 #  thesisdown::thesis_word: default
 #  thesisdown::thesis_epub: default
 
@@ -130,7 +130,7 @@ This implies that three of the following attributes are always present in each e
 
 ## Problem statement {.unnumbered}
 
-Nowadays, data is considered as the most valuable resource and machine learning makes it possible to interpret complex data however most use cases are seen in business context such as music recommendation, predicting customer churn or finding probability of having cancer. With recent development in machine learning algorithms and access to open source data and software, there are plenty of opportunities to correctly understand historical terrorist attacks and prevent the future conflicts. In the last decade, terrorist attacks have been incresed significantly as shown in the plot below: 
+Nowadays, data is considered as the most valuable resource and machine learning makes it possible to interpret complex data however most use cases are seen in business context such as music recommendation, predicting customer churn or finding probability of having cancer. With recent development in machine learning algorithms and access to open source data and software, there are plenty of opportunities to correctly understand historical terrorist attacks and prevent the future conflicts. In the last decade, terrorist attacks have been incresed significantly (data source: GTD) as shown in the plot below: 
 
 
 ```{r echo=FALSE, fig.cap="Terrorist attacks around the world between 1970-2016", fig.height=3, out.width = "100%"}

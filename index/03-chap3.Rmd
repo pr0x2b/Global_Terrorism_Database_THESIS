@@ -18,11 +18,13 @@ List of all the variable with short description as well as the script to impleme
 
 ## Global overview
 
+```{r }
+tmp <- df %>% group_by(region, year) %>% summarize(attack_count = n())
+```
+
 A quick look at region level number attacks suggests that situation is becoming worst in Middle East & North Africa followed by South Asia, Sub-Saharan Africa and Southeast Asia where exponential growth in number of attacks can be observed specifically from years 2010 to 2016. Note that the Y axis is set free to have closer look at trends.
 
 ```{r echo=FALSE, fig.cap="Attack frequency by year and region", fig.height=5, out.width = "100%"}
-tmp <- df %>% group_by(region, year) %>% summarize(attack_count = n())
-
 ggplot(tmp, aes(x=year, y=attack_count, color = region)) + 
   geom_line(size = 1) + 
   facet_wrap( ~ region, ncol=3, scales = "free_y") + 
@@ -37,9 +39,11 @@ An interesting observation is in Eastern Europe region where sudden increase in 
 
 To understand the attack characteristics, let’s take a look at Frequency of attack type and type of weapon used by terrorist groups. 
 
-```{r echo=FALSE, fig.cap="Trend in type of attack in all incidents globally", fig.height=3, out.width = "100%"}
+```{r }
 tmp <- df %>% group_by(attack_type, year) %>% summarise(total_attacks = n()) 
+```
 
+```{r echo=FALSE, fig.cap="Trend in type of attack in all incidents globally", fig.height=3, out.width = "100%"}
 # work around get pdf and html output
 if( knitr:::is_latex_output() ) {
     include_graphics(path = "figure/heatmap_attack.png")
@@ -59,8 +63,11 @@ if( knitr:::is_latex_output() ) {
 
 The heat signatures indicates Bombing/Explosive as one of the frequently used techniques by terrorist groups. Although the pattern in this tactic is visible throughout all the year, while rising during late 80s and early 90s however it has now increased to nearly 7 times since 2006. Similar pattern (with lower magnitude) can be observed in Armed Assault followed by Hostage Taking and Assassination technique. 
 
-```{r echo=FALSE, fig.cap="Trend in type of weapon used in all incidents globally", fig.height=3, out.width = "100%"}
+```{r }
 tmp <- df %>% group_by(weapon_type, year) %>% summarise(total_attacks = n())
+```
+
+```{r echo=FALSE, fig.cap="Trend in type of weapon used in all incidents globally", fig.height=3, out.width = "100%"}
 if( knitr:::is_latex_output() ) {
     include_graphics(path = "figure/heatmap_weapon.png")
 } else {
@@ -78,12 +85,16 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-Upon examining the trends in type of weapon used in all terrorist incidents globally as shown in the figure 2.3, it is visible that use of Explosives/Bomb/Dynamites and Firearms is extremely high since 2011 and compared to other weapon types. Use of vehicles as weapon type was relatively low until 2013 however it was on peak in 2015 with total 34 number number of attacks. 
+Upon examining the trends in type of weapon used in all terrorist incidents globally, it is visible that use of Explosives/Bomb/Dynamites and Firearms is extremely high since 2011 and compared to other weapon types. Use of vehicles as weapon type was relatively low until 2013 however it was on peak in 2015 with total 34 number number of attacks. 
+
 
 Observing trends in target type over the period of time is also a useful way to understand characteristics and ideology among terrorist incidents. As shown in the plot below, the heat signature indicates the top five most most frequently attacked target types as Private Citizens & Property followed by Military, Police, Government and Business. 
 
-```{r echo=FALSE, fig.cap="Trend in intended targets in all incidents globally", fig.height=5, out.width = "100%"}
+```{r }
 tmp <- df %>% group_by(target_type, year) %>% summarise(total_attacks = n()) 
+```
+
+```{r echo=FALSE, fig.cap="Trend in intended targets in all incidents globally", fig.height=5, out.width = "100%"}
 if( knitr:::is_latex_output() ) {
     include_graphics(path = "figure/heatmap_target.png")
 } else {
@@ -113,12 +124,14 @@ In order to determine top ten most active and violent groups based on fatalities
 by_groups <- df %>% 
   filter(group_name != "Unknown" & year >= 2010) %>% 
   replace_na(list(nkill = 0, nwound = 0)) %>% 
-  select(group_name, region, year, month, nkill, nwound, part_of_multiple_attacks) %>% 
+  select(group_name, region, year, month, nkill, nwound, 
+         part_of_multiple_attacks) %>% 
   group_by(group_name, region, year, month) %>% 
   filter(if_else(part_of_multiple_attacks == 1, 
                  nkill == max(nkill) & nwound == max(nwound), 
                  nkill == nkill & nwound == nwound)) %>%
-  distinct(group_name, region, year, month, nkill, nwound, part_of_multiple_attacks) %>%
+  distinct(group_name, region, year, month, nkill, nwound, 
+           part_of_multiple_attacks) %>%
   mutate(impact = nkill + nwound) %>%
   group_by(group_name) %>%
   summarise(total = sum(impact)) %>% 
@@ -142,13 +155,19 @@ ggplot(by_groups, aes(x= reorder(group_name, -total), y= total)) +
         plot.title = element_text(size=12), legend.position = "none")  
 
 ```
-Based on cumulative number of fatalities and injured people, we can see that ISIL and Taliban, followed by Boko Haram are the most violent groups that are currently active. To better understand their activity over the period of time, we take a look at attack frequency. 
+Based on cumulative number of fatalities and injured people, we can see that ISIL and Taliban, followed by Boko Haram are the most violent groups that are currently active. 
 
+To better understand their activity over the period of time, we take a look at attack frequency from each group. 
+
+```{r }
+tmp <- df %>% 
+  filter(group_name %in% top10_groups) %>% 
+  group_by(group_name, year) %>% 
+  summarise(total_attacks = n())
+```
+
+  
 ```{r echo=FALSE, fig.cap="Attack frequency by Top 10 groups", fig.height=3, out.width = "100%"}
-
-tmp <- df %>% filter(group_name %in% top10_groups) %>% 
-	group_by(group_name, year) %>% summarise(total_attacks = n())
-
 if( knitr:::is_latex_output() ) {
     include_graphics(path = "figure/heatmap_attack_t10.png")
 } else {
@@ -166,19 +185,20 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-It’s interesting to see that majority of this most violent terrorist groups (6 out of 10) were formed after 2006 only. Particularly, number of attacks from ISIL can be seen increasing rapidly within shortest period of time (4 years) and a gradual increase in attacks from Taliban (reaching peak at 1249 in year 2015). Attack characteristics for all 10 groups (cumulative) indicates Military as the most frequent target (27.5%) followed by civilians (27.3%). Similarly, Bombing/Explosions and Armed assault as a most frequent attack tactics accounts for 70.4% of all the attacks as shown in the plots below.  
+It’s interesting to see that majority of this most violent terrorist groups (6 out of 10) were formed after 2006 only. Particularly, number of attacks from ISIL can be seen increasing rapidly within shortest period of time (4 years) and a gradual increase in attacks from Taliban (reaching peak at 1249 in year 2015). 
+
+Attack characteristics for all 10 groups (cumulative) indicates Military as the most frequent target (27.5%) followed by civilians (27.3%). Similarly, Bombing/Explosions and Armed assault as a most frequent attack tactics accounts for 70.4% of all the attacks as shown in the plots below.  
 
 ```{r echo= FALSE, fig.cap="Characteristics of top 10 groups", fig.height=3, out.width = "100%"}
-
 group_attack_type <- df %>%  
-	filter(group_name %in% top10_groups) %>% 
-	group_by(attack_type) %>% 
-	summarize(count = n()) %>% arrange(desc(count)) %>% head(10) 
+  filter(group_name %in% top10_groups) %>% 
+  group_by(attack_type) %>% 
+  summarize(count = n()) %>% arrange(desc(count)) %>% head(10) 
 
 group_target_type <- df %>%  
-	filter(group_name %in% top10_groups) %>% 
-	group_by(target_type) %>% 
-	summarize(count = n()) %>% arrange(desc(count)) %>% head(10)
+  filter(group_name %in% top10_groups) %>% 
+  group_by(target_type) %>% 
+  summarize(count = n()) %>% arrange(desc(count)) %>% head(10)
 
 if( knitr:::is_latex_output() ) {
     include_graphics(path = "figure/heatmap_pie.png")
@@ -206,7 +226,7 @@ if( knitr:::is_latex_output() ) {
 
 ## The major and minor epicenters
 
-The term "Epicenter" used here refers to the location that is impacted by terrorist incidents from top 10 groups as defined. To examine the threat level from this groups by geographic location, I use cumulative sum of number of people killed and number of people wounded as measurement. Below is the code used to prepare the data for this analysis. 
+The term "Epicenter" used here refers to the geographical location that is impacted by terrorist incidents from top 10 groups as defined. To examine the threat level from this groups by geographic location, I use cumulative sum of number of people killed and number of people wounded as measurement. Below is the code used to prepare the data for this analysis. 
 
 ```{r }
 tmp <- df %>% 
@@ -220,8 +240,12 @@ tmp <- df %>%
   distinct(group_name, region, country, year, month, nkill,
   		   nwound, part_of_multiple_attacks) %>%
   group_by(country, region) %>%
-  summarise(attack_count = n(), nkill_plus_nwound = sum(nkill + nwound))
+  summarise(attack_count = n(), 
+            nkill_plus_nwound = sum(nkill + nwound))
+```
 
+```{r }
+# Threat level in four regions
 tbl <- tmp %>% 
   filter(region %in% c("North America", "Eastern Europe", 
                        "Central Asia", "Southeast Asia"))
@@ -247,12 +271,12 @@ if( knitr:::is_latex_output() ) {
 
 We can see minor/ negligible threat level across North America and Central Asia region however Ukraine turns out to be the major epicenter in Eastern Europe region and poses high threat level. Similarly, low number of attacks but high number of casualties and injuries make Philippines minor epicenter within Southeast Asia region.
 
+In the next plots, we use treemap to get quick overview of threat level by regions. The area represents number of attacks and color represents cumulative fatalities and injuries.
+
 ```{r}
 tmp1 <- tmp %>% 
   filter(region %in% c("Western Europe")) 
 ```
-
-In the next plots, we use treemap to get quick overview of threat level by regions. The area represents number of attacks and color represents cumulative fatalities and injuries.
 
 ```{r echo=FALSE, fig.cap="Threat level in Western Europe", fig.height=3, out.width="100%"}
 tmp1 %>%
@@ -267,7 +291,7 @@ tmp1 %>%
     theme(plot.title = element_text(size=12))
   
 ```
-The situation in Western Europe represents opposite of what we have observed in Eastern Europe. Here we can see that terrorism from top ten groups is spread across most the countries. While France facing the biggest impact in terms of cumulative fatalities and injuries followed by Belgium, we can also see that Germany is facing the highest number of attacks. Based on threat level, we can identify Germany and France as major epicenters and Belgium as a minor epicenter in Western Europe region. 
+The situation in Western Europe represents opposite of what we have observed in Eastern Europe. Here we can see that terrorism from top ten groups is spread across most the countries. While France facing the biggest impact in terms of cumulative fatalities and injuries followed by Belgium, we can also see that Germany is facing the highest number of attacks. 
 
 
 ```{r echo=FALSE}
@@ -287,13 +311,14 @@ if( knitr:::is_latex_output() ) {
 }
 
 ```
-It should be noted that the threat level is Ukraine is almost 5 times higher than the threat level in whole Western Europe region. 
+Based on threat level, we can identify Germany and France as major epicenters and Belgium as a minor epicenter in Western Europe region. It should be noted that the threat level is Ukraine alone is almost 5 times higher than the threat level in whole Western Europe region. 
 
 ```{r}
 tmp1 <- tmp %>% 
   filter(region %in% c("Middle East & North Africa", 
                        "Sub-Saharan Africa", "South Asia"))
 ```
+
 
 ```{r echo= FALSE, fig.cap="Threat level in Africa, Middle-East and South Asia", fig.height=3, out.width = "100%"}
 tmp1 %>%
@@ -310,7 +335,6 @@ tmp1 %>%
   
 ```
 
-From the plot above, we can see that all three regions are heavily impacted. While Afghanistan facing the largest impact in terms of fatalities and number of people injured followed by Iraq, we can also see that the spread in Southeast Asia is limited to Pakistan and Afghanistan only. In contrast, Sub-Saharan Africa and Middle East & North Africa region indicates spread across many countries. In a comparison to other regions, the cumulative sum of number of fatalities and injuries are more than 10000 in highly impacted countries. For the comparison purpose, let’s have a look at numbers in impacted countries.
 
 ```{r echo=FALSE}
 tbl <- tmp1 %>% arrange(desc(nkill_plus_nwound))
@@ -318,7 +342,7 @@ tbl <- tmp1 %>% arrange(desc(nkill_plus_nwound))
 if( knitr:::is_latex_output() ) {
   knitr::kable(tbl, booktabs = TRUE,
 		caption = "Threat level in Africa, Middle-East and South Asia") %>%
-		kable_styling(latex_options = "HOLD_position", full_width = F, font_size = 11)
+		kable_styling(latex_options = "HOLD_position", full_width = F, font_size = 9)
 } else {
   knitr::kable(tbl, booktabs = TRUE,
 		caption = "Threat level in Africa, Middle-East and South Asia") %>%
@@ -328,11 +352,16 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
+From the plot and table above, we can see that all three regions are heavily impacted. While Afghanistan facing the largest impact in terms of fatalities and number of people injured followed by Iraq, we can also see that the spread in Southeast Asia is limited to Pakistan and Afghanistan only (similar to Eastern Europe). 
 
-\par
-To further identify the epicenters by each group, let us narrow down our analysis to city level.
+In case of Sub-Saharan Africa and Middle East & North Africa region, we can see spread across many countries. We can also see many countries with low number of attacks but relatively large number of fatalities and injuries such as in Yemen, Niger, Nigeria and Chad. In a comparison to other regions, the cumulative sum of number of fatalities and injuries in Africa, Middle-East and South Asia is more than 9,000 in each of top five highly impacted countries.
+
+To further identify the epicenters by each group, let us narrow down our analysis to city level. For this analysis, I have set the threshold for cumulative number of fatalities and injuries to 100 and have removed observations where name of the city is unknown as shown in the code chunk below: 
 
 ```{r}
+#------------------------------------------
+#Epicenters at city level per group
+#------------------------------------------
 tmp <- df %>% 
   filter(group_name %in% top10_groups) %>%
   replace_na(list(nkill = 0, nwound = 0)) %>% 
@@ -344,11 +373,22 @@ tmp <- df %>%
   distinct(group_name, region, country, city, year, month, 
            nkill, nwound, part_of_multiple_attacks) %>%
   group_by(city, group_name) %>% 
-  summarise(attack_count = n(), nkill_plus_nwound = sum(nkill + nwound)) %>%
-  filter(nkill_plus_nwound >= 100 & city != "Unknown" & city != "unknown")
+  summarise(attack_count = n(), 
+            nkill_plus_nwound = sum(nkill + nwound)) %>%
+  filter(nkill_plus_nwound >= 100 & 
+         city != "Unknown" & 
+         city != "unknown") %>%
+  as.data.frame()
 ```
 
-```{r echo= FALSE, fig.cap="The Major and Minor Epicenters of Terrorism (by each group)", fig.height=7, out.width = "100%"}
+
+```{r}
+glimpse(tmp)
+```
+
+From the prepared data, we can see that 284 cities are impacted from top 10 most active and violent groups. Next, we plot this data using treemap where the size/area represents number of attacks and color represents intensity of cumulative sum of fatalities and injuries. 
+
+```{r echo= FALSE, fig.cap="The Major and Minor Epicenters of Terrorism (by each group)", fig.height=8, out.width = "100%"}
 tmp %>%
   ggplot(aes(area = attack_count, 
   			 fill = nkill_plus_nwound, 
@@ -363,8 +403,8 @@ tmp %>%
     guides(fill = guide_colorbar(barwidth = 12)) +
     theme(plot.title = element_text(size=12), 
           strip.text = element_text(size = 9, face = "bold"))
-
 ```
-In the illustration above, the size/area represents number of attacks and color represents intensity of cumulative sum of fatalities and injuries. We can see distinct characteristic among the groups in terms of spread. For example, Al-Nusrah Front, Houthi Extremists and Donetsk People’s Republic groups have spread across 5 to 10 cities while having few major epicenters. Whereas ISIL, Taliban and Boko Haram groups have spread across many cities. In case of ISIL, we can also see relatively large number of fatalities and injuries with low number of attacks in several cities. 
+
+We can see distinct characteristic among the groups in terms of spread. For example, Al-Nusrah Front, Houthi Extremists and Donetsk People’s Republic groups have spread across 5 to 10 cities while having few major epicenters. Whereas ISIL, Taliban and Boko Haram groups have spread across many cities. In case of ISIL, we can also see relatively large number of fatalities and injuries with low number of attacks in several cities. 
 
 To summarize, we identified the top 10 most lethal groups that are active between 2010 to 2016 and examined their characteristics behind attacks. We looked at the trend in type of attack and corresponding number of attacks over the period of time, which up to certain extent, indicates easy access to firearms and explosive devices either through illegal arms trade or through undisclosed support from powerful nation/s. We also examined pattern in target type, in which, 46.7% attacks were targeted at Military and Police category and 27.3% attacks were intended toward civilians. Based on threat level from top ten groups, we examined the geographical spread and identified the hot spots where this groups are highly active. 

@@ -1,8 +1,3 @@
----
-output: html_document
-editor_options: 
-  chunk_output_type: console
----
 # Predicting Class Probabilities {#classification}
 
 In our dataset, we have several categorical variables such as suicide attack, attack success, extended attack, part of multiple attacks etc with qualitative value i.e. Yes/ No (1 or 0). In previous chapter, we have predicted number of attacks and fatalities for Afghanistan, Iraq and SAHEL region. In this chapter, we choose data from all the countries that are impacted by top 10 most active and violent groups and make use of cutting edge LightGBM algorithm to predict the category of target variable which will be helpful to identify and understand the causal variables behind such attacks. This is supervised machine learning approach, which means our dataset has labelled observations and the objective is to find a function that can be used to assign a class to unseen observations. 
@@ -22,7 +17,7 @@ LightGBM is a fairly recent implementation of parallel GBDT process which uses h
 
 The key difference between traditional algorithms and LightGBM algorithm is how trees are grown. Most decision tree learning algorithms controls the model complexity by depth and grow trees by level (depth-wise) as shown in the image below (image source ^[https://github.com/Microsoft/LightGBM/blob/master/docs/Features.rst#references]):
 
-```{r depthwise, echo=FALSE, fig.height=3, out.width="65%", fig.cap= "Level-wise tree growth in most GBDT algorithms"}
+```{r depthwise, echo=FALSE, fig.height=3, out.width="65%", fig.align='center',fig.cap= "Level-wise tree growth in most GBDT algorithms"}
 include_graphics(path = "figure/depthwise.png")
 ```
 
@@ -69,13 +64,15 @@ tmp <- as.factor(ifelse(df_class$suicide_attack == 1, "Yes", "No"))
 knitr::kable(Freq(tmp), 
              booktabs = TRUE, 
              caption = "Frequency table: suicide attack variable") %>% 
-    kable_styling(full_width = F, font_size = 13,
-                  latex_options = "HOLD_position")
+    kable_styling(full_width = F, latex_options = "HOLD_position")
 ```
 
-From the frequency table and plot, we can see that 11.3% incidents were observed as suicide attacks out of total 21,780 observations. Our objective is to train the classifier on training data (upto 2015) and correctly classify the instances of "Yes" in suicide attack variable in test data (year 2016). 
+From the frequency table, we can see that 11.3% incidents were observed as suicide attacks out of total 21,780 observations. Our objective is to train the classifier on training data (up to 2015) and correctly classify the instances of "Yes" in suicide attack variable in test data (year 2016). 
 
-```{r echo= FALSE, fig.height=4, fig.width=4, fig.cap="Overview of target variable: Suicide Attack"}
+### Dealing with class imbalance
+
+
+```{r echo= FALSE, fig.height=3, fig.width=4, fig.cap="Overview of target variable: Suicide Attack"}
 tmp <- df_class %>% 
   group_by(suicide_attack) %>% 
   summarize(count = n()) %>%
@@ -89,11 +86,9 @@ ggplot(tmp, aes(x=suicide_attack,
   theme(axis.title = element_text(size=12), plot.title = element_text(size=12)) 
 ```
 
-### Dealing with class imbalance
+From the frequency table and the plot above, we can see that the target variable has severe class imbalance where positive cases are present in only 11.3% observations. For the classification modelling, class imbalance is a major issue and there are several techniques to deal with it such as down sampling, up sampling, SMOTE (Synthetic Minority Over-sampling Technique). 
 
-As we can see that the target variable has severe class imbalance where positive cases present in only 11.3% observations. For the classification modelling, class imbalance is a major issue and there are several techniques to deal with it such as down sampling, up sampling, SMOTE (Synthetic Minority Over-sampling Technique). 
-
-We use `scale_pos_weight` argument in model building process which controls the weights of the positive obeservations. According to LightGBM documentation [@MicrosoftCorporation_2018], default value for `scale_pos_weight` is 1.0 and it represents weight of positive class in binary classification task. We calculate this value as number of negative samples / number of positive samples.  
+We use `scale_pos_weight` argument in model building process which controls the weights of the positive observations. According to LightGBM documentation [@MicrosoftCorporation_2018], default value for `scale_pos_weight` is 1.0 and it represents weight of positive class in binary classification task. We calculate this value as number of negative samples / number of positive samples.  
 
 ## Feature engineering
 
@@ -143,6 +138,7 @@ for (f in features) {
 # Step 4: Covert all the variable to numeric
 #--------------------------------------------------------------
 data[] <- lapply(data, as.numeric)
+#str(data)
 ```
 
 At this point, all of our variables are numeric and there are no missing values or NAs in this prepared data.
@@ -291,6 +287,7 @@ model <- lgb.train(params,
 In order to evaluate the performance of our model on test data, we have used AUC metric which is commonly used in binary classification problem. From the trained model, we extract AUC score on test data from the best iteration with the code as shown below:
 
 ```{r}
+cat("Best iteration: ", model$best_iter, "\n")
 cat("Validation AUC @ best iter: ", 
     max(unlist(model$record_evals[["validation"]][["auc"]][["eval"]])), "\n")
 ```
@@ -333,27 +330,66 @@ From the feature importance matrix, we can see that type of weapon contributes t
 
 ## Model interpretation
 
-To further analyse reasoning behind model's decision making process, we randomly select one observation from test data and compare it with the predicted value based on features contribution. 
+To further analyse reasoning behind model’s decision making process, we randomly select one observation from test data and compare it with the predicted value based on features contribution. With the code chunk as shown below, we have extracted predicted value from our trained model for the second observation in test data. 
+
+```{r}
+cat(paste("predicted value from model: ", test_preds[[2]]))
+```
+The predicted value is 0.85 (i.e. > 0.5) which means our model indicates that the incident likely to be a suicide attack (i.e. "Yes" instance in suicide attack variable). Next, we use `lgb.interpret` function to compute feature contribution components of raw score prediction for this observation. 
+
+```{r}
+#extract interpretation for 2nd observation in (transformed) test data
+test_matrix <- as.matrix(test[, colnames(test)])
+tree_interpretation <- lgb.interprete(model, data = test_matrix, idxset = 2)
+```
+
+
+```{r echo=FALSE, fig.height=4, out.width= "100%", fig.cap="Model interpretation for 2nd observation"}
+if( knitr:::is_latex_output() ) {
+  lgb.plot.interpretation(tree_interpretation[[1]])
+} else {
+  tree_interpretation <- as.data.frame(rbindlist(tree_interpretation)) %>% 
+    head(10)
+  tree_interpretation$Contribution <- round(tree_interpretation$Contribution, 2)
+  highchart() %>% 
+    hc_title(text = "Model/ Tree Interpretation by Features Contribution") %>%
+    hc_add_series_labels_values(
+      tree_interpretation$Feature, tree_interpretation$Contribution,
+      dataLabels = list(enabled = TRUE),
+      colors = ifelse(tree_interpretation$Contribution >= 0, "#ce1e36", "#0d6bc6"), 
+      showInLegend=F, type = "bar") %>% 
+    hc_yAxis(title = list(text = "Contribution"), 
+             labels = list(format = "{value}")) %>% 
+    hc_xAxis(categories = tree_interpretation$Feature, 
+             title = list(text = "Feature")) %>% 
+    hc_add_theme(hc_theme_ffx()) %>%
+    hc_tooltip(pointFormat = "{point.y}")
+}
+```
+
+In the plot above, ten most important features (with higher contribution) are shown on the Y axis and their contribution value is on the X axis. The negative value indicates contradiction and positive value represents support. Our trained model has taken decision to predict 0.85 for the second observation based on contribution level of above mentioned features. Although nkill and weapon_type variables are one of most important features based on gain however their contribution toward prediction is negative. On the other hand, province, city, attack type and attack success features have positive value which indicates support. 
+
+In our model, we have transformed the data to numeric. However, we can extract the raw test data (before transformation) and specific columns to compare the actual values with feature contribution plot above. 
 
 ```{r}
 # extract raw test data
-tmp_test <- df_class %>% filter(year == 2016) 
+tmp_test <- df_class %>% 
+  filter(year == 2016) %>%
+  select(suicide_attack, nkill, provstate, weapon_type, 
+         attack_type, city, attack_success, target_type, 
+         refugee_origin, n_peace_keepers)
+
 # Extract second observation
-knitr::kable(t(tmp_test[2, ]), booktabs= TRUE,
+tmp_test <- as.data.frame(t(tmp_test[2, ]))
+
+# display result
+knitr::kable(tmp_test, booktabs= TRUE,
              caption = "Actual values in 2nd observation in test set") %>%
   kable_styling(latex_options = "HOLD_position", font_size = 12, full_width = F)
 ```
 
-Next, we extract the predicted value from the model and use lgb.interpret function to compute feature contribution components of raw score prediction. 
+The predicted value from our model for the second observation is 0.85 and comparing it with actual value suggests that the incident was in fact an suicide attack as shown in the table above where value is "1" in suicide attack variable. For this specific observation, our model suggests that Kabul as a city and provstate, Bombing/Explosion as attack type and attack being successful contributes positive toward prediction. In contrast, 3 fatalities, business as a target type and explosives as a weapon type contributes negatively to the prediction. Our trained model has correctly predicted 582 out of 673 instances of "1"/ "Yes" in suicide attacks and achieves accuracy of 86.5% with this decision making process. 
 
-```{r}
-cat(paste("predicted value from model: ", test_preds[[2]]))
 
-#extract interpretation for 2nd observation in (transformed) test data
-tree_interpretation <- lgb.interprete(model, data = as.matrix(test[, colnames(test)]), 2)
-lgb.plot.interpretation(tree_interpretation[[1]])
-```
-
-As shown in the plot above, the decision making process behind making prediction for second observation in test is based on contribution of above features. The negative value indicates contradiction and positive value represents support. Although nkill and weapon_type variables are one of most important features based on gain however their contribution toward prediction is negative. Same way, province, city, attack type and attack success features contributes positive toward prediction. 
 
 
