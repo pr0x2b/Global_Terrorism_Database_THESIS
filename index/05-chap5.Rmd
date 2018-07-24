@@ -1,8 +1,8 @@
 # Pattern discovery {#pattern-discovery}
 
-This part of analysis is based on unsupervised machine learning algorithm and makes use of association rules to discover patterns in terrorist incidents from Islamic State, Taliban and Boko Haram group that were identified in top ten most active and violent groups.  
+This part of the analysis is based on unsupervised machine learning algorithm and makes use of association rules to discover patterns in terrorist incidents from Islamic State, Taliban and Boko Haram group that were identified in top ten most active and violent groups.  
 
-Mining of association rules is widely used method in retail and eCommerce environment and commonly known as Market Basket Analysis using Apriori algorithm. The logic behind this approach is that if a customer buys a certain group of products then they are more or less likely to buy another group of products [@Karthiyayini_2016]. 
+Mining of association rules is a widely used method in retail and eCommerce environment and commonly known as Market Basket Analysis using Apriori algorithm. The logic behind this approach is that if a customer buys a certain group of products then they are more or less likely to buy another group of products [@Karthiyayini_2016]. 
 
 **Pseudocode of the Apriori algorithm:** (minimal version ^[https://en.wikipedia.org/wiki/Apriori_algorithm])
 
@@ -24,11 +24,11 @@ $$
 $$
 
 
-As the goal of this algorithm is to determine set of frequent items among the candidates, this methodology can also be applied to discover patterns within terrorism context. The idea is to understand attack habits from terrorist groups by finding association and correlation between different attacks that were carried out in the past. It’s important to note that output from this algorithm is a list of association rules (frequent patterns) and provides descriptive analysis only. The real value of such unsupervised learning is in the insights we can take away from algorithm’s finding. 
+As the goal of this algorithm is to determine the set of frequent items among the candidates, this methodology can also be applied to discover patterns within the terrorism context. The idea is to understand attack habits from terrorist groups by finding association and correlation between different attacks that were carried out in the past. It’s important to note that output from this algorithm is a list of association rules (frequent patterns) and provides descriptive analysis only. The real value of such unsupervised learning is in the insights we can take away from the algorithm’s finding. 
 
 ## Data preparation
 
-For this analysis, I have chosen specific variables that are not highly correlated with chosen groups i.e. target type, weapon type, attack type, suicide attack and number of fatalities while excluding the observations where value is "Unknown". 
+For this analysis, I have chosen specific variables that are not highly correlated with chosen groups i.e. target type, weapon type, attack type, suicide attack and a number of fatalities while excluding the observations where the value is "Unknown". 
 
 ```{r }
 tmp <- dfh %>%
@@ -58,17 +58,17 @@ str(tmp)
 ```
 
 
-## Explaination of key terms
+## Explanation of key terms
 
-The Apriori algorithm has three main measures namely support, confidence and lift. These three measure are used to decide the relative strength of the rules. In the model parameters, we set rhs to chosen group and lhs refers to frequent pattern that is observed.
+The Apriori algorithm has three main measures namely support, confidence and lift. These three measures are used to decide the relative strength of the rules. In the model parameters, we set RHS to the chosen group and LHS refers to a frequent pattern that is observed.
 
 **Support** indicates how interesting a pattern is. In the algorithm configuration (params), I have set the threshold to 0.001 which means a pattern must have appeared at least 0.001 * nrow(tmp) = 18 times. 
 
-**Confidence** value i.e 0.5 (set as threshold in model params) means that in order to be included in the results, the rule has to be correct at least 50 percent of the time. This is particularly helpful to eliminate the unreliable rules. 
+**Confidence** value i.e 0.5 (set as a threshold in model params) means that in order to be included in the results, the rule has to be correct at least 50 percent of the time. This is particularly helpful to eliminate the unreliable rules. 
 
 **Lift** indicates probability (support) of the itemset (pattern) over the product of the probabilities of all items in the itemset [@Hahsler_2018]. 
 
-In general, high confidence and good lift are the standard measures to evaluate importance of a particular rule/ association however not all the rules are useful. This rules normally falls into three categories i.e. actionable, trivial(useless) and inexplicable [@Klimberg_2017]. Example of useless rule can be an association that is obvious and thus not worth mentioning. 
+In general, high confidence and good lift are the standard measures to evaluate the importance of a particular rule/ association however not all the rules are useful. This rules normally fall into three categories i.e. actionable, trivial(useless) and inexplicable [@Klimberg_2017]. Example of the useless rule can be an association that is obvious and thus not worth mentioning. 
  
 
 ## Islamic State (ISIL)
@@ -85,7 +85,7 @@ rules <- apriori(data = tmp, parameter= params, appearance = group_ISIL)
 ```
 
 
-In model summary, we can see that Absolute minimum support count is 18 which means the pattern needs to appear at least 18 times in order to be included. We have set this threshold with support value as explained previously. Out of all the patterns, the model is able to find 51 association rules for ISIL group. We further remove the rules that may be redundant before starting our analysis. 
+In the model summary, we can see that the Absolute minimum support count is 18 which means the pattern needs to appear at least 18 times in order to be included. We have set this threshold with support value as explained previously. Out of all the patterns, the model is able to find 51 association rules for the ISIL group. We further remove the rules that may be redundant before starting our analysis. 
 
 ### Top 5 patterns (ISIL)
 
@@ -105,7 +105,7 @@ if( knitr:::is_latex_output() ) {
 ```
 
 
-From the top five patterns based on confidence, we can see that use of chemical weapon turns out to be the most frequent pattern with relatively high lift value. It is also interesting to see that attacks on other terrorists (non state militia) is observed in 3 out of top 5 patterns.  
+From the top five patterns based on confidence, we can see that the use of chemical weapon turns out to be the most frequent pattern with relatively high lift value. It is also interesting to see that attacks on other terrorists (non state militia) are observed in 3 out of top 5 patterns.  
 
 ```{r echo=FALSE, fig.cap="Association rules in ISIL group", fig.height=4, out.width="100%"}
 if( knitr:::is_latex_output() ) {
@@ -118,7 +118,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-The plot shown above represents all the discovered patterns (after removing redundant rules). We can see that majority of discovered rules are between 0.5 to 0.7 confidence while two rules with high support and both indicating attack on military with suicide attack. 
+The plot shown above represents all the discovered patterns (after removing redundant rules). We can see that majority of discovered rules are between 0.5 to 0.7 confidence while two rules with high support and both indicating an attack on the military with a suicide attack. 
 
 ### Network graph (ISIL)
 
@@ -130,7 +130,7 @@ ig_df <- get.data.frame(
 ```
 
 
-The network graph shown below summarizes how things are related and interconnected with each other and describes the habits of ISIL group. 
+The network graph shown below summarizes how things are related and interconnected with each other and describes the habits of the ISIL group. 
 
 ```{r echo=FALSE, fig.cap="Network graph of discovered patterns- ISIL group", fig.height=7, out.width = "100%"}
 #work around for pdf and html output
@@ -173,7 +173,7 @@ rules <- apriori(data = tmp,
 ```
 
 
-From the model summary, we can see that the algorithm is able to identify 139 rules within the set threshold as defined in model parameters. However it is possible that many rules may be redundant so we eliminate those rules. 
+From the model summary, we can see that the algorithm is able to identify 139 rules within the set threshold as defined in model parameters. However, it is possible that many rules may be redundant so we eliminate those rules. 
 
 
 ### Top 5 patterns (Taliban)
@@ -201,7 +201,7 @@ if( knitr:::is_latex_output() ) {
 ```
 
 
-From the top five patterns above, we can see that use of chemical weapon indicates highest confidence and lift value. This was also the case in ISIL group. It is also observed that police is the most common target in the incidents involving use of firearms and resulting fatalities between 11 to 50. 
+From the top five patterns above, we can see that the use of chemical weapon indicates the highest confidence and lift value. This was also the case in the ISIL group. It is also observed that police is the most common target in the incidents involving the use of firearms and resulting fatalities between 11 to 50. 
 
 
 ```{r echo=FALSE, fig.cap="Association Rules in Taliban group", fig.height=4, out.width="100%"}
@@ -216,7 +216,7 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-From the plot above, we can identify many interesting patterns with confidence above 0.55 with high support such as attacks on NGO and government officials however most patterns indicates attack on police only. Let us have a detailed look at all the patterns with network graph. 
+From the plot above, we can identify many interesting patterns with confidence above 0.55 with high support such as attacks on NGO and government officials however most patterns indicate an attack on police only. Let us have a detailed look at all the patterns with network graph. 
 
 ### Network graph (Taliban)
 
@@ -278,7 +278,7 @@ if( knitr:::is_latex_output() ) {
                caption = "Five most important patterns (Boko Haram)")
 }
 ```
-In case of Boko Haram, we can see quite different patterns in comparison to ISIL and Taliban group. All of the top five patterns as shown above indicates attacks on civilians. Specifically, incidents involving armed assault and use of explosives with resulting fatalities more than 50 are significant patterns. This also illustrates the differences in ideology between groups. 
+In the case of Boko Haram, we can see quite different patterns in comparison to ISIL and Taliban group. All of the top five patterns, as shown above, indicates attacks on civilians. Specifically, incidents involving armed assault and use of explosives with resulting fatalities more than 50 are significant patterns. This also illustrates the differences in ideology between groups. 
 
 ```{r echo=FALSE, fig.cap="Association Rules in Boko Haram group", fig.height=4, out.width="100%"}
 if( knitr:::is_latex_output() ) {
@@ -291,9 +291,9 @@ if( knitr:::is_latex_output() ) {
 }
 
 ```
-From the plot above, we can see many patterns with high support and lift value with confidence between 0.55 and 0.65. Four patterns with high support value (on the right hand side of the plot) corresponds to attack on civilians using firearms as a weapon type, armed assault as an attack type resulting fatalities between 6 to 10 and 11 to 50. Religious figures and Telecommunication as a target is also visible within confidence value of 0.55 to 0.65 and lift value ~ 6. 
+From the plot above, we can see many patterns with high support and lift value with confidence between 0.55 and 0.65. Four patterns with high support value (on the right-hand side of the plot) corresponds to attack on civilians using firearms as a weapon type, armed assault as an attack type resulting fatalities between 6 to 10 and 11 to 50. Religious figures and Telecommunication as a target is also visible within confidence value of 0.55 to 0.65 and lift value ~ 6. 
 
-In total, 27 rules are identified after removing redundant rules. Let's have a closer look at all the 27 rules with network graph to visualize the characteristics and habits of Boko Haram group.
+In total, 27 rules are identified after removing redundant rules. Let's have a closer look at all the 27 rules with network graph to visualize the characteristics and habits of the Boko Haram group.
 
 
 ### Network graph (Boko Haram)
@@ -332,4 +332,4 @@ if( knitr:::is_latex_output() ) {
 ```
 
 
-To summarize this chapter, we identified the most frequent patterns for ISIL, Taliban and Boko Haram group which indicates distinct nature/ habits among this groups. While use of chemical weapon in both ISIL and Taliban group turns out to be most frequent pattern, we also discovered other interesting and significant patterns such as ISIL being more likely to attack other terrorists (non-state militia) with bombing/explosion while having resulting fatalities between 6 to 10, Boko Haram having tendency to target civilians with explosives, without suicide attack and resulting fatalities more than 50, and Taliban having frequent target on police with explosives concentrating on resulting fatalities between 11 to 50. 
+To summarize this chapter, we identified the most frequent patterns for ISIL, Taliban and Boko Haram group which indicates distinct nature/ habits among this groups. While use of chemical weapon in both ISIL and Taliban group turns out to be most frequent pattern, we also discovered other interesting and significant patterns such as ISIL being more likely to attack other terrorists (non-state militia) with bombing/explosion while having resulting fatalities between 6 to 10, Boko Haram having tendency to target civilians with explosives, without suicide attack and resulting fatalities more than 50, and Taliban having frequent target on police with explosives concentrating on resulting fatalities between 11 to 50.

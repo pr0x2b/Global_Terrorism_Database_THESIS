@@ -1,6 +1,6 @@
 # Time-series Forecasting {#time-series}
 
-Time-series forecasting is a supervised machine learning approach that uses historical data to predict future occurrences. This is particularly helpful in terrorism context for long term strategic planning. For this analysis, the forecasting goal and corresponding data is chosen as below: 
+Time-series forecasting is a supervised machine learning approach that uses historical data to predict future occurrences. This is particularly helpful in terrorism context for long-term strategic planning. For this analysis, the forecasting goal and corresponding data are chosen as below: 
 
 ```{r echo=FALSE}
 text_tbl <- data.frame(
@@ -19,13 +19,13 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-For each analysis, first we select the appropriate data, examine seasonal components and then split the data in training and test set to evaluate performance of Auto Arima, Neural Network, TBATS and ETS models with seven different metrics. To examine whether an ensemble predictions can improve the overall accuracy, we take the average of all the predictions and compute Theil’s U statistic. In the last part of the analysis, we use all the data points (train + test) to make forecast for chosen future period. 
+For each analysis, first, we select the appropriate data, examine seasonal components and then split the data in training and test set to evaluate the performance of Auto Arima, Neural Network, TBATS and ETS models with seven different metrics. To examine whether an ensemble prediction can improve the overall accuracy, we take the average of all the predictions and compute Theil’s U statistic. In the last part of the analysis, we use all the data points (train + test) to make a forecast for the chosen future period. 
 
 ## Afghanistan (Predict future attacks)
 
 ### Data preparation
 
-Based on exploratory data analysis, it is observed that the number attacks with visible pattern began from year 2000 so the data is selected between year 2000 to 2016. To get the time-series frequency by months for all the years, we use `complete` function from tidyr package to turn implicit missing values into explicit missing values. In other words, we add missing months and assign zero as shown in the code below: 
+Based on exploratory data analysis, it is observed that the number of attacks with visible pattern began from the year 2000 so the data is selected between the year 2000 to 2016. To get the time-series frequency by months for all the years, we use `complete` function from tidyr package to turn implicit missing values into explicit missing values. In other words, we add missing months and assign zero as shown in the code below: 
 
 ```{r}
 dft <- df %>%
@@ -54,7 +54,7 @@ dft <- na.kalman(dft)
 
 ### Seasonality analysis
 
-First we take a look at time plot to get an idea about how number of attacks have changed over the period of time. In the plot below, observations (number of attacks) are plotted against the time of observation. 
+First, we take a look at time plot to get an idea about how a number of attacks have changed over the period of time. In the plot below, observations (number of attacks) are plotted against the time of observation. 
 
 ```{r echo= FALSE, fig.cap= "Attack frequency by year- Afghanistan" ,fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
@@ -75,7 +75,7 @@ if( knitr:::is_latex_output() ) {
     title = "Seasonality plot (Afghanistan)") 
 }
 ```
-From the seasonal patterns within year as shown in the plot above, we can see that year 2015 (followed by 2012) was the deadliest year in terms of number of terror attacks. In both years, spike is visible in May month. 
+From the seasonal patterns within a year, as shown in the plot above, we can see that year 2015 (followed by 2012) was the deadliest year in terms of number of terror attacks. In both years, the spike is visible in May month. 
 
 ```{r echo= FALSE, fig.cap= "Seasonal pattern (boxplot)- Afghanistan", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
@@ -85,7 +85,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the boxplot, we can confirm that the May month contributes the most in terms of terrorist incidents throughout all the years (2000-2016) in Afghanistan. We can see the upward trend in number of attacks starting from February and reaching peak in in May month. 
+From the boxplot, we can confirm that the May month contributes the most in terms of terrorist incidents throughout all the years (2000-2016) in Afghanistan. We can see the upward trend in a number of attacks starting from February and reaching a peak in May month. 
 
 Decomposition by additive and multiplicative time-series is helpful to describe the trend and seasonal component within data. This also helps understand anomalies in data as shown in the plot below:  
 
@@ -103,18 +103,18 @@ Time-series decomposition comprises three components depending on observed patte
 - a trend-cycle component and
 - a remainder component 
 
-The seasonal component as shown in the plot above represents pattern that occur frequently within fixed period of time. Trend cycle contains both trend and cycle and a remainder component contains everything else in the time-series. The remainder component is also called random component/ noise and it represents residuals of the original time-series after removing seasonal and trend component [@Anomaly.io_2015; @Hyndman_2018].   
+The seasonal component as shown in the plot above represents a pattern that occurs frequently within a fixed period of time. Trend-cycle contains both trend and cycle and a remainder component contains everything else in the time-series. The remainder component is also called random component/ noise and it represents residuals of the original time-series after removing seasonal and trend component [@Anomaly.io_2015; @Hyndman_2018].   
 
 
 ### Correlation test
 
-There are several methods to identify correlation between series and lags such as ACF, PACF and lag plots. In a lag plot, two variables are lagged and presented in scatterplot manner. In simple words, lag means fixed amount of time from time-series data. We use lag plots method for this analysis which allows us to quickly visualize three things:
+There are several methods to identify a correlation between series and lags such as ACF, PACF and lag plots. In a lag plot, two variables are lagged and presented in scatterplot manner. In simple words, lag means a fixed amount of time from time-series data. We use lag plots method for this analysis which allows us to quickly visualize three things:
 
 - outliers 
 - randomness and 
 - auto-correlation.  
 
-The plot as shown below represents nine different lags. Although we can see few outliers but there is no randomness in data. To further explain this, we can see positive linear trend going upward from left to right in all nine plots. Positive linear trend is an indication that positive auto-correlation is present in our data. 
+The plot as shown below represents nine different lags. Although we can see a few outliers but there is no randomness in data. To further explain this, we can see the positive linear trend going upward from left to right in all nine plots. The positive linear trend is an indication that positive auto-correlation is present in our data. 
 
 ```{r echo= FALSE, fig.cap= "Correlation test", fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
@@ -124,12 +124,12 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-Specifically, lags 1, 2, 3 and 9 shows strong positive auto-correlation. Presence of auto-correlation can be problematic for some models. 
+Specifically, lags 1, 2, 3 and 9 show strong positive auto-correlation. Presence of auto-correlation can be problematic for some models. 
 
 
 ### Modelling
 
-In this part of the analysis, we split the data in training and test set in order to evaluate performance of four different models before making the actual forecasts. 
+In this part of the analysis, we split the data in training and test set in order to evaluate the performance of four different models before making the actual forecasts. 
 
 #### Train-Test Split
 
@@ -147,7 +147,7 @@ train <- data$train
 test  <- data$test
 ```
 
-We have chosen 12 months look ahead period (horizon) so the test set contains the last 12 months from our data i.e. all the months in year 2016 on which we will be evaluating the performance of the model. 
+We have chosen 12 months look ahead period (horizon) so the test set contains the last 12 months from our data i.e. all the months in the year 2016 on which we will be evaluating the performance of the model. 
 
 \pagebreak
 
@@ -167,7 +167,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-A quick look at residuals from Auto Arima suggests that the mean of residuals is very close to zero however from the histogram, we can see that residuals doesn’t follow the normal distribution. What this means is, forecasts from this method will probably be quite good but prediction intervals computed assuming a normal distribution may be inaccurate [@Hyndman_2018].
+A quick look at residuals from Auto Arima suggests that the mean of residuals is very close to zero however from the histogram, we can see that residuals don’t follow the normal distribution. What this means is, forecasts from this method will probably be quite good but prediction intervals computed assuming a normal distribution may be inaccurate [@Hyndman_2018].
 
 ```{r}
 # Accuracy check/ Forecast evaluation
@@ -184,9 +184,9 @@ if( knitr:::is_latex_output() ) {
 }
  
 ```
-From the plot above, it is observed that Auto Arima model nearly captures fitted values based on training data but forecasted values are little bit apart from actual values (test data- year 2016). 
+From the plot above, it is observed that the Auto Arima model nearly captures fitted values based on training data but forecasted values are a little bit apart from actual values (test data- year 2016). 
 
-Next, we examine the pattern in actual vs fitted and forecasted values for remaining three models. 
+Next, we examine the pattern in actual vs fitted and forecasted values for the remaining three models. 
 
 #### Neural Network
 ```{r}
@@ -246,9 +246,9 @@ if( knitr:::is_latex_output() ) {
 
 ### Evaluating models' Performance
 
-To compare the performance of all four models on test data, I have extracted mean accuracy from each model and have arranged the models by MAPE metric which is most commonly used. We will also look at six other metrics to get better idea about model’s performance. 
+To compare the performance of all four models on test data, I have extracted mean accuracy from each model and have arranged the models by MAPE metric which is most commonly used. We will also look at six other metrics to get a better idea of the model’s performance. 
 
-Out of all the seven metrics as shown in the table below, ME (Mean Error), RMSE (Root Mean Squared Error) and MAE (Mean Absolute Error) are scale-dependent error. Whereas MPE (Mean Percentage Error) and MAPE (Mean Absolute Percent Error) are percentage errors and ACF stands for first-order correlation. Researchers [@Hyndman_2018] suggest that percentage errors have the advantage of being unit-free, and so are frequently used to compare forecast performances between data sets. 
+Out of all the seven metrics, as shown in the table below, ME (Mean Error), RMSE (Root Mean Squared Error) and MAE (Mean Absolute Error) are a scale-dependent error. Whereas MPE (Mean Percentage Error) and MAPE (Mean Absolute Percent Error) are percentage errors and ACF stands for first-order correlation. Researchers [@Hyndman_2018] suggest that percentage errors have the advantage of being unit-free, and so are frequently used to compare forecast performances between data sets. 
 
 
 ```{r}
@@ -279,15 +279,15 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-Based on MAPE metrics, we can see that TBATS and ETS models achieves the higher accuracy (~ 15) and out performs Auto Arima and Neural Network models. TBATS (Exponential Smoothing State Space Model With Box-Cox Transformation) and ETS (Exponential Smoothing State Space Model) both uses exponential smoothing method. Specifically, TBATS modelling approach offers several key advantages such as handling of typical non linear features and allowing any auto-correlation in the residuals to be taken into account [@Livera_2011].
+Based on MAPE metrics, we can see that TBATS and ETS models achieve the higher accuracy (~ 15) and out performs Auto Arima and Neural Network models. TBATS (Exponential Smoothing State Space Model With Box-Cox Transformation) and ETS (Exponential Smoothing State Space Model) both use exponential smoothing method. Specifically, TBATS modeling approach offers several key advantages such as handling of typical nonlinear features and allowing any auto-correlation in the residuals to be taken into account [@Livera_2011].
 
-In addition to MAPE metric which is chosen to identify the best model, we also look at **Theil’s U statistic** to estimate how good or bad the model is. In simple words, Theil’s U-statistic compares the performance of model with naïve/ random walk model(U=1). If Theil’s U statistic value equals one, it means that the model forecasting method is as good as naïve model (guessing). Value greater than one means the forecasting method is even worst than guessing. Similarly, value less than 1 indicates that forecasting method is better than naïve model and worth considering [@Oracle_]. 
+In addition to MAPE metric which is chosen to identify the best model, we also look at **Theil’s U statistic** to estimate how good or bad the model is. In simple words, Theil’s U-statistic compares the performance of the model with naïve/ random walk model(U=1). If Theil’s U statistic value equals one, it means that the model forecasting method is as good as naïve model (guessing). A value greater than one means the forecasting method is even worst than guessing. Similarly, the value less than 1 indicates that the forecasting method is better than naïve model and worth considering [@Oracle_]. 
 
-From the comparison, we can see that all four models have Theil’s U score less than one while TBATS and ETS models having comparatively good score of 0.6 compared to Neural Network at 0.95.
+From the comparison, we can see that all four models have Theil’s U score less than one while TBATS and ETS models having a comparatively good score of 0.6 compared to Neural Network at 0.95.
 
 ### Ensemble
 
-As stated in literature review, many research focuses on single model approach or using the best single model out of all the models. Instead of throwing out weak models, I employ simple ensemble approach (averaging predictions of all four models) to improve the overall accuracy on test set. This is one of the well-known approach used in machine learning competitions such as on Kaggle [@JacobvanVeen_2015]. Following is the code used to extract predictions from all four models and then new column "ensemble" is added which take the average of all models. Next, we calculate Theil’s U score on ensemble predictions using a simple function in DescTools package by supplying actual observations and predicted observations as shown below: 
+As stated in the literature review, many research focuses on a single model approach or using the best single model out of all the models. Instead of throwing out weak models, I employ simple ensemble approach (averaging predictions of all four models) to improve the overall accuracy on the test set. This is one of the well-known approach used in machine learning competitions such as on Kaggle [@JacobvanVeen_2015]. Following is the code used to extract predictions from all four models and then new column "ensemble" is added which take the average of all models. Next, we calculate Theil’s U score on ensemble predictions using a simple function in DescTools package by supplying actual observations and predicted observations as shown below: 
 
 ```{r}
 # extract predictions from all four models and get average
@@ -302,12 +302,12 @@ cat(paste("Theil's U score on Ensemble: ",
 
 Although TBATS model is our best single model however ensemble predictions by averaging forecasts of other weak models is even better. We can see that the ensemble approach significantly improves the overall accuracy as measured by Theil’s U score of 0.2. The most recent theoretical framework also supports the ensemble approach in time-series forecasting. Researchers [@Hyndman_2018], in their book "Forecasting: Principles and Practice", suggests that using several different methods on the same time-series data and then averaging the results of forecast often guarantees better performance than any single best models. 
 
-To summarize, it is possible that TBATS model may not be the best model on other data however use of ensemble approach and corresponding Theil’s U score can be used in time-series forecasting to improve the accuracy and justify the reliability of final predictions. 
+To summarize, it is possible that TBATS model may not be the best model on other data, however, use of ensemble approach and corresponding Theil’s U score can be used in time-series forecasting to improve the accuracy and justify the reliability of final predictions. 
 
 
 ### Forecast future number of attacks
 
-As we have evaluated performance of all four models, the next step of process is to generate forecast using all the data points i.e 2000-2016. The forecast horizon can be changed based on business requirement and by observing the predictions. As shown in the code chunk below, first we will generate forecasts from all four models and then we will visualize the results with plots. 
+As we have evaluated the performance of all four models, the next step of the process is to generate a forecast using all the data points i.e 2000-2016. The forecast horizon can be changed based on business requirement and by observing the predictions. As shown in the code chunk below, first we will generate forecasts from all four models and then we will visualize the results with plots. 
 
 ```{r}
 f_horizon <- 18
@@ -421,7 +421,7 @@ if(!knitr:::is_latex_output() ) {
 }
 ```
 
-The forecasting results are often represented by mean value and by confidence interval of 80% and 95%. The mean value of forecast is considered as final forecasting value. Next, we extract forecasts for chosen horizon and add the ensembled predictions as predicted future attacks in Afghanistan.
+The forecasting results are often represented by the mean value and by confidence interval of 80% and 95%. The mean value of the forecast is considered as final forecasting value. Next, we extract forecasts for the chosen horizon and add the ensembled predictions as predicted future attacks in Afghanistan.
 
 ```{r}
 tbl_arima   <- timetk::tk_tbl(round(fore_arima$mean)) 
@@ -460,7 +460,7 @@ For this analysis, we use the exact same approach as before to estimate the numb
 
 ### Data preparation
 
-I have selected the data between 2004 to 2016 to make it appropriate for the modelling. Wherever an incident is part of multiple attacks, we have different reported figures from different sources. To overcome this issue, I have grouped data on specific variables and then taken the maximum reported value as shown in the code chunk below:
+I have selected the data from 2004 to 2016 to make it appropriate for the modeling. Wherever an incident is part of multiple attacks, we have different reported figures from different sources. To overcome this issue, I have grouped data on specific variables and then taken the maximum reported value as shown in the code chunk below:
 
 \vspace{18pt}
 
@@ -519,9 +519,9 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the seasonal components, we can see that number of fatalities are higher during mid year. Specifically, July month accounts the most followed by April and May month. An interesting observation from the second plot above is that the variation in number fatalities by months between year 2008 and 2013 is quite steady. Whereas in the years following 2013, we can see upward trend as well as noticeable difference in number of fatalities by months. 
+From the seasonal components, we can see that the number of fatalities is higher during mid-year. Specifically, July month accounts the most followed by April and May month. An interesting observation from the second plot above is that the variation in the number of fatalities by months between the year 2008 and 2013 is quite steady. Whereas in the years following 2013, we can see an upward trend as well as the noticeable difference in a number of fatalities by months. 
 
-From the boxplot, we can also see extreme outliers (in statistical term) in June, August and October month indicating very high number of fatalities in single incidents. 
+From the boxplot, we can also see extreme outliers (in the statistical term) in June, August and October month indicating the very high number of fatalities in single incidents. 
 
 ### Correlation test
 
@@ -533,7 +533,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the lag plot, we can see slightly positive linear pattern as well as few outliers in all nine lags however there is no randomness in data. Linear pattern also suggests that auto-correlation is present. In statistical terms, correlation means the extent of a linear relationship between two variables. Same way, auto-correlation means the linear relationship between lagged values of a time series as shown in the plot above. 
+From the lag plot, we can see the slightly positive linear pattern as well as few outliers in all nine lags however there is no randomness in data. The linear pattern also suggests that auto-correlation is present. In statistical terms, correlation means the extent of a linear relationship between two variables. Same way, auto-correlation means the linear relationship between lagged values of a time series as shown in the plot above. 
 
 
 ### Modelling
@@ -589,9 +589,9 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-From the model comparison based on MAPE metric, we can see that Auto Arima model performs better on this data. The corresponding Theil’s U score is ~ 0.8 for all the models which means forecasts from chosen model are better than random guessing. 
+From the model comparison based on MAPE metric, we can see that Auto Arima model performs better on this data. The corresponding Theil’s U score is ~ 0.8 for all the models which mean forecasts from the chosen model are better than random guessing. 
 
-Next we calculate Theil’s U score on ensembled predictions to see how much improvement can be achieved compared to best single model. 
+Next, we calculate Theil’s U score on ensembled predictions to see how much improvement can be achieved compared to the best single model. 
 
 ### Ensemble
 
@@ -606,12 +606,12 @@ cat(paste("Theil's U score on Ensemble: ",
           round(TheilU(a = test, p = preds$ensemble),3)))
 ```
 
-As expected, we can see the significant improvement in forecasting accuracy by averaging predictions from all four models. Just to re-iterate, Theil’s U score less than 1 means predictions are better than random guess (naive model). 
+As expected, we can see the significant improvement in forecasting accuracy by averaging predictions from all four models. Just to re-iterate, Theil’s U score less than 1 means predictions are better than a random guess (naive model). 
 
 
 ### Forecast future fatalities
 
-In the validation part, data was into train and test in order to evaluate performance of different models. For the forecast, we run the models all the data points.
+In the validation part, data was into train and test in order to evaluate the performance of different models. For the forecast, we run the models all the data points.
 
 ```{r}
 # look ahead period 
@@ -763,13 +763,13 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-We can see flat forecast in ETS and TBATS model on this data which means that the trend and seasonality is insufficient to allow the future observations to have different conditional means for that model. In that case, both models return the last observed value. We also computed the Theil’s U score for ensemble on test set which is ~ 0.39. By using the ensembled approach and corresponding Theil’s U score during model evaluation, we can ensure the reliability of forecasted values on unseen data. 
+We can see flat forecast in ETS and TBATS model on this data which means that the trend and seasonality are insufficient to allow the future observations to have different conditional means for that model. In that case, both models return the last observed value. We also computed the Theil’s U score for ensemble on test set which is ~ 0.39. By using the ensembled approach and corresponding Theil’s U score during model evaluation, we can ensure the reliability of forecasted values on unseen data. 
 
 
 
 ## SAHEL Region (Predict future attacks)
 
-The Sahel region in Africa stretches from east to west across African continent. At present, this region draws huge political attention due to the indications of possible geographical expansion of ISIL [@Liautaud_2018]. To estimate the future number of attacks in this region, I have selected data from year 2000 and filtered by eight countries that falls within sahel region as shown in the data preparation step. 
+The Sahel region in Africa stretches from east to west across the African continent. At present, this region draws huge political attention due to the indications of possible geographical expansion of ISIL [@Liautaud_2018]. To estimate the future number of attacks in this region, I have selected data from the year 2000 and filtered by eight countries that fall within the sahel region as shown in the data preparation step. 
 
 ### Data preparation
 
@@ -808,7 +808,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the attack frequency by year, it is observed that number of attacks have increased exponentially in the last decade and reaching peak during year 2014-2015. Several researchers [@Crone_2017; @Onuoha_2018] have indicated that Boko Haram affiliated itself with Islamic State in 2015 as well as large number of small groups from entire region have also declared their affiliation with Islamic State.
+From the attack frequency by year, it is observed that the number of attacks have increased exponentially in the last decade and reaching a peak during the year 2014-2015. Several researchers [@Crone_2017; @Onuoha_2018] have indicated that Boko Haram affiliated itself with Islamic State in 2015 as well as a large number of small groups from the entire region have also declared their affiliation with Islamic State.
 
 ```{r echo= FALSE, fig.cap= "Seasonal pattern (heatmap) - SAHEL Region", fig.height=3, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
@@ -818,7 +818,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-From the heatmap above, we can see sudden increase in number of attacks from year 2012 and more than 50 attacks a month on average. Let’s have a look at seasonal components to see if there is any pattern by cycles. 
+From the heatmap above, we can see a sudden increase in a number of attacks from the year 2012 and more than 50 attacks a month on average. Let’s have a look at seasonal components to see if there is any pattern by cycles. 
 
 ```{r echo= FALSE, fig.cap= "Seasonality pattern (boxplot) - SAHEL Region", fig.height=4, out.width= "100%"}
 if( knitr:::is_latex_output() ) {
@@ -829,7 +829,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-In a comparison to number of attacks in Afghanistan and number of fatalities in Iraq, we can see opposite trend in SAHEL region where months in the beginning and end of the year (Jan to Mar and Oct to Dec) indicates higher number of attacks through the period (2000-2016). In case of Afghanistan and Iraq, it was mostly observed in the months middle of year.
+In a comparison to a number of attacks in Afghanistan and number of fatalities in Iraq, we can see opposite trend in SAHEL region where months in the beginning and end of the year (Jan to Mar and Oct to Dec) indicates a higher number of attacks through the period (2000-2016). In the case of Afghanistan and Iraq, it was mostly observed in the months middle of the year.
 
 ### Correlation test
 
@@ -1028,7 +1028,7 @@ if(!knitr:::is_latex_output() ) {
 }
 ```
 
-From the plots above, we can see that Auto Arima, Neural Network and TBATS model are able to capture observed trend whereas ETS model fails and generates flat predictions. However, ensemble approach will compensate the loss from any weak models as computed before. 
+From the plots above, we can see that Auto Arima, Neural Network, and TBATS model are able to capture observed trend whereas the ETS model fails and generates flat predictions. However, the ensemble approach will compensate for the loss from any weak models as computed before. 
 
 ```{r}
 tbl_arima   <- timetk::tk_tbl(round(fore_arima$mean)) 
@@ -1066,9 +1066,9 @@ if( knitr:::is_latex_output() ) {
 
 **Summary**
 
-To summarize this chapter, we analysed the seasonality components within time-series at monthly frequency for Afghanistan, Iraq and SAHEL region. We found an upward trend in number of attacks starting from February to May month in Afghanistan throughout all the years. Similarly in Iraq, we found higher fatalities during July month followed by April and May month. Whereas in SAHEL region, this pattern is completely opposite. 
+To summarize this chapter, we analyzed the seasonality components within time-series at the monthly frequency for Afghanistan, Iraq and SAHEL region. We found an upward trend in a number of attacks starting from February to May month in Afghanistan throughout all the years. Similarly, in Iraq, we found higher fatalities during July month followed by April and May month. Whereas in the SAHEL region, this pattern is completely the opposite. 
 
-From the time-series forecasting models, we estimated the future number of attacks and fatalities using four different models at monthly frequency. We also illustrated the importance of using ensemble method and evaluated predicted vs actual values using Theil’s U statistic which indicates significant improvement in forecasting accuracy than best single model. Comparing same models on different time-series data indicates that the best single model in one time-series data may not be the best single model in another time-series data. 
+From the time-series forecasting models, we estimated the future number of attacks and fatalities using four different models at a monthly frequency. We also illustrated the importance of using ensemble method and evaluated predicted vs actual values using Theil’s U statistic which indicates a significant improvement in forecasting accuracy than the best single model. Comparing the same models on different time-series data indicates that the best single model in one time-series data may not be the best single model in another time-series data. 
 
-Apart from prediction at monthly frequency, and forecasting number of attacks and fatalities, scope of this analysis can be further extended predict number of injuries, quarterly frequency and for any country using the shiny app which is also an integral part of this research. 
+Apart from prediction at a monthly frequency, and forecasting number of attacks and fatalities, the scope of this analysis can be further extended predict number of injuries, quarterly frequency and for any country using the shiny app which is also an integral part of this research. 
 

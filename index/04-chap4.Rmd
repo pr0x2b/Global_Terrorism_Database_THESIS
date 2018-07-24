@@ -1,6 +1,6 @@
 # Statistical Hypothesis Testing {#hypothesis-testing}
 
-In this chapter, first we examine the strength of relationship between two numerical variables using pearson correlation coefficient. This way, we can get an idea about which variables have strong/weak and positive/negative correlation with each other. In the second part, we perform hypothesis test between each of top ten groups and number of fatalities to see which groups represents similarity and differences. We use the data related to top ten most active and violent groups only.
+In this chapter, first, we examine the strength of the relationship between two numerical variables using Pearson correlation coefficient. This way, we can get an idea of which variables have strong/weak and positive/negative correlation with each other. In the second part, we perform a hypothesis test between each of the top ten groups and the number of fatalities to see which groups represent similarity and differences. We use the data related to the top ten most active and violent groups only.
 
 ## Data preparation
 
@@ -45,9 +45,9 @@ PlotWeb(m, lwd = abs(m[lower.tri(m)] * 10),
                            title = "Correlation"))
 ```
 
-In the plot above, line width between the nodes is used in proportion to the correlation of two variables. To focus only on significant correlations, I have replaced observations with p-value more than 0.05 with NA. Legend on the bottom right represents correlation coefficient by line width and color depending on positive or negative linear relationship. The variables on the left hand side of the plot are extracted from World Bank data (development indicators) and variables on the right hand side are from GTD. 
+In the plot above, line width between the nodes is used in proportion to the correlation of two variables. To focus only on significant correlations, I have replaced observations with p-value more than 0.05 with NA. Legend on the bottom right represents correlation coefficient by line width and color depending on positive or negative linear relationship. The variables on the left-hand side of the plot are extracted from World Bank data (development indicators) and variables on the right-hand side are from GTD. 
 
-Specifically, we are more interested in relationship to the variables on the right hand side which will be used in time-series forecasting and classification modelling as target variable. For example, number of people wounded (nwound) variable has positive linear relationship with suicide attack. The conflict index variable shows strong positive relationship with international ideological attacks and minor positive relationship with part of multiple attacks. Overall, we can see that majority of numerical variables shows relationship with each other.  
+Specifically, we are more interested in the relationship to the variables on the right-hand side which will be used in time-series forecasting and classification modeling as the target variable. For example, a number of people wounded (nwound) variable has a positive linear relationship with a suicide attack. The conflict index variable shows a strong positive relationship with international ideological attacks and minor positive relationship with a part of multiple attacks. Overall, we can see that the majority of numerical variables shows a relationship with each other.  
 
 
 ## Hypothesis test: fatalities vs groups
@@ -65,7 +65,7 @@ H_a: & \text{ At least one sample mean is not equal to the others}
 \end{aligned}
 $$
 
-First, we use box plot to examine distribution by quartiles for each groups. 
+First, we use a box plot to examine distribution by quartiles for each group. 
 
 ```{r echo= FALSE, fig.cap="Boxplot: group vs fatalities", fig.height=3, out.width = "100%"}
 ggplot(dfh, aes(group_name, nkill, fill = group_name)) + 
@@ -81,7 +81,7 @@ In statistical terms, we have some extreme outliers i.e. nkill ~ 1500 in ISIL gr
 
 ### ANOVA test
 
-The ANOVA model computes the residual variance and the variance between sample means in order to calculate the F-statistic. This is the first step to determine whether or not means are different in pair of groups.
+The ANOVA model computes the residual variance and the variance between sample means in order to calculate the F-statistic. This is the first step to determine whether or not means are different in a pair of groups.
 
 $$
 \large
@@ -100,11 +100,11 @@ r.aov <- aov(nkill ~ group_name , data = dfh)
 summary(r.aov)
 ```
 
-Model summary provides us F value and Pr(>F) corresponding to the p-value of the test. As we can see that p-value is < 0.05, which means there are significant differences between the groups. In other words, we reject the null hypothesis. From this test, we identified that some of the group means are different however we don't know which pair of groups have different means. 
+The model summary provides us F value and Pr(>F) corresponding to the p-value of the test. As we can see that the p-value is < 0.05, which means there are significant differences between the groups. In other words, we reject the null hypothesis. From this test, we identified that some of the group means are different however we don't know which pair of groups have different means. 
 
 ### PostHoc test
 
-PostHoc test is useful to determine where the differences occurred between groups. For this test, we use several different methods for the comparison purpose. This methods can be classified as either conservative or liberal approach. Conservative methods are considered to be robust against committing Type I error as they use more stringent criterion for statistical significance. First we run the PostHoc test by comparing results (p value) from The Fisher LSD (Least Significant Different), Scheffe and Dunn’s (Bonferroni) test. 
+PostHoc test is useful to determine where the differences occurred between groups. For this test, we use several different methods for the comparison purpose. This method can be classified as either conservative or liberal approach. Conservative methods are considered to be robust against committing Type I error as they use more stringent criterion for statistical significance. First, we run the PostHoc test by comparing results (p-value) from The Fisher LSD (Least Significant Different), Scheffe and Dunn’s (Bonferroni) test. 
 
 ```{r }
 #------------------------------------------
@@ -139,7 +139,7 @@ if( knitr:::is_latex_output() ) {
 ```
 
 
-The Fisher LSD (Least Significant Different) test is the most liberal in all the PostHoc tests whereas the Scheffe test is the most conservative and protects against Type I error. On the other hand, Dunn’s (Bonferroni) test is extremely conservative [@AndriSignorelletmult.al._2018]. Out of all the possible combination of pairs (45), 16 pair of groups indicates p adj value > 0.9 based on Scheffe test. In statistical terms, it means 16 pairs of groups as shown in the table above have non-significantly different means in number of fatalities.
+The Fisher LSD (Least Significant Different) test is the most liberal in all the PostHoc tests whereas the Scheffe test is the most conservative and protects against Type I error. On the other hand, Dunn’s (Bonferroni) test is extremely conservative [@AndriSignorelletmult.al._2018]. Out of all the possible combination of pairs (45), 16 pair of groups indicates p adj value > 0.9 based on the Scheffe test. In statistical terms, it means 16 pairs of groups as shown in the table above have non-significantly different means in a number of fatalities.
 
 Next, we use Tukey HSD (Honestly Significant Difference) method which is the most common and preferred method. 
 
@@ -170,7 +170,7 @@ rm(hsd, posthoc1, r.aov, m, ctest, tmp, tmp1)
 
 ### Interpretation
 
-The pairs of groups with adj p-value near or equals to 1 represents non-significantly different means in number of fatalities such as Boko Haram - Al-Nusrah, Al-Qaida in Arabian Peninsula (AQAP)- Al-Shabaab, Houthi Extremist- PKK, Taliban- Tehrik-i-Taliban etc. 
+The pairs of groups with adj p-value near or equals to 1 represents non-significantly different means in a number of fatalities such as Boko Haram - Al-Nusrah, Al-Qaida in Arabian Peninsula (AQAP)- Al-Shabaab, Houthi Extremist- PKK, Taliban- Tehrik-i-Taliban etc. 
 
-Similarly, pair of groups with adjusted p-value near zero indicates significant different means in number of fatalities such as pairs of ISIL with all the remaining groups, Taliban - Al-Nusrah, PKK - Boko Haram, Donetsk_PR - Al-Nusrah etc. 
+Similarly, a pair of groups with adjusted p-value near zero indicates significantly different means in a number of fatalities such as pairs of ISIL with all the remaining groups, Taliban - Al-Nusrah, PKK - Boko Haram, Donetsk_PR - Al-Nusrah etc. 
 

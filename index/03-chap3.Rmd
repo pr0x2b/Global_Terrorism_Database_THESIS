@@ -1,19 +1,19 @@
 # Impact Analysis {#impact-analysis}
 
-This part of the research uses descriptive statistics to explore and understand terrorist events from various perspectives. This is essential to examine characteristics of attacks and responsible groups over the period of time. Findings and insights from this analysis is eventually helpful to select appropriate data for the statistical modelling part. 
+This part of the research uses descriptive statistics to explore and understand terrorist events from various perspectives. This is essential to examine characteristics of attacks and responsible groups over the period of time. Findings and insights from this analysis are eventually helpful to select appropriate data for the statistical modeling part. 
 
 ## Data preparation
 
-The primary data file `globalterrorismdb_0617dist.xlsx` used in this research contains over 170,000 terrorist attacks between 1970-2016 (excluding the year 1993). This file can be downloaded by filling up a form on START Consortium’s website ^[Accessing GTD data: https://www.start.umd.edu/gtd/contact/]. This file contains total of 135 variables categorized by incident ID and date, incident information, attack information, weapon information, target/victim information, perpetrator information, casualties and consequences, and additional information. Out of 135 variables, I have selected total of 38 variables from each categories that are relevant to research objective. During data cleaning process, I have made following changes (corrective steps) to original data to make it ready for analysis:
+The primary data file `globalterrorismdb_0617dist.xlsx` used in this research contains over 170,000 terrorist attacks between 1970-2016 (excluding the year 1993). This file can be downloaded by filling up a form on START Consortium’s website ^[Accessing GTD data: https://www.start.umd.edu/gtd/contact/]. This file contains a total of 135 variables categorized by incident ID and date, incident information, attack information, weapon information, target/victim information, perpetrator information, casualties and consequences, and additional information. Out of 135 variables, I have selected a total of 38 variables from each category that are relevant to the research objective. During the data cleaning process, I have made following changes (corrective steps) to original data to make it ready for analysis:
 
-* renaming of some variables (such as `gname` to `group_name`, `INT_LOG` to `intl_logistical_attack`) to keep the analysis and codes interpretable to wider audience. 
-* replacing 2.7% NAs in latitude and longitude with country level or closest matching geocodes. Note that most NAs refers to either disputed territories such as Kosovo or countries that no longer exists such as Czechoslovakia.
+* renaming of some variables (such as `gname` to `group_name`, `INT_LOG` to `intl_logistical_attack`) to keep the analysis and codes interpretable to a wider audience. 
+* replacing 2.7% NAs in latitude and longitude with country level or closest matching geocodes. Note that most NAs refers to either disputed territories such as Kosovo or countries that no longer exist such as Czechoslovakia.
 * 5% NAs in `nkill` (number of people killed) and 9% NAs in `nwound` (number of people wounded) variable replaced with 0. GTD reference manual suggests that "Where there is evidence of fatalities, but a figure is not reported or it is too vague to be of use, this field remains blank."
 * NAs in regional variables i.e `city` and `provstate` replaced with "unknown"
 
- GTD data is further enriched with country and year wise indicators from World Bank Open Data to get multi-dimensional view and for modelling part. This data is also open-source and can be accessed through R library `WDI` ^[Searching and extracting data from the World Bank’s World Development Indicators. : https://cran.r-project.org/web/packages/WDI/WDI.pdf]. 
+ GTD data is further enriched with country and year wise indicators from World Bank Open Data to get a multi-dimensional view and for modeling part. This data is also open-source and can be accessed through R library `WDI` ^[Searching and extracting data from the World Bank’s World Development Indicators. : https://cran.r-project.org/web/packages/WDI/WDI.pdf]. 
  
-List of all the variable with short description as well as the script to implement aforementioned steps and to prepare clean dataset can be viewed in [Appendix I]. Detailed information and explanation about each variable can be found GTD codebook^[https://www.start.umd.edu/gtd/downloads/Codebook.pdf]. 
+List of all the variable with a short description as well as the script to implement the aforementioned steps and to prepare clean dataset can be viewed in [Appendix I]. Detailed information and explanation about each variable can be found GTD codebook^[https://www.start.umd.edu/gtd/downloads/Codebook.pdf]. 
 
 
 ## Global overview
@@ -22,7 +22,7 @@ List of all the variable with short description as well as the script to impleme
 tmp <- df %>% group_by(region, year) %>% summarize(attack_count = n())
 ```
 
-A quick look at region level number attacks suggests that situation is becoming worst in Middle East & North Africa followed by South Asia, Sub-Saharan Africa and Southeast Asia where exponential growth in number of attacks can be observed specifically from years 2010 to 2016. Note that the Y axis is set free to have closer look at trends.
+A quick look at region level number attacks suggests that situation is becoming worst in the Middle East & North Africa followed by South Asia, Sub-Saharan Africa and Southeast Asia where exponential growth in a number of attacks can be observed specifically from years 2010 to 2016. Note that the Y-axis is set free to have closer look at trends.
 
 ```{r echo=FALSE, fig.cap="Attack frequency by year and region", fig.height=5, out.width = "100%"}
 ggplot(tmp, aes(x=year, y=attack_count, color = region)) + 
@@ -35,7 +35,7 @@ ggplot(tmp, aes(x=year, y=attack_count, color = region)) +
 
 ```
 
-An interesting observation is in Eastern Europe region where sudden increase in number of attacks can be observed during 2014-2015 and then sudden decrease in 2016. Within the most impacted regions, nearly similar trend of gradual increase in number of attacks after 2010 and peak during 2014-2015 is visible. It’s worth mentioning that in June 2014, Islamic State announced establishment of "Caliphate" while declaring Abu Bakr al-Baghdadi as "leader of Muslims everywhere" and urging other groups to pledge allegiance [@AlJazeera_2014]. Islamic State was at its peak strength during Jan 2014 to Jan 2015 [@Ceron_2018].
+An interesting observation is in Eastern Europe region where a sudden increase in a number of attacks can be observed during 2014-2015 and then a sudden decrease in 2016. Within the most impacted regions, the nearly similar trend of gradual increase in a number of attacks after 2010 and peak during 2014-2015 is visible. It’s worth mentioning that in June 2014, Islamic State announced the establishment of "Caliphate" while declaring Abu Bakr al-Baghdadi as "leader of Muslims everywhere" and urging other groups to pledge allegiance [@AlJazeera_2014]. Islamic State was at its peak strength during Jan 2014 to Jan 2015 [@Ceron_2018].
 
 To understand the attack characteristics, let’s take a look at Frequency of attack type and type of weapon used by terrorist groups. 
 
@@ -61,7 +61,7 @@ if( knitr:::is_latex_output() ) {
 }
 ```
 
-The heat signatures indicates Bombing/Explosive as one of the frequently used techniques by terrorist groups. Although the pattern in this tactic is visible throughout all the year, while rising during late 80s and early 90s however it has now increased to nearly 7 times since 2006. Similar pattern (with lower magnitude) can be observed in Armed Assault followed by Hostage Taking and Assassination technique. 
+The heat signatures indicate Bombing/Explosive as one of the frequently used techniques by terrorist groups. Although the pattern in this tactic is visible throughout all the year, while rising during the late 80s and early 90s however it has now increased to nearly 7 times since 2006. A similar pattern (with lower magnitude) can be observed in Armed Assault followed by Hostage Taking and Assassination technique. 
 
 ```{r }
 tmp <- df %>% group_by(weapon_type, year) %>% summarise(total_attacks = n())
@@ -85,10 +85,10 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-Upon examining the trends in type of weapon used in all terrorist incidents globally, it is visible that use of Explosives/Bomb/Dynamites and Firearms is extremely high since 2011 and compared to other weapon types. Use of vehicles as weapon type was relatively low until 2013 however it was on peak in 2015 with total 34 number number of attacks. 
+Upon examining the trends in the type of weapon used in all terrorist incidents globally, it is visible that use of Explosives/Bomb/Dynamites and Firearms is extremely high since 2011 and compared to other weapon types. Use of vehicles as weapon type was relatively low until 2013, however, it was on peak in 2015 with total 34 number of attacks. 
 
 
-Observing trends in target type over the period of time is also a useful way to understand characteristics and ideology among terrorist incidents. As shown in the plot below, the heat signature indicates the top five most most frequently attacked target types as Private Citizens & Property followed by Military, Police, Government and Business. 
+Observing trends in target type over the period of time is also a useful way to understand characteristics and ideology among terrorist incidents. As shown in the plot below, the heat signature indicates the top five most frequently attacked target types as Private Citizens & Property followed by Military, Police, Government, and Business. 
 
 ```{r }
 tmp <- df %>% group_by(target_type, year) %>% summarise(total_attacks = n()) 
@@ -114,11 +114,11 @@ According to GTD codebook, Private Citizens & Property category includes attack 
 
 ## The top 10 most active and violent groups
 
-Findings from exploratory data analysis at region level indicates that number of attacks have increased significantly from year 2010 and nearly at the same pace in Middle East & North Africa, South Asia, Sub-Saharan Africa and Southeast Asia region. Trends in attack type, weapon type and target type over the same period of time (from 2010) suggests that bombings and explosions as a choice of attack type is growing exponentially while use of explosives & firearms and attacks on civilians is at alarming high level. 
+Findings from exploratory data analysis at region level indicate that the number of attacks have increased significantly from the year 2010 and nearly at the same pace in the Middle East & North Africa, South Asia, Sub-Saharan Africa and Southeast Asia region. Trends in attack type, weapon type and target type over the same period of time (from 2010) suggests that bombings and explosions as a choice of attack type is growing exponentially while the use of explosives & firearms and attacks on civilians is at alarming high level. 
 
-This part of the research identifies and examines the top ten most violent and active terrorist groups based on number of fatalities and number of people injured. GTD codebook suggests that when an attack is a part of multiple attacks, sources sometimes provide a cumulative fatality total for all of the incidents rather than fatality figures for each incident. 
+This part of the research identifies and examines the top ten most violent and active terrorist groups based on a number of fatalities and number of people injured. GTD codebook suggests that when an attack is a part of multiple attacks, sources sometimes provide a cumulative fatality total for all of the incidents rather than fatality figures for each incident. 
 
-In order to determine top ten most active and violent groups based on fatalities and injured while preserving statistical accuracy, first I filter the dataset for the events that took place from 2010 onward and remove the incidents where group name is not known. The new variable `impact` is sum of fatalities and number of people injured. Wherever an attack is observed as a part of multiple attacks, and reported figures are different, I use the figure which is maximum among all the reported figures while ensuring that reported incidents are distinct and grouped by month, year, region and name of the group as shown in the code below: 
+In order to determine top ten most active and violent groups based on fatalities and injured while preserving statistical accuracy, first I filter the dataset for the events that took place from 2010 onward and remove the incidents where group name is not known. The new variable `impact` is the sum of fatalities and the number of people injured. Wherever an attack is observed as a part of multiple attacks, and reported figures are different, I use the figure which is maximum among all the reported figures while ensuring that reported incidents are distinct and grouped by month, year, region and name of the group as shown in the code below: 
 
 ```{r}
 by_groups <- df %>% 
@@ -155,7 +155,7 @@ ggplot(by_groups, aes(x= reorder(group_name, -total), y= total)) +
         plot.title = element_text(size=12), legend.position = "none")  
 
 ```
-Based on cumulative number of fatalities and injured people, we can see that ISIL and Taliban, followed by Boko Haram are the most violent groups that are currently active. 
+Based on a cumulative number of fatalities and injured people, we can see that ISIL and Taliban, followed by Boko Haram are the most violent groups that are currently active. 
 
 To better understand their activity over the period of time, we take a look at attack frequency from each group. 
 
@@ -185,9 +185,9 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-It’s interesting to see that majority of this most violent terrorist groups (6 out of 10) were formed after 2006 only. Particularly, number of attacks from ISIL can be seen increasing rapidly within shortest period of time (4 years) and a gradual increase in attacks from Taliban (reaching peak at 1249 in year 2015). 
+It’s interesting to see that the majority of this most violent terrorist groups (6 out of 10) were formed after 2006 only. Particularly, a number of attacks from ISIL can be seen increasing rapidly within a shortest period of time (4 years) and a gradual increase in attacks from Taliban (reaching a peak at 1249 in the year 2015). 
 
-Attack characteristics for all 10 groups (cumulative) indicates Military as the most frequent target (27.5%) followed by civilians (27.3%). Similarly, Bombing/Explosions and Armed assault as a most frequent attack tactics accounts for 70.4% of all the attacks as shown in the plots below.  
+Attack characteristics for all 10 groups (cumulative) indicate Military as the most frequent target (27.5%) followed by civilians (27.3%). Similarly, Bombing/Explosions and Armed assault as a most frequent attack tactics account for 70.4% of all the attacks as shown in the plots below.  
 
 ```{r echo= FALSE, fig.cap="Characteristics of top 10 groups", fig.height=3, out.width = "100%"}
 group_attack_type <- df %>%  
@@ -226,7 +226,7 @@ if( knitr:::is_latex_output() ) {
 
 ## The major and minor epicenters
 
-The term "Epicenter" used here refers to the geographical location that is impacted by terrorist incidents from top 10 groups as defined. To examine the threat level from this groups by geographic location, I use cumulative sum of number of people killed and number of people wounded as measurement. Below is the code used to prepare the data for this analysis. 
+The term "Epicenter" used here refers to the geographical location that is impacted by terrorist incidents from top 10 groups as defined. To examine the threat level from this groups by geographic location, I use the cumulative sum of the number of people killed and a number of people wounded as a measurement. Below is the code used to prepare the data for this analysis. 
 
 ```{r }
 tmp <- df %>% 
@@ -269,9 +269,9 @@ if( knitr:::is_latex_output() ) {
 
 ```
 
-We can see minor/ negligible threat level across North America and Central Asia region however Ukraine turns out to be the major epicenter in Eastern Europe region and poses high threat level. Similarly, low number of attacks but high number of casualties and injuries make Philippines minor epicenter within Southeast Asia region.
+We can see minor/ negligible threat level across North America and Central Asia region, however, Ukraine turns out to be the major epicenter in Eastern Europe region and poses high threat level. Similarly, a low number of attacks but the high number of casualties and injuries make Philippines minor epicenter within the Southeast Asia region.
 
-In the next plots, we use treemap to get quick overview of threat level by regions. The area represents number of attacks and color represents cumulative fatalities and injuries.
+In the next plots, we use treemap to get a quick overview of the threat level by regions. The area represents a number of attacks and color represents cumulative fatalities and injuries.
 
 ```{r}
 tmp1 <- tmp %>% 
@@ -291,7 +291,7 @@ tmp1 %>%
     theme(plot.title = element_text(size=12))
   
 ```
-The situation in Western Europe represents opposite of what we have observed in Eastern Europe. Here we can see that terrorism from top ten groups is spread across most the countries. While France facing the biggest impact in terms of cumulative fatalities and injuries followed by Belgium, we can also see that Germany is facing the highest number of attacks. 
+The situation in Western Europe represents the opposite of what we have observed in Eastern Europe. Here we can see that terrorism from top ten groups is spread across most the countries. While France facing the biggest impact in terms of cumulative fatalities and injuries followed by Belgium, we can also see that Germany is facing the highest number of attacks. 
 
 
 ```{r echo=FALSE}
@@ -311,7 +311,7 @@ if( knitr:::is_latex_output() ) {
 }
 
 ```
-Based on threat level, we can identify Germany and France as major epicenters and Belgium as a minor epicenter in Western Europe region. It should be noted that the threat level is Ukraine alone is almost 5 times higher than the threat level in whole Western Europe region. 
+Based on threat level, we can identify Germany and France as major epicenters and Belgium as a minor epicenter in the Western Europe region. It should be noted that the threat level in Ukraine alone is almost 5 times higher than the threat level in the whole Western Europe region. 
 
 ```{r}
 tmp1 <- tmp %>% 
@@ -354,9 +354,9 @@ if( knitr:::is_latex_output() ) {
 
 From the plot and table above, we can see that all three regions are heavily impacted. While Afghanistan facing the largest impact in terms of fatalities and number of people injured followed by Iraq, we can also see that the spread in Southeast Asia is limited to Pakistan and Afghanistan only (similar to Eastern Europe). 
 
-In case of Sub-Saharan Africa and Middle East & North Africa region, we can see spread across many countries. We can also see many countries with low number of attacks but relatively large number of fatalities and injuries such as in Yemen, Niger, Nigeria and Chad. In a comparison to other regions, the cumulative sum of number of fatalities and injuries in Africa, Middle-East and South Asia is more than 9,000 in each of top five highly impacted countries.
+In the case of Sub-Saharan Africa and the Middle East & North Africa region, we can see spread across many countries. We can also see many countries with a low number of attacks but the relatively large number of fatalities and injuries such as in Yemen, Niger, Nigeria, and Chad. In a comparison to other regions, the cumulative sum of a number of fatalities and injuries in Africa, Middle-East, and South Asia is more than 9,000 in each of the top five highly impacted countries.
 
-To further identify the epicenters by each group, let us narrow down our analysis to city level. For this analysis, I have set the threshold for cumulative number of fatalities and injuries to 100 and have removed observations where name of the city is unknown as shown in the code chunk below: 
+To further identify the epicenters by each group, let us narrow down our analysis to the city level. For this analysis, I have set the threshold for a cumulative number of fatalities and injuries to 100 and have removed observations where the name of the city is unknown as shown in the code chunk below: 
 
 ```{r}
 #------------------------------------------
@@ -386,7 +386,7 @@ tmp <- df %>%
 glimpse(tmp)
 ```
 
-From the prepared data, we can see that 284 cities are impacted from top 10 most active and violent groups. Next, we plot this data using treemap where the size/area represents number of attacks and color represents intensity of cumulative sum of fatalities and injuries. 
+From the prepared data, we can see that 284 cities are impacted by the top 10 most active and violent groups. Next, we plot this data using treemap where the size/area represents a number of attacks and color represents the intensity of the cumulative sum of fatalities and injuries. 
 
 ```{r echo= FALSE, fig.cap="The Major and Minor Epicenters of Terrorism (by each group)", fig.height=8, out.width = "100%"}
 tmp %>%
@@ -405,6 +405,6 @@ tmp %>%
           strip.text = element_text(size = 9, face = "bold"))
 ```
 
-We can see distinct characteristic among the groups in terms of spread. For example, Al-Nusrah Front, Houthi Extremists and Donetsk People’s Republic groups have spread across 5 to 10 cities while having few major epicenters. Whereas ISIL, Taliban and Boko Haram groups have spread across many cities. In case of ISIL, we can also see relatively large number of fatalities and injuries with low number of attacks in several cities. 
+We can see distinct characteristic among the groups in terms of spread. For example, Al-Nusrah Front, Houthi Extremists and Donetsk People’s Republic groups have spread across 5 to 10 cities while having few major epicenters. Whereas ISIL, Taliban and Boko Haram groups have spread across many cities. In the case of ISIL, we can also see a relatively large number of fatalities and injuries with a low number of attacks in several cities. 
 
-To summarize, we identified the top 10 most lethal groups that are active between 2010 to 2016 and examined their characteristics behind attacks. We looked at the trend in type of attack and corresponding number of attacks over the period of time, which up to certain extent, indicates easy access to firearms and explosive devices either through illegal arms trade or through undisclosed support from powerful nation/s. We also examined pattern in target type, in which, 46.7% attacks were targeted at Military and Police category and 27.3% attacks were intended toward civilians. Based on threat level from top ten groups, we examined the geographical spread and identified the hot spots where this groups are highly active. 
+To summarize, we identified the top 10 most lethal groups that are active between 2010 to 2016 and examined their characteristics behind attacks. We looked at the trend in the type of attack and a corresponding number of attacks over the period of time, which up to certain extent, indicates easy access to firearms and explosive devices either through illegal arms trade or through undisclosed support from powerful nation/s. We also examined pattern in target type, in which, 46.7% attacks were targeted at the Military and Police category and 27.3% attacks were intended toward civilians. Based on the threat level from the top ten groups, we examined the geographical spread and identified the hot spots where these groups are highly active.
