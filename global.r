@@ -27,8 +27,6 @@
 # devtools::install_github('rstudio/DT')
 
 # devtools::install_github("RamiKrispin/TSstudio")
-# devtools::install_github("RamiKrispin/MLstudio")
-# library(MLstudio)
 
 # load libraries and set global options
 if (!require("pacman")) install.packages("pacman")
@@ -36,7 +34,9 @@ pacman::p_load(data.table, DT, openxlsx, RCurl, stringr, stringi, reshape, knitr
                DescTools, GGally, StandardizeText, scales, lubridate, countrycode, leaflet, leaflet.extras,
                viridis, viridisLite, RColorBrewer, ggfortify, plotly, highcharter, treemap, d3heatmap, 
                arules, arulesViz, TSstudio, timetk, tidyquant, tidyr, zoo, forecast, tseries, imputeTS, 
-               countrycode, WDI, purrr, igraph, visNetwork, randomcoloR, treemapify,
+               countrycode, WDI, purrr, igraph, visNetwork, 
+               # randomcoloR, 
+               treemapify,
                shiny, ggmap, maptools, maps, eply, 
                shinydashboard, shinythemes, shinyjs, shinyBS, shinyWidgets, shinycssloaders, tidyverse,
                parallel, caret, pROC, lightgbm)
